@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez",
-    "version": (0, 2),
+    "version": (0, 3),
     "blender": (2, 7, 0),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -237,6 +237,76 @@ def node_templates_pulldown(self, context):
         icon="RADIO")
 # // FEATURE: Node Templates
 
+# FEATURE: OB/MA ID panel in Node Editor
+class NODE_PT_indices(bpy.types.Panel):
+    '''Object / Material Indices Panel'''
+    bl_space_type = 'NODE_EDITOR'
+    bl_region_type = 'UI'
+    bl_label = 'Object / Material Indices'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        node = context.active_node
+        return node and node.type == 'ID_MASK'
+
+    def draw(self, context):
+        layout = self.layout
+
+        objects = bpy.data.objects
+        materials = bpy.data.materials
+
+        show_ob_id = False
+        show_ma_id = False
+
+        for ob in objects:
+            if ob.pass_index > 0:
+                show_ob_id = True
+        for ma in materials:
+            if ma.pass_index > 0:
+                show_ma_id = True
+
+        if not show_ob_id and not show_ma_id:
+            layout.label(text="No objects or materials indices so far.", icon="INFO")
+
+        if show_ob_id:
+            split = layout.split()
+            col = split.column()
+            col.label(text="Object Name", icon="OBJECT_DATA")
+            split.label(text="ID Number")
+            row = layout.row()
+            for ob in objects:
+                icon_type = "OUTLINER_DATA_" + ob.type
+                if ob.pass_index > 0:
+                    row.label(text="%s" % ob.name, icon=icon_type)
+                    row.label(text="%s" % ob.pass_index)
+                    row = layout.row()
+
+        layout.separator()
+
+        if show_ma_id:
+            split = layout.split()
+            col = split.column()
+            col.label(text="Material Name", icon="MATERIAL_DATA")
+            split.label(text="ID Number")
+            row = layout.row()
+
+            for ma in materials:
+                icon = "BLANK1"
+                if ma.use_nodes:
+                    icon = "NODETREE"
+                elif ma.library:
+                    icon = "LIBRARY_DATA_DIRECT"
+                    if ma.is_library_indirect:
+                        icon = "LIBRARY_DATA_INDIRECT"
+
+                if ma.pass_index > 0:
+                    row.label(text="%s" % ma.name, icon=icon)
+                    row.label(text="%s" % ma.pass_index)
+                    row = layout.row()
+
+# // FEATURE: OB/MA ID panel in Node Editor
+
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
     '''Amaranth Toolset Panel'''
@@ -322,6 +392,8 @@ def register():
     bpy.utils.register_class(FILE_OT_directory_current_blend) # Node Templates
     bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
 
+    bpy.utils.register_class(NODE_PT_indices) # OB/MA Indices Panel
+
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
@@ -354,6 +426,8 @@ def unregister():
     bpy.utils.unregister_class(NODE_OT_AddTemplateVignette) 
 
     bpy.types.FILEBROWSER_HT_header.remove(button_directory_current_blend)
+
+    bpy.utils.unregister_class(NODE_PT_indices)
     
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
