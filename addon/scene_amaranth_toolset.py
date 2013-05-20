@@ -274,7 +274,7 @@ class NODE_PT_indices(bpy.types.Panel):
                 show_ma_id = True
         row = layout.row(align=True)  
         row.prop(node, 'index', text="Mask Index")
-        row.prop(node, 'use_matching_indices', text="Only Matching Indices")
+        row.prop(node, 'use_matching_indices', text="Only Matching IDs")
         
         layout.separator()
 
