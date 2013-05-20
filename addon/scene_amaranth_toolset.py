@@ -255,16 +255,28 @@ class NODE_PT_indices(bpy.types.Panel):
 
         objects = bpy.data.objects
         materials = bpy.data.materials
+        node = context.active_node
 
         show_ob_id = False
         show_ma_id = False
+        matching_ids = False
+
+        if context.active_object:
+            ob_act = context.active_object
+        else:
+            ob_act = False
 
         for ob in objects:
-            if ob.pass_index > 0:
+            if ob and ob.pass_index > 0:
                 show_ob_id = True
         for ma in materials:
-            if ma.pass_index > 0:
+            if ma and ma.pass_index > 0:
                 show_ma_id = True
+        row = layout.row(align=True)  
+        row.prop(node, 'index', text="Mask Index")
+        row.prop(node, 'use_matching_indices', text="Only Matching Indices")
+        
+        layout.separator()
 
         if not show_ob_id and not show_ma_id:
             layout.label(text="No objects or materials indices so far.", icon="INFO")
@@ -272,22 +284,47 @@ class NODE_PT_indices(bpy.types.Panel):
         if show_ob_id:
             split = layout.split()
             col = split.column()
-            col.label(text="Object Name", icon="OBJECT_DATA")
+            col.label(text="Object Name")
             split.label(text="ID Number")
             row = layout.row()
             for ob in objects:
-                icon_type = "OUTLINER_DATA_" + ob.type
-                if ob.pass_index > 0:
-                    row.label(text="%s" % ob.name, icon=icon_type)
+                icon = "OUTLINER_DATA_" + ob.type
+                if ob.library:
+                    icon = "LIBRARY_DATA_DIRECT"
+                elif ob.is_library_indirect:
+                    icon = "LIBRARY_DATA_INDIRECT"
+
+                if ob and node.use_matching_indices \
+                      and ob.pass_index == node.index \
+                      and ob.pass_index != 0:
+                    matching_ids = True
+                    row.label(
+                      text="[{}]".format(ob.name)
+                          if ob_act and ob.name == ob_act.name else ob.name,
+                      icon=icon)
                     row.label(text="%s" % ob.pass_index)
                     row = layout.row()
 
-        layout.separator()
+                elif ob and not node.use_matching_indices \
+                        and ob.pass_index > 0:
+
+                    matching_ids = True
+                    row.label(
+                      text="[{}]".format(ob.name)
+                          if ob_act and ob.name == ob_act.name else ob.name,
+                      icon=icon)
+                    row.label(text="%s" % ob.pass_index)
+                    row = layout.row()
+
+            if node.use_matching_indices and not matching_ids:
+                row.label(text="No objects with ID %s" % node.index, icon="INFO")
+
+            layout.separator()
 
         if show_ma_id:
             split = layout.split()
             col = split.column()
-            col.label(text="Material Name", icon="MATERIAL_DATA")
+            col.label(text="Material Name")
             split.label(text="ID Number")
             row = layout.row()
 
@@ -300,10 +337,25 @@ class NODE_PT_indices(bpy.types.Panel):
                     if ma.is_library_indirect:
                         icon = "LIBRARY_DATA_INDIRECT"
 
-                if ma.pass_index > 0:
+                if ma and node.use_matching_indices \
+                      and ma.pass_index == node.index \
+                      and ma.pass_index != 0:
+                    matching_ids = True
                     row.label(text="%s" % ma.name, icon=icon)
                     row.label(text="%s" % ma.pass_index)
                     row = layout.row()
+
+                elif ma and not node.use_matching_indices \
+                        and ma.pass_index > 0:
+
+                    matching_ids = True
+                    row.label(text="%s" % ma.name, icon=icon)
+                    row.label(text="%s" % ma.pass_index)
+                    row = layout.row()
+
+            if node.use_matching_indices and not matching_ids:
+                row.label(text="No materials with ID %s" % node.index, icon="INFO")
+
 
 # // FEATURE: OB/MA ID panel in Node Editor
 
@@ -393,6 +445,8 @@ def register():
     bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
 
     bpy.utils.register_class(NODE_PT_indices) # OB/MA Indices Panel
+    bpy.types.Node.use_matching_indices = bpy.props.BoolProperty(default=True,
+                                            description="If disabled, display all available indices")
 
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
