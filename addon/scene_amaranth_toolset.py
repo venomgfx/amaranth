@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez",
-    "version": (0, 3),
+    "version": (0, 3, 1),
     "blender": (2, 7, 0),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -237,6 +237,19 @@ def node_templates_pulldown(self, context):
         icon="RADIO")
 # // FEATURE: Node Templates
 
+def node_stats(self,context):
+
+    nodes = context.scene.node_tree.nodes
+    nodes_total = len(nodes.keys())
+    nodes_selected = 0
+    for n in nodes:
+        if n.select:
+            nodes_selected = nodes_selected + 1
+
+    layout = self.layout
+    row = layout.row(align=True)
+    row.label(text="Nodes: %s/%s" % (nodes_selected, str(nodes_total)))
+
 # FEATURE: OB/MA ID panel in Node Editor
 class NODE_PT_indices(bpy.types.Panel):
     '''Object / Material Indices Panel'''
@@ -440,6 +453,7 @@ def register():
     bpy.utils.register_class(NODE_OT_AddTemplateVignette) # Node Templates
     bpy.utils.register_class(NODE_MT_amaranth_templates)
     bpy.types.NODE_HT_header.append(node_templates_pulldown)
+    bpy.types.NODE_HT_header.append(node_stats)
 
     bpy.utils.register_class(FILE_OT_directory_current_blend) # Node Templates
     bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
@@ -477,7 +491,8 @@ def unregister():
 
     bpy.utils.unregister_class(NODE_MT_amaranth_templates)
     bpy.types.NODE_HT_header.remove(node_templates_pulldown)
-    bpy.utils.unregister_class(NODE_OT_AddTemplateVignette) 
+    bpy.utils.unregister_class(NODE_OT_AddTemplateVignette)
+    bpy.types.NODE_HT_header.remove(node_stats)
 
     bpy.types.FILEBROWSER_HT_header.remove(button_directory_current_blend)
 
