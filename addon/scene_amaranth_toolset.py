@@ -19,8 +19,8 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez",
-    "version": (0, 3, 2),
-    "blender": (2, 7, 0),
+    "version": (0, 3, 4),
+    "blender": (2, 7, 1),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
     "warning": "",
@@ -32,6 +32,41 @@ bl_info = {
 import bpy
 from bpy.types import Operator
 from mathutils import Vector
+from bpy.app.handlers import persistent
+
+# Properties
+def init_properties():
+
+    scene = bpy.types.Scene
+    node = bpy.types.Node
+    render = bpy.types.RenderSettings
+    scene.use_frame_current = bpy.props.BoolProperty(default=True)
+    scene.use_scene_refresh = bpy.props.BoolProperty(default=True)
+    scene.use_file_save_reload = bpy.props.BoolProperty(default=True)
+    scene.use_timeline_extra_info = bpy.props.BoolProperty(default=True)
+
+    scene.use_unsimplify_render = bpy.props.BoolProperty(
+        default=False,
+        name="Unsimplify Render",
+        description="Disable Simplify during render")
+    scene.simplify_status = bpy.props.BoolProperty(default=False)
+
+    node.use_matching_indices = bpy.props.BoolProperty(
+        default=True,
+        description="If disabled, display all available indices")
+
+def clear_properties():
+    props = (
+        "use_frame_current",
+        "use_scene_refresh",
+        "use_file_save_reload",
+        "use_timeline_extra_info"
+    )
+    
+    wm = bpy.context.window_manager
+    for p in props:
+        if p in wm:
+            del wm[p]
 
 # FEATURE: Refresh Scene!
 class SCENE_OT_refresh(Operator):
@@ -51,9 +86,10 @@ class SCENE_OT_refresh(Operator):
 def button_refresh(self, context):
 
     scene = context.scene
+    layout = self.layout
     if scene.use_scene_refresh:
-        self.layout.separator()
-        self.layout.operator(
+        layout.separator()
+        layout.operator(
             SCENE_OT_refresh.bl_idname,
             text="Refresh!",
             icon='FILE_REFRESH')
@@ -69,7 +105,7 @@ def save_reload(self, context, path):
     else:
         bpy.ops.wm.save_as_mainfile("INVOKE_AREA")
 
-class FILE_OT_save_reload(Operator):
+class WM_OT_save_reload(Operator):
     """Save and Reload the current blend file"""
     bl_idname = "wm.save_reload"
     bl_label = "Save & Reload"
@@ -86,10 +122,11 @@ class FILE_OT_save_reload(Operator):
 def button_save_reload(self, context):
 
     scene = context.scene
+    layout = self.layout
     if scene.use_file_save_reload:
-        self.layout.separator()
-        self.layout.operator(
-            FILE_OT_save_reload.bl_idname,
+        layout.separator()
+        layout.operator(
+            WM_OT_save_reload.bl_idname,
             text="Save & Reload",
             icon='FILE_REFRESH')
 # // FEATURE: Save & Reload
@@ -238,17 +275,17 @@ def node_templates_pulldown(self, context):
 # // FEATURE: Node Templates
 
 def node_stats(self,context):
-
-    nodes = context.scene.node_tree.nodes
-    nodes_total = len(nodes.keys())
-    nodes_selected = 0
-    for n in nodes:
-        if n.select:
-            nodes_selected = nodes_selected + 1
-
-    layout = self.layout
-    row = layout.row(align=True)
-    row.label(text="Nodes: %s/%s" % (nodes_selected, str(nodes_total)))
+    if context.scene.node_tree:
+        nodes = context.scene.node_tree.nodes
+        nodes_total = len(nodes.keys())
+        nodes_selected = 0
+        for n in nodes:
+            if n.select:
+                nodes_selected = nodes_selected + 1
+    
+        layout = self.layout
+        row = layout.row(align=True)
+        row.label(text="Nodes: %s/%s" % (nodes_selected, str(nodes_total)))
 
 # FEATURE: OB/MA ID panel in Node Editor
 class NODE_PT_indices(bpy.types.Panel):
@@ -372,6 +409,28 @@ class NODE_PT_indices(bpy.types.Panel):
 
 # // FEATURE: OB/MA ID panel in Node Editor
 
+# FEATURE: Unsimplify on render
+@persistent
+def unsimplify_render_pre(context):
+    scene = bpy.context.scene
+    render = scene.render
+    
+    scene.simplify_status = render.use_simplify
+    
+    if scene.use_unsimplify_render:
+        render.use_simplify = False
+
+@persistent
+def unsimplify_render_post(context):
+    scene = bpy.context.scene
+    render = scene.render
+    render.use_simplify = scene.simplify_status
+
+def unsimplify_ui(self,context):
+    scene = bpy.context.scene
+    self.layout.prop(scene, 'use_unsimplify_render')
+# //FEATURE: Unsimplify on render
+
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
     '''Amaranth Toolset Panel'''
@@ -427,6 +486,15 @@ class AmaranthToolsetPanel(bpy.types.Panel):
         sub.active = scene.use_timeline_extra_info
         sub.label(text="Timeline Header")
 
+classes = (AmaranthToolsetPanel,
+           SCENE_OT_refresh,
+           WM_OT_save_reload,
+           NODE_OT_AddTemplateVignette,
+           NODE_MT_amaranth_templates,
+           FILE_OT_directory_current_blend,
+           NODE_PT_indices)
+
+
 addon_keymaps = []
 
 kmi_defs = (
@@ -435,32 +503,27 @@ kmi_defs = (
 
 def register():
     # UI: Register the panel
-    bpy.utils.register_class(AmaranthToolsetPanel)
-    bpy.types.Scene.use_frame_current = bpy.props.BoolProperty(default=True)
-    bpy.types.Scene.use_scene_refresh = bpy.props.BoolProperty(default=True)
-    bpy.types.Scene.use_file_save_reload = bpy.props.BoolProperty(default=True)
-    bpy.types.Scene.use_timeline_extra_info = bpy.props.BoolProperty(default=True)
+    init_properties()
+    for c in classes:
+        bpy.utils.register_class(c)
 
-    bpy.utils.register_class(SCENE_OT_refresh) # Refresh
     bpy.types.VIEW3D_MT_object_specials.append(button_refresh)
-    
-    bpy.utils.register_class(FILE_OT_save_reload) # Save Reload
+
     bpy.types.INFO_MT_file.append(button_save_reload)
 
     bpy.types.VIEW3D_MT_object_specials.append(button_frame_current) # Current Frame
     bpy.types.TIME_HT_header.append(label_timeline_extra_info) # Timeline Extra Info
 
-    bpy.utils.register_class(NODE_OT_AddTemplateVignette) # Node Templates
-    bpy.utils.register_class(NODE_MT_amaranth_templates)
     bpy.types.NODE_HT_header.append(node_templates_pulldown)
     bpy.types.NODE_HT_header.append(node_stats)
 
-    bpy.utils.register_class(FILE_OT_directory_current_blend) # Node Templates
     bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
 
-    bpy.utils.register_class(NODE_PT_indices) # OB/MA Indices Panel
-    bpy.types.Node.use_matching_indices = bpy.props.BoolProperty(default=True,
-                                            description="If disabled, display all available indices")
+    bpy.types.SCENE_PT_simplify.append(unsimplify_ui)
+    bpy.types.CyclesScene_PT_simplify.append(unsimplify_ui)
+
+    bpy.app.handlers.render_pre.append(unsimplify_render_pre)
+    bpy.app.handlers.render_post.append(unsimplify_render_post)
 
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
@@ -486,27 +549,32 @@ def register():
         addon_keymaps.append((km, kmi))
 
 def unregister():
-    bpy.utils.unregister_class(AmaranthToolsetPanel)
+    for c in classes:
+        bpy.utils.unregister_class(c)
 
-    bpy.utils.unregister_class(SCENE_OT_refresh)
     bpy.types.VIEW3D_MT_object_specials.remove(button_refresh)
-    bpy.utils.unregister_class(FILE_OT_save_reload)
+
     bpy.types.INFO_MT_file.remove(button_save_reload)
+
     bpy.types.VIEW3D_MT_object_specials.remove(button_frame_current)
     bpy.types.TIME_HT_header.remove(label_timeline_extra_info)
 
-    bpy.utils.unregister_class(NODE_MT_amaranth_templates)
     bpy.types.NODE_HT_header.remove(node_templates_pulldown)
-    bpy.utils.unregister_class(NODE_OT_AddTemplateVignette)
     bpy.types.NODE_HT_header.remove(node_stats)
 
     bpy.types.FILEBROWSER_HT_header.remove(button_directory_current_blend)
 
-    bpy.utils.unregister_class(NODE_PT_indices)
+    bpy.types.SCENE_PT_simplify.remove(unsimplify_ui)
+    bpy.types.CyclesScene_PT_simplify.remove(unsimplify_ui)
+
+    bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
+    bpy.app.handlers.render_post.remove(unsimplify_render_post)
     
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
+    
+    clear_properties()
 
 if __name__ == "__main__":
     register()
