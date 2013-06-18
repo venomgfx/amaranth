@@ -531,13 +531,21 @@ def unsimplify_ui(self,context):
     self.layout.prop(scene, 'use_unsimplify_render')
 # //FEATURE: Unsimplify on render
 
-# Tiny feat:
+# FEATURE: Extra Info Stats
 def stats_scene(self, context):
     scenes_count = str(len(bpy.data.scenes))
     cameras_count = str(len(bpy.data.cameras))
+    cameras_selected = 0
+
+    for obs in context.selected_objects:
+        if obs.type == 'CAMERA':
+            cameras_selected = cameras_selected + 1
+
     row = self.layout.row(align=True)
 
-    row.label(text="Scenes:{} | Cameras:{}".format(scenes_count, cameras_count))
+    row.label(text="Scenes:{} | Cameras:{}/{}".format(
+               scenes_count, cameras_selected, cameras_count))
+# //FEATURE: Extra Info Stats
 
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
