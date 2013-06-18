@@ -531,6 +531,14 @@ def unsimplify_ui(self,context):
     self.layout.prop(scene, 'use_unsimplify_render')
 # //FEATURE: Unsimplify on render
 
+# Tiny feat:
+def stats_scene(self, context):
+    scenes_count = str(len(bpy.data.scenes))
+    cameras_count = str(len(bpy.data.cameras))
+    row = self.layout.row(align=True)
+
+    row.label(text="Scenes:{} | Cameras:{}".format(scenes_count, cameras_count))
+
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
     '''Amaranth Toolset Panel'''
@@ -612,6 +620,7 @@ def register():
     bpy.types.VIEW3D_MT_object_specials.append(button_refresh)
 
     bpy.types.INFO_MT_file.append(button_save_reload)
+    bpy.types.INFO_HT_header.append(stats_scene)
 
     bpy.types.VIEW3D_MT_object_specials.append(button_frame_current) # Current Frame
     bpy.types.TIME_HT_header.append(label_timeline_extra_info) # Timeline Extra Info
@@ -657,6 +666,7 @@ def unregister():
     bpy.types.VIEW3D_MT_object_specials.remove(button_refresh)
 
     bpy.types.INFO_MT_file.remove(button_save_reload)
+    bpy.types.INFO_HT_header.remove(stats_scene)
 
     bpy.types.VIEW3D_MT_object_specials.remove(button_frame_current)
     bpy.types.TIME_HT_header.remove(label_timeline_extra_info)
