@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez",
-    "version": (0, 3, 4),
+    "version": (0, 3, 5),
     "blender": (2, 7, 1),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -39,7 +39,8 @@ def init_properties():
 
     scene = bpy.types.Scene
     node = bpy.types.Node
-    render = bpy.types.RenderSettings
+    nodes_compo = bpy.types.CompositorNodeTree
+
     scene.use_frame_current = bpy.props.BoolProperty(default=True)
     scene.use_scene_refresh = bpy.props.BoolProperty(default=True)
     scene.use_file_save_reload = bpy.props.BoolProperty(default=True)
@@ -55,12 +56,33 @@ def init_properties():
         default=True,
         description="If disabled, display all available indices")
 
+    test_items = [
+        ("ALL", "All Types", "", 0),
+        ("BLUR", "Blur", "", 1),
+        ("BOKEHBLUR", "Bokeh Blur", "", 2),
+        ("VECBLUR", "Vector Blur", "", 3),
+        ("DEFOCUS", "Defocus", "", 4),
+        ("R_LAYERS", "Render Layer", "", 5)
+        ]
+
+    nodes_compo.types = bpy.props.EnumProperty(
+        items=test_items, name = "Types")
+
+    nodes_compo.toggle_mute = bpy.props.BoolProperty(default=False)
+    node.status = bpy.props.BoolProperty(default=False)
+
+
 def clear_properties():
     props = (
         "use_frame_current",
         "use_scene_refresh",
         "use_file_save_reload",
-        "use_timeline_extra_info"
+        "use_timeline_extra_info",
+        "use_unsimplify_render",
+        "simplify_status",
+        "use_matching_indices",
+        "use_simplify_nodes_vector",
+        "status"
     )
     
     wm = bpy.context.window_manager
@@ -287,6 +309,84 @@ def node_stats(self,context):
         row = layout.row(align=True)
         row.label(text="Nodes: %s/%s" % (nodes_selected, str(nodes_total)))
 
+# FEATURE: Simplify Compo Nodes
+class NODE_PT_simplify(bpy.types.Panel):
+    '''Simplify Compositor Panel'''
+    bl_space_type = 'NODE_EDITOR'
+    bl_region_type = 'UI'
+    bl_label = 'Simplify'
+#    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        node_tree = context.scene.node_tree
+
+        layout.prop(node_tree, 'types')
+        layout.operator(NODE_OT_toggle_mute.bl_idname,
+            text="Turn On" if node_tree.toggle_mute else "Turn Off",
+            icon='RESTRICT_VIEW_OFF' if node_tree.toggle_mute else 'RESTRICT_VIEW_ON')
+        
+        if node_tree.types == 'VECBLUR':
+            layout.label(text="This will also toggle the Vector pass {}".format(
+                                "on" if node_tree.toggle_mute else "off"), icon="INFO")
+
+class NODE_OT_toggle_mute(Operator):
+    """"""
+    bl_idname = "node.toggle_mute"
+    bl_label = "Toggle Mute"
+
+    def execute(self, context):
+        scene = context.scene
+        node_tree = scene.node_tree
+        node_type = node_tree.types
+        rlayers = scene.render
+        
+        if not 'amaranth_pass_vector' in scene.keys():
+            scene['amaranth_pass_vector'] = []
+        
+        #can't extend() the list, so make a dummy one
+        pass_vector = scene['amaranth_pass_vector']
+
+        if not pass_vector:
+            pass_vector = []
+
+        if node_tree.toggle_mute:
+            for node in node_tree.nodes:
+                if node_type == 'ALL':
+                    node.mute = node.status
+                if node.type == node_type:
+                    node.mute = node.status
+                if node_type == 'VECBLUR':
+                    for layer in rlayers.layers:
+                        if layer.name in pass_vector:
+                            layer.use_pass_vector = True
+                            pass_vector.remove(layer.name)
+
+                node_tree.toggle_mute = False
+
+        else:
+            for node in node_tree.nodes:
+                if node_type == 'ALL':
+                    node.mute = True
+                if node.type == node_type:
+                    node.status = node.mute
+                    node.mute = True
+                if node_type == 'VECBLUR':
+                    for layer in rlayers.layers:
+                        if layer.use_pass_vector:
+                            pass_vector.append(layer.name)
+                            layer.use_pass_vector = False
+                            pass
+
+                node_tree.toggle_mute = True
+
+        # Write back to the custom prop
+        pass_vector = sorted(set(pass_vector))
+        scene['amaranth_pass_vector'] = pass_vector
+
+        return {'FINISHED'}
+        
+
 # FEATURE: OB/MA ID panel in Node Editor
 class NODE_PT_indices(bpy.types.Panel):
     '''Object / Material Indices Panel'''
@@ -492,7 +592,9 @@ classes = (AmaranthToolsetPanel,
            NODE_OT_AddTemplateVignette,
            NODE_MT_amaranth_templates,
            FILE_OT_directory_current_blend,
-           NODE_PT_indices)
+           NODE_PT_indices,
+           NODE_PT_simplify,
+           NODE_OT_toggle_mute)
 
 
 addon_keymaps = []
