@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez",
-    "version": (0, 3, 5),
+    "version": (0, 3, 6),
     "blender": (2, 7, 1),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
