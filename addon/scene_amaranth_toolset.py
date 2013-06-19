@@ -547,6 +547,33 @@ def stats_scene(self, context):
                scenes_count, cameras_selected, cameras_count))
 # //FEATURE: Extra Info Stats
 
+# FEATURE: Camera Bounds as Render Border
+class VIEW3D_OT_render_border_camera(Operator):
+    """Set camera bounds as render border"""
+    bl_idname = "view3d.render_border_camera"
+    bl_label = "Camera as Render Border"
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.space_data.region_3d.view_perspective == 'CAMERA'
+
+    def execute(self, context):
+        render = context.scene.render
+        render.use_border = True
+        render.border_min_x = 0
+        render.border_min_y = 0
+        render.border_max_x = 1
+        render.border_max_y = 1
+
+        return {'FINISHED'}
+
+def button_render_border_camera(self, context):
+
+    layout = self.layout
+    layout.operator(VIEW3D_OT_render_border_camera.bl_idname,
+                text="Camera as Render Border", icon="CAMERA_DATA")
+# //FEATURE: Camera Bounds as Render Border
+
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
     '''Amaranth Toolset Panel'''
@@ -610,7 +637,8 @@ classes = (AmaranthToolsetPanel,
            FILE_OT_directory_current_blend,
            NODE_PT_indices,
            NODE_PT_simplify,
-           NODE_OT_toggle_mute)
+           NODE_OT_toggle_mute,
+           VIEW3D_OT_render_border_camera)
 
 
 addon_keymaps = []
@@ -626,6 +654,7 @@ def register():
         bpy.utils.register_class(c)
 
     bpy.types.VIEW3D_MT_object_specials.append(button_refresh)
+    bpy.types.VIEW3D_MT_object_specials.append(button_render_border_camera)
 
     bpy.types.INFO_MT_file.append(button_save_reload)
     bpy.types.INFO_HT_header.append(stats_scene)
@@ -672,6 +701,7 @@ def unregister():
         bpy.utils.unregister_class(c)
 
     bpy.types.VIEW3D_MT_object_specials.remove(button_refresh)
+    bpy.types.VIEW3D_MT_object_specials.remove(button_render_border_camera)
 
     bpy.types.INFO_MT_file.remove(button_save_reload)
     bpy.types.INFO_HT_header.remove(stats_scene)
