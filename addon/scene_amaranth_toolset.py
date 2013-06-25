@@ -569,10 +569,28 @@ class VIEW3D_OT_render_border_camera(Operator):
 
 def button_render_border_camera(self, context):
 
-    layout = self.layout
-    layout.operator(VIEW3D_OT_render_border_camera.bl_idname,
-                text="Camera as Render Border", icon="CAMERA_DATA")
+    view3d = context.space_data.region_3d
+    
+    if view3d.view_perspective == 'CAMERA':
+        layout = self.layout
+        layout.separator()
+        layout.operator(VIEW3D_OT_render_border_camera.bl_idname,
+                        text="Camera as Render Border", icon="FULLSCREEN_ENTER")
+
 # //FEATURE: Camera Bounds as Render Border
+# FEATURE: Passepartout options on W menu
+def button_camera_passepartout(self, context):
+
+    view3d = context.space_data.region_3d
+    cam = context.scene.camera.data
+    
+    if view3d.view_perspective == 'CAMERA':
+        layout = self.layout
+        if cam.show_passepartout:
+            layout.prop(cam, "passepartout_alpha", text="Passepartout")
+        else:
+            layout.prop(cam, "show_passepartout")
+
 
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
@@ -655,6 +673,7 @@ def register():
 
     bpy.types.VIEW3D_MT_object_specials.append(button_refresh)
     bpy.types.VIEW3D_MT_object_specials.append(button_render_border_camera)
+    bpy.types.VIEW3D_MT_object_specials.append(button_camera_passepartout)
 
     bpy.types.INFO_MT_file.append(button_save_reload)
     bpy.types.INFO_HT_header.append(stats_scene)
@@ -702,6 +721,7 @@ def unregister():
 
     bpy.types.VIEW3D_MT_object_specials.remove(button_refresh)
     bpy.types.VIEW3D_MT_object_specials.remove(button_render_border_camera)
+    bpy.types.VIEW3D_MT_object_specials.remove(button_camera_passepartout)
 
     bpy.types.INFO_MT_file.remove(button_save_reload)
     bpy.types.INFO_HT_header.remove(stats_scene)
