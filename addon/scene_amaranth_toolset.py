@@ -591,6 +591,18 @@ def button_camera_passepartout(self, context):
         else:
             layout.prop(cam, "show_passepartout")
 
+class VIEW3D_OT_show_only_render(Operator):
+    bl_idname = "view3d.show_only_render"
+    bl_label = "Show Only Render"
+
+    def execute(self, context):
+        space = bpy.context.space_data
+        
+        if space.show_only_render:
+            space.show_only_render = False
+        else:
+            space.show_only_render = True
+        return {'FINISHED'}
 
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
@@ -656,7 +668,8 @@ classes = (AmaranthToolsetPanel,
            NODE_PT_indices,
            NODE_PT_simplify,
            NODE_OT_toggle_mute,
-           VIEW3D_OT_render_border_camera)
+           VIEW3D_OT_render_border_camera,
+           VIEW3D_OT_show_only_render)
 
 
 addon_keymaps = []
@@ -703,6 +716,9 @@ def register():
         kmi.properties.data_path = 'space_data.viewport_shade'
         kmi.properties.value_1 = 'SOLID'
         kmi.properties.value_2 = 'RENDERED'
+
+        km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
+        kmi = km.keymap_items.new('view3d.show_only_render', 'Z', 'PRESS', shift=True, alt=True)
 
         addon_keymaps.append((km, kmi))
 
