@@ -298,16 +298,18 @@ def node_templates_pulldown(self, context):
 
 def node_stats(self,context):
     if context.scene.node_tree:
+        tree_type = context.space_data.tree_type
         nodes = context.scene.node_tree.nodes
         nodes_total = len(nodes.keys())
         nodes_selected = 0
         for n in nodes:
             if n.select:
                 nodes_selected = nodes_selected + 1
-    
-        layout = self.layout
-        row = layout.row(align=True)
-        row.label(text="Nodes: %s/%s" % (nodes_selected, str(nodes_total)))
+
+        if tree_type == 'CompositorNodeTree':
+            layout = self.layout
+            row = layout.row(align=True)
+            row.label(text="Nodes: %s/%s" % (nodes_selected, str(nodes_total)))
 
 # FEATURE: Simplify Compo Nodes
 class NODE_PT_simplify(bpy.types.Panel):
@@ -321,14 +323,15 @@ class NODE_PT_simplify(bpy.types.Panel):
         layout = self.layout
         node_tree = context.scene.node_tree
 
-        layout.prop(node_tree, 'types')
-        layout.operator(NODE_OT_toggle_mute.bl_idname,
-            text="Turn On" if node_tree.toggle_mute else "Turn Off",
-            icon='RESTRICT_VIEW_OFF' if node_tree.toggle_mute else 'RESTRICT_VIEW_ON')
+        if node_tree is not None:
+            layout.prop(node_tree, 'types')
+            layout.operator(NODE_OT_toggle_mute.bl_idname,
+                text="Turn On" if node_tree.toggle_mute else "Turn Off",
+                icon='RESTRICT_VIEW_OFF' if node_tree.toggle_mute else 'RESTRICT_VIEW_ON')
         
-        if node_tree.types == 'VECBLUR':
-            layout.label(text="This will also toggle the Vector pass {}".format(
-                                "on" if node_tree.toggle_mute else "off"), icon="INFO")
+            if node_tree.types == 'VECBLUR':
+                layout.label(text="This will also toggle the Vector pass {}".format(
+                                    "on" if node_tree.toggle_mute else "off"), icon="INFO")
 
 class NODE_OT_toggle_mute(Operator):
     """"""
