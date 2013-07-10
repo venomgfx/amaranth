@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez",
-    "version": (0, 3, 7),
+    "version": (0, 3, 8),
     "blender": (2, 7, 1),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -695,6 +695,8 @@ def register():
     bpy.types.INFO_HT_header.append(stats_scene)
 
     bpy.types.VIEW3D_MT_object_specials.append(button_frame_current) # Current Frame
+    bpy.types.VIEW3D_MT_pose_specials.append(button_frame_current)
+
     bpy.types.TIME_HT_header.append(label_timeline_extra_info) # Timeline Extra Info
 
     bpy.types.NODE_HT_header.append(node_templates_pulldown)
@@ -746,6 +748,7 @@ def unregister():
     bpy.types.INFO_HT_header.remove(stats_scene)
 
     bpy.types.VIEW3D_MT_object_specials.remove(button_frame_current)
+    bpy.types.VIEW3D_MT_pose_specials.remove(button_frame_current)
     bpy.types.TIME_HT_header.remove(label_timeline_extra_info)
 
     bpy.types.NODE_HT_header.remove(node_templates_pulldown)
