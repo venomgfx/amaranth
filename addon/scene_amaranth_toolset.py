@@ -18,8 +18,8 @@
 
 bl_info = {
     "name": "Amaranth Toolset",
-    "author": "Pablo Vazquez",
-    "version": (0, 3, 8),
+    "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
+    "version": (0, 3, 9),
     "blender": (2, 7, 1),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -45,6 +45,7 @@ def init_properties():
     scene.use_scene_refresh = bpy.props.BoolProperty(default=True)
     scene.use_file_save_reload = bpy.props.BoolProperty(default=True)
     scene.use_timeline_extra_info = bpy.props.BoolProperty(default=True)
+    scene.use_image_node_display = bpy.props.BoolProperty(default=True)
 
     scene.use_unsimplify_render = bpy.props.BoolProperty(
         default=False,
@@ -581,6 +582,7 @@ def button_render_border_camera(self, context):
                         text="Camera as Render Border", icon="FULLSCREEN_ENTER")
 
 # //FEATURE: Camera Bounds as Render Border
+
 # FEATURE: Passepartout options on W menu
 def button_camera_passepartout(self, context):
 
@@ -594,6 +596,7 @@ def button_camera_passepartout(self, context):
         else:
             layout.prop(cam, "show_passepartout")
 
+# FEATURE: Show Only Render with Alt+Shift+Z
 class VIEW3D_OT_show_only_render(Operator):
     bl_idname = "view3d.show_only_render"
     bl_label = "Show Only Render"
@@ -605,6 +608,40 @@ class VIEW3D_OT_show_only_render(Operator):
             space.show_only_render = False
         else:
             space.show_only_render = True
+        return {'FINISHED'}
+
+
+# FEATURE: Display Active Image Node on Image Editor
+# Made by Sergey Sharybin, tweaks from Bassam Kurdali
+image_nodes = {"CompositorNodeImage", "ShaderNodeTexImage"}
+
+class NODE_OT_select_and_show_image(Operator):
+    """Select the node and show image in image editor if selecting image node"""
+    bl_idname = "node.select_and_show_image"
+    bl_label = "Select Node and Show Image"
+    bl_options = {'UNDO'}
+
+    def invoke(self, context, event):
+        mouse_x = event.mouse_region_x
+        mouse_y = event.mouse_region_y
+        extend = False
+
+        bpy.ops.node.select(mouse_x = mouse_x,
+                            mouse_y = mouse_y,
+                            extend = extend)
+
+
+        if context.scene.use_image_node_display:
+            if context.active_node:
+                active_node = context.active_node
+                if active_node.bl_idname in image_nodes and active_node.image:
+                    for area in context.screen.areas:
+                        if area.type == "IMAGE_EDITOR":
+                            for space in area.spaces:
+                                if space.type == "IMAGE_EDITOR":
+                                    space.image = active_node.image
+                            break
+
         return {'FINISHED'}
 
 # UI: Amaranth Options Panel
@@ -662,6 +699,20 @@ class AmaranthToolsetPanel(bpy.types.Panel):
         sub.active = scene.use_timeline_extra_info
         sub.label(text="Timeline Header")
 
+        # --
+        row = layout.row()
+        box = row.box()
+        box.prop(scene, 'use_image_node_display',
+                 text= 'Active Image Node in Editor',
+                 icon='IMAGE_COL')
+        sub = box.row()
+        sub.active = scene.use_timeline_extra_info
+        sub.label(text="Display active node image in image editor")
+        
+        if bpy.app.version[1] < 68:
+            sub = box.row()
+            sub.label(text="Only works in +2.68 RC", icon="ERROR")
+
 classes = (AmaranthToolsetPanel,
            SCENE_OT_refresh,
            WM_OT_save_reload,
@@ -671,6 +722,7 @@ classes = (AmaranthToolsetPanel,
            NODE_PT_indices,
            NODE_PT_simplify,
            NODE_OT_toggle_mute,
+           NODE_OT_select_and_show_image,
            VIEW3D_OT_render_border_camera,
            VIEW3D_OT_show_only_render)
 
@@ -724,6 +776,10 @@ def register():
 
         km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new('view3d.show_only_render', 'Z', 'PRESS', shift=True, alt=True)
+
+        km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
+        km.keymap_items.new("node.select_and_show_image", 'ACTIONMOUSE', 'PRESS')
+        km.keymap_items.new("node.select_and_show_image", 'SELECTMOUSE', 'PRESS')
 
         addon_keymaps.append((km, kmi))
 
