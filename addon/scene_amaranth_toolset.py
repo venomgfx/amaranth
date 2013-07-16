@@ -615,22 +615,13 @@ class VIEW3D_OT_show_only_render(Operator):
 # Made by Sergey Sharybin, tweaks from Bassam Kurdali
 image_nodes = {"CompositorNodeImage", "ShaderNodeTexImage"}
 
-class NODE_OT_select_and_show_image(Operator):
-    """Select the node and show image in image editor if selecting image node"""
-    bl_idname = "node.select_and_show_image"
-    bl_label = "Select Node and Show Image"
+class NODE_OT_show_active_node_image(Operator):
+    """Show active image node image in the image editor"""
+    bl_idname = "node.show_active_node_image"
+    bl_label = "Show Active Node Node"
     bl_options = {'UNDO'}
 
-    def invoke(self, context, event):
-        mouse_x = event.mouse_region_x
-        mouse_y = event.mouse_region_y
-        extend = False
-
-        bpy.ops.node.select(mouse_x = mouse_x,
-                            mouse_y = mouse_y,
-                            extend = extend)
-
-
+    def execute(self, context):
         if context.scene.use_image_node_display:
             if context.active_node:
                 active_node = context.active_node
@@ -641,7 +632,7 @@ class NODE_OT_select_and_show_image(Operator):
                                 if space.type == "IMAGE_EDITOR":
                                     space.image = active_node.image
                             break
-
+    
         return {'FINISHED'}
 
 # UI: Amaranth Options Panel
@@ -722,7 +713,7 @@ classes = (AmaranthToolsetPanel,
            NODE_PT_indices,
            NODE_PT_simplify,
            NODE_OT_toggle_mute,
-           NODE_OT_select_and_show_image,
+           NODE_OT_show_active_node_image,
            VIEW3D_OT_render_border_camera,
            VIEW3D_OT_show_only_render)
 
@@ -778,8 +769,8 @@ def register():
         kmi = km.keymap_items.new('view3d.show_only_render', 'Z', 'PRESS', shift=True, alt=True)
 
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
-        km.keymap_items.new("node.select_and_show_image", 'ACTIONMOUSE', 'PRESS')
-        km.keymap_items.new("node.select_and_show_image", 'SELECTMOUSE', 'PRESS')
+        km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'RELEASE')
+        km.keymap_items.new("node.show_active_node_image", 'SELECTMOUSE', 'RELEASE')
 
         addon_keymaps.append((km, kmi))
 
