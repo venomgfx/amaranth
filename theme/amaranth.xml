@@ -225,14 +225,15 @@
       </ThemeUserInterface>
     </user_interface>
     <view_3d>
-      <ThemeView3D grid="#4d4d4d"
+      <ThemeView3D grid="#454545"
                    wire="#000000"
-                   lamp="#99999928"
-                   speaker="#666666"
-                   camera="#666666"
-                   empty="#666666"
+                   wire_edit="#999999"
+                   lamp="#7b66804d"
+                   speaker="#7b6680"
+                   camera="#7b6680"
+                   empty="#7b6680"
                    object_selected="#ff374a"
-                   object_active="#ffe6e8"
+                   object_active="#ffccd0"
                    object_grouped="#083008"
                    object_grouped_active="#55bb55"
                    transform="#ffffff"
@@ -245,10 +246,12 @@
                    edge_sharp="#00ffff"
                    edge_crease="#cc0099"
                    edge_facesel="#4b4b4b"
+                   freestyle_edge_mark="#7fff7f"
                    face="#00000036"
                    face_select="#a45b5b73"
                    face_dot="#b33641"
                    facedot_size="3"
+                   freestyle_face_mark="#7fff7f33"
                    nurb_uline="#909000"
                    nurb_vline="#803060"
                    nurb_sel_uline="#f0ff40"
@@ -264,6 +267,7 @@
                    handle_sel_align="#f090a0"
                    lastsel_point="#ffffff"
                    extra_edge_len="#200000"
+                   extra_edge_angle="#000000"
                    extra_face_angle="#000080"
                    extra_face_area="#002000"
                    editmesh_active="#ffcccc80"
@@ -297,7 +301,7 @@
             </panelcolors>
             <gradients>
               <ThemeGradientColors show_grad="TRUE"
-                                   gradient="#232323"
+                                   gradient="#2c2c2c"
                                    high_gradient="#444444">
               </ThemeGradientColors>
             </gradients>
@@ -497,6 +501,7 @@
                         face_select="#a47c5b3c"
                         face_dot="#ffffff"
                         facedot_size="3"
+                        freestyle_face_mark="#00000000"
                         editmesh_active="#ffffff80"
                         scope_back="#303030ff"
                         preview_stitch_face="#1242b026"
@@ -598,8 +603,8 @@
                        syntax_builtin="#ff4870"
                        syntax_symbols="#999999"
                        syntax_special="#d880ff"
-                       syntax_preprocessor="#32008c"
-                       syntax_reserved="#601827"
+                       syntax_preprocessor="#8b7aff"
+                       syntax_reserved="#832b3d"
                        syntax_comment="#58c130"
                        syntax_string="#ffdb3f"
                        syntax_numbers="#74c0ff">
@@ -978,4 +983,36 @@
       </ThemeBoneColorSet>
     </bone_color_sets>
   </Theme>
+  <ThemeStyle>
+    <panel_title>
+      <ThemeFontStyle points="13"
+                      font_kerning_style="FITTED"
+                      shadow="1"
+                      shadow_offset_x="1"
+                      shadow_offset_y="-1"
+                      shadow_alpha="1"
+                      shadow_value="0">
+      </ThemeFontStyle>
+    </panel_title>
+    <widget_label>
+      <ThemeFontStyle points="11"
+                      font_kerning_style="FITTED"
+                      shadow="2"
+                      shadow_offset_x="2"
+                      shadow_offset_y="-1"
+                      shadow_alpha="0.25"
+                      shadow_value="0">
+      </ThemeFontStyle>
+    </widget_label>
+    <widget>
+      <ThemeFontStyle points="11"
+                      font_kerning_style="FITTED"
+                      shadow="2"
+                      shadow_offset_x="1"
+                      shadow_offset_y="-1"
+                      shadow_alpha="0.45"
+                      shadow_value="0">
+      </ThemeFontStyle>
+    </widget>
+  </ThemeStyle>
 </bpy>
