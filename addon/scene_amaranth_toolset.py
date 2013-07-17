@@ -172,13 +172,22 @@ def label_timeline_extra_info(self, context):
     scene = context.scene
     if scene.use_timeline_extra_info:
         row = layout.row(align=True)
-        row.label(text="%s / %s" % (bpy.utils.smpte_from_frame(scene.frame_current - scene.frame_start),
-                        bpy.utils.smpte_from_frame(scene.frame_end - scene.frame_start)), icon="TIME")
 
-        if (scene.frame_current > scene.frame_end):
-            row.label(text="%s Frames Too Much" % (scene.frame_end - scene.frame_current))
+        # Check for preview range
+        frame_start = scene.frame_preview_start if scene.use_preview_range else scene.frame_start
+        frame_end = scene.frame_preview_end if scene.use_preview_range else scene.frame_end
+        
+        row.label(text="%s / %s" % (bpy.utils.smpte_from_frame(scene.frame_current - frame_start),
+                        bpy.utils.smpte_from_frame(frame_end - frame_start)))
+
+        if (scene.frame_current > frame_end):
+            row.label(text="%s Frames Ahead" % ((frame_end - scene.frame_current) * -1))
+        elif (scene.frame_current == frame_start):
+            row.label(text="%s Start Frame" % scene.frame_current)
+        elif (scene.frame_current == frame_end):
+            row.label(text="%s End Frame" % scene.frame_current)
         else:
-            row.label(text="%s Frames Left" % (scene.frame_end - scene.frame_current))
+            row.label(text="%s Frames Left" % (frame_end - scene.frame_current))
 
 # // FEATURE: Timeline Time + Frames Left
 
