@@ -546,15 +546,31 @@ def stats_scene(self, context):
     scenes_count = str(len(bpy.data.scenes))
     cameras_count = str(len(bpy.data.cameras))
     cameras_selected = 0
+    meshlights = 0
+    meshlights_visible = 0
 
-    for obs in context.selected_objects:
-        if obs.type == 'CAMERA':
-            cameras_selected = cameras_selected + 1
+    for ob in context.scene.objects:
+        if ob.material_slots:
+            for ma in ob.material_slots:
+                if ma.material:
+                    if ma.material.node_tree:
+                        for no in ma.material.node_tree.nodes:
+                            if no.type == 'EMISSION':
+                                meshlights = meshlights + 1
+                                if ob in context.visible_objects:
+                                    meshlights_visible = meshlights_visible + 1
+                                break
+        if ob in context.selected_objects:
+            if ob.type == 'CAMERA':
+                cameras_selected = cameras_selected + 1
+
+    meshlights_string = '| Meshlights:{}/{}'.format(meshlights_visible, meshlights)
 
     row = self.layout.row(align=True)
+    row.label(text="Scenes:{} | Cameras:{}/{} {}".format(
+               scenes_count, cameras_selected, cameras_count,
+               meshlights_string if context.scene.render.engine == 'CYCLES' else ''))
 
-    row.label(text="Scenes:{} | Cameras:{}/{}".format(
-               scenes_count, cameras_selected, cameras_count))
 # //FEATURE: Extra Info Stats
 
 # FEATURE: Camera Bounds as Render Border
