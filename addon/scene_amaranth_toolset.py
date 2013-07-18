@@ -581,7 +581,7 @@ class VIEW3D_OT_render_border_camera(Operator):
 
     @classmethod
     def poll(cls, context):
-        return bpy.context.space_data.region_3d.view_perspective == 'CAMERA'
+        return context.space_data.region_3d.view_perspective == 'CAMERA'
 
     def execute(self, context):
         render = context.scene.render
@@ -665,6 +665,10 @@ class VIEW3D_OT_select_meshlights(Operator):
     bl_label = "Select Meshlights"
     bl_options = {'UNDO'}
 
+    @classmethod
+    def poll(cls, context):
+        return context.scene.render.engine == 'CYCLES'
+
     def execute(self, context):
         bpy.ops.object.select_all()
         bpy.ops.object.select_all()
@@ -676,11 +680,13 @@ class VIEW3D_OT_select_meshlights(Operator):
                             for no in ma.material.node_tree.nodes:
                                 if no.type == 'EMISSION':
                                     ob.select = True
-    
+
         return {'FINISHED'}
 
 def button_select_meshlights(self, context):
-    self.layout.operator('view3d.select_meshlights', icon="LAMP_SUN")
+    
+    if context.scene.render.engine == 'CYCLES':
+        self.layout.operator('view3d.select_meshlights', icon="LAMP_SUN")
 # // FEATURE: Select Meshlights
 
 # UI: Amaranth Options Panel
