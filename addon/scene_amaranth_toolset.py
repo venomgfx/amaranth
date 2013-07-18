@@ -656,6 +656,32 @@ class NODE_OT_show_active_node_image(Operator):
                             break
     
         return {'FINISHED'}
+# // FEATURE: Display Active Image Node on Image Editor
+
+# FEATURE: Select Meshlights
+class VIEW3D_OT_select_meshlights(Operator):
+    """Select light emitting meshes"""
+    bl_idname = "view3d.select_meshlights"
+    bl_label = "Select Meshlights"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        bpy.ops.object.select_all()
+        bpy.ops.object.select_all()
+        for ob in context.scene.objects:
+            if ob.material_slots:
+                for ma in ob.material_slots:
+                    if ma.material:
+                        if ma.material.node_tree:
+                            for no in ma.material.node_tree.nodes:
+                                if no.type == 'EMISSION':
+                                    ob.select = True
+    
+        return {'FINISHED'}
+
+def button_select_meshlights(self, context):
+    self.layout.operator('view3d.select_meshlights', icon="LAMP_SUN")
+# // FEATURE: Select Meshlights
 
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
@@ -737,8 +763,8 @@ classes = (AmaranthToolsetPanel,
            NODE_OT_toggle_mute,
            NODE_OT_show_active_node_image,
            VIEW3D_OT_render_border_camera,
-           VIEW3D_OT_show_only_render)
-
+           VIEW3D_OT_show_only_render,
+           VIEW3D_OT_select_meshlights)
 
 addon_keymaps = []
 
@@ -761,6 +787,7 @@ def register():
 
     bpy.types.VIEW3D_MT_object_specials.append(button_frame_current) # Current Frame
     bpy.types.VIEW3D_MT_pose_specials.append(button_frame_current)
+    bpy.types.VIEW3D_MT_select_object.append(button_select_meshlights)
 
     bpy.types.TIME_HT_header.append(label_timeline_extra_info) # Timeline Extra Info
 
@@ -818,6 +845,8 @@ def unregister():
 
     bpy.types.VIEW3D_MT_object_specials.remove(button_frame_current)
     bpy.types.VIEW3D_MT_pose_specials.remove(button_frame_current)
+    bpy.types.VIEW3D_MT_select_object.remove(button_select_meshlights)
+
     bpy.types.TIME_HT_header.remove(label_timeline_extra_info)
 
     bpy.types.NODE_HT_header.remove(node_templates_pulldown)
