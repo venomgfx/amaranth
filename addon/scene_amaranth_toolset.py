@@ -524,18 +524,15 @@ class NODE_PT_indices(bpy.types.Panel):
 
 # FEATURE: Unsimplify on render
 @persistent
-def unsimplify_render_pre(context):
-    scene = bpy.context.scene
+def unsimplify_render_pre(scene):
     render = scene.render
-    
     scene.simplify_status = render.use_simplify
-    
+
     if scene.use_unsimplify_render:
         render.use_simplify = False
 
 @persistent
-def unsimplify_render_post(context):
-    scene = bpy.context.scene
+def unsimplify_render_post(scene):
     render = scene.render
     render.use_simplify = scene.simplify_status
 
