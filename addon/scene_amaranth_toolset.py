@@ -780,14 +780,14 @@ def register():
 
         addon_keymaps.append((km, kmi))
 
-    # copypasted from the awesome node efficiency tools, future hotkeys proof!
-    km = kc.keymaps.new(name='Node Editor', space_type="NODE_EDITOR")
-    for (identifier, key, CTRL, SHIFT, ALT, props) in kmi_defs:
-        kmi = km.keymap_items.new(identifier, key, 'PRESS', ctrl=CTRL, shift=SHIFT, alt=ALT)
-        if props:
-            for prop, value in props:
-                setattr(kmi.properties, prop, value)
-        addon_keymaps.append((km, kmi))
+        # copypasted from the awesome node efficiency tools, future hotkeys proof!
+        km = kc.keymaps.new(name='Node Editor', space_type="NODE_EDITOR")
+        for (identifier, key, CTRL, SHIFT, ALT, props) in kmi_defs:
+            kmi = km.keymap_items.new(identifier, key, 'PRESS', ctrl=CTRL, shift=SHIFT, alt=ALT)
+            if props:
+                for prop, value in props:
+                    setattr(kmi.properties, prop, value)
+            addon_keymaps.append((km, kmi))
 
 def unregister():
     for c in classes:
