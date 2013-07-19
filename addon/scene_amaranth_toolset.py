@@ -659,9 +659,9 @@ class NODE_OT_show_active_node_image(Operator):
 # // FEATURE: Display Active Image Node on Image Editor
 
 # FEATURE: Select Meshlights
-class VIEW3D_OT_select_meshlights(Operator):
+class OBJECT_OT_select_meshlights(Operator):
     """Select light emitting meshes"""
-    bl_idname = "view3d.select_meshlights"
+    bl_idname = "object.select_meshlights"
     bl_label = "Select Meshlights"
     bl_options = {'UNDO'}
 
@@ -680,13 +680,14 @@ class VIEW3D_OT_select_meshlights(Operator):
                             for no in ma.material.node_tree.nodes:
                                 if no.type == 'EMISSION':
                                     ob.select = True
+                                    context.scene.objects.active = ob
 
         return {'FINISHED'}
 
 def button_select_meshlights(self, context):
     
     if context.scene.render.engine == 'CYCLES':
-        self.layout.operator('view3d.select_meshlights', icon="LAMP_SUN")
+        self.layout.operator('object.select_meshlights', icon="LAMP_SUN")
 # // FEATURE: Select Meshlights
 
 # UI: Amaranth Options Panel
@@ -770,7 +771,7 @@ classes = (AmaranthToolsetPanel,
            NODE_OT_show_active_node_image,
            VIEW3D_OT_render_border_camera,
            VIEW3D_OT_show_only_render,
-           VIEW3D_OT_select_meshlights)
+           OBJECT_OT_select_meshlights)
 
 addon_keymaps = []
 
