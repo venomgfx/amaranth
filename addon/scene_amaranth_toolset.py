@@ -19,8 +19,8 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 3, 9),
-    "blender": (2, 7, 1),
+    "version": (0, 4, 0),
+    "blender": (2, 68),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
     "warning": "",
@@ -220,7 +220,9 @@ class NODE_OT_AddTemplateVignette(Operator):
     @classmethod
     def poll(cls, context):
         space = context.space_data
-        return space.type == 'NODE_EDITOR' and space.node_tree is not None
+        return space.type == 'NODE_EDITOR' \
+                and space.node_tree is not None \
+                and space.tree_type == 'CompositorNodeTree'
 
     # used as reference the setup scene script from master nazgul
     def _setupNodes(self, context):
@@ -746,18 +748,15 @@ class AmaranthToolsetPanel(bpy.types.Panel):
         sub.label(text="Timeline Header")
 
         # --
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_image_node_display',
-                 text= 'Active Image Node in Editor',
-                 icon='IMAGE_COL')
-        sub = box.row()
-        sub.active = scene.use_timeline_extra_info
-        sub.label(text="Display active node image in image editor")
-        
-        if bpy.app.version[1] < 68:
+        if bpy.app.version[1] > 67:
+            row = layout.row()
+            box = row.box()
+            box.prop(scene, 'use_image_node_display',
+                     text= 'Active Image Node in Editor',
+                     icon='IMAGE_COL')
             sub = box.row()
-            sub.label(text="Only works in +2.68 RC", icon="ERROR")
+            sub.active = scene.use_timeline_extra_info
+            sub.label(text="Display active node image in image editor")
 
 classes = (AmaranthToolsetPanel,
            SCENE_OT_refresh,
