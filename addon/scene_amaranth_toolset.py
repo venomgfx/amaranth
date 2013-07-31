@@ -672,8 +672,9 @@ class OBJECT_OT_select_meshlights(Operator):
         return context.scene.render.engine == 'CYCLES'
 
     def execute(self, context):
-        bpy.ops.object.select_all()
-        bpy.ops.object.select_all()
+        # Deselect everything first
+        bpy.ops.object.select_all(action='DESELECT')
+
         for ob in context.scene.objects:
             if ob.material_slots:
                 for ma in ob.material_slots:
