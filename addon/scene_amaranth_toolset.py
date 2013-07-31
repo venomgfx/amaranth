@@ -685,6 +685,9 @@ class OBJECT_OT_select_meshlights(Operator):
                                     ob.select = True
                                     context.scene.objects.active = ob
 
+        if not context.selected_objects and not context.scene.objects.active:
+            self.report({'INFO'}, "No meshlights to select")
+
         return {'FINISHED'}
 
 def button_select_meshlights(self, context):
