@@ -637,7 +637,9 @@ class VIEW3D_OT_show_only_render(Operator):
 
 # FEATURE: Display Active Image Node on Image Editor
 # Made by Sergey Sharybin, tweaks from Bassam Kurdali
-image_nodes = {"CompositorNodeImage", "ShaderNodeTexImage"}
+image_nodes = {"CompositorNodeImage",
+               "ShaderNodeTexImage",
+               "ShaderNodeTexEnvironment"}
 
 class NODE_OT_show_active_node_image(Operator):
     """Show active image node image in the image editor"""
@@ -695,6 +697,20 @@ def button_select_meshlights(self, context):
     if context.scene.render.engine == 'CYCLES':
         self.layout.operator('object.select_meshlights', icon="LAMP_SUN")
 # // FEATURE: Select Meshlights
+
+# FEATURE: Cycles Viewport Extra Settings
+def material_cycles_settings_extra(self, context):
+    
+    layout = self.layout
+    col = layout.column()
+    row = col.row(align=True)
+    
+    obj = context.object
+    mat = context.material
+    if obj.type == 'MESH':
+        row.prop(obj, "show_transparent", text="Viewport Alpha")
+        row.active = obj.show_transparent
+        row.prop(mat, "alpha", text="Alpha")
 
 # UI: Amaranth Options Panel
 class AmaranthToolsetPanel(bpy.types.Panel):
@@ -804,6 +820,8 @@ def register():
     bpy.types.NODE_HT_header.append(node_templates_pulldown)
     bpy.types.NODE_HT_header.append(node_stats)
 
+    bpy.types.CyclesMaterial_PT_settings.append(material_cycles_settings_extra)
+
     bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
 
     bpy.types.SCENE_PT_simplify.append(unsimplify_ui)
@@ -861,6 +879,8 @@ def unregister():
 
     bpy.types.NODE_HT_header.remove(node_templates_pulldown)
     bpy.types.NODE_HT_header.remove(node_stats)
+
+    bpy.types.CyclesMaterial_PT_settings.remove(material_cycles_settings_extra)
 
     bpy.types.FILEBROWSER_HT_header.remove(button_directory_current_blend)
 
