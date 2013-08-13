@@ -837,13 +837,12 @@ def register():
         kmi = km.keymap_items.new('scene.refresh', 'F5', 'PRESS', shift=False, ctrl=False)
         kmi = km.keymap_items.new('wm.save_reload', 'W', 'PRESS', shift=True, ctrl=True)
 
+        km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
+        kmi = km.keymap_items.new('view3d.show_only_render', 'Z', 'PRESS', shift=True, alt=True)
         kmi = km.keymap_items.new('wm.context_toggle_enum', 'Z', 'PRESS', shift=True, alt=False)
         kmi.properties.data_path = 'space_data.viewport_shade'
         kmi.properties.value_1 = 'SOLID'
         kmi.properties.value_2 = 'RENDERED'
-
-        km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
-        kmi = km.keymap_items.new('view3d.show_only_render', 'Z', 'PRESS', shift=True, alt=True)
 
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
         km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'RELEASE')
