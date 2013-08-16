@@ -24,7 +24,7 @@ bl_info = {
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
     "warning": "",
-    "wiki_url": "",
+    "wiki_url": "http://pablovazquez.org/amaranth",
     "tracker_url": "",
     "category": "Scene"}
 
