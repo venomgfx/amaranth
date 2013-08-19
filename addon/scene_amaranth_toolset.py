@@ -30,9 +30,55 @@ bl_info = {
 
 
 import bpy
-from bpy.types import Operator
+from bpy.types import Operator, AddonPreferences
+from bpy.props import BoolProperty
 from mathutils import Vector
 from bpy.app.handlers import persistent
+
+class AmaranthToolsetPreferences(AddonPreferences):
+    bl_idname = __name__
+    use_frame_current = BoolProperty(
+            name="Current Frame Slider",
+            description="Specials Menu [W]",
+            default=True,
+            )
+    use_file_save_reload = BoolProperty(
+            name="Save & Reload File",
+            description="File menu > Save & Reload, or Ctrl + Shift + W",
+            default=True,
+            )
+
+    use_scene_refresh = BoolProperty(
+            name="Refresh Scene",
+            description="Specials Menu [W], or hit F5",
+            default=True,
+            )
+    use_timeline_extra_info = BoolProperty(
+            name="Timeline Extra Info",
+            description="Timeline Header",
+            default=True,
+            )
+    use_image_node_display = BoolProperty(
+            name="Active Image Node in Editor",
+            description="Display active node image in image editor",
+            default=True,
+            )
+    use_passepartout_slider = BoolProperty(
+            name="Passepartout Slider",
+            description="Under Specials menu W, when in Camera view",
+            default=True,
+            )
+
+    def draw(self, context):
+        layout = self.layout
+        #layout.label(text="This is a preferences view for our addon")
+        layout.prop(self, "use_frame_current")
+        layout.prop(self, "use_file_save_reload")
+        layout.prop(self, "use_scene_refresh")
+        layout.prop(self, "use_timeline_extra_info")
+        layout.prop(self, "use_image_node_display")
+        layout.prop(self, "use_passepartout_slider")
+
 
 # Properties
 def init_properties():
@@ -40,12 +86,6 @@ def init_properties():
     scene = bpy.types.Scene
     node = bpy.types.Node
     nodes_compo = bpy.types.CompositorNodeTree
-
-    scene.use_frame_current = bpy.props.BoolProperty(default=True)
-    scene.use_scene_refresh = bpy.props.BoolProperty(default=True)
-    scene.use_file_save_reload = bpy.props.BoolProperty(default=True)
-    scene.use_timeline_extra_info = bpy.props.BoolProperty(default=True)
-    scene.use_image_node_display = bpy.props.BoolProperty(default=True)
 
     scene.use_unsimplify_render = bpy.props.BoolProperty(
         default=False,
@@ -75,10 +115,6 @@ def init_properties():
 
 def clear_properties():
     props = (
-        "use_frame_current",
-        "use_scene_refresh",
-        "use_file_save_reload",
-        "use_timeline_extra_info",
         "use_unsimplify_render",
         "simplify_status",
         "use_matching_indices",
@@ -99,7 +135,8 @@ class SCENE_OT_refresh(Operator):
     
     def execute(self, context):
         scene = context.scene
-        if scene.use_scene_refresh:    
+        preferences = context.user_preferences.addons[__name__].preferences
+        if preferences.use_scene_refresh:    
             # Changing the frame is usually the best way to go
             bpy.context.scene.frame_current = bpy.context.scene.frame_current
             self.report({"INFO"}, "Scene Refreshed!")
@@ -110,7 +147,8 @@ def button_refresh(self, context):
 
     scene = context.scene
     layout = self.layout
-    if scene.use_scene_refresh:
+    preferences = context.user_preferences.addons[__name__].preferences
+    if preferences.use_scene_refresh:
         layout.separator()
         layout.operator(
             SCENE_OT_refresh.bl_idname,
@@ -146,7 +184,8 @@ def button_save_reload(self, context):
 
     scene = context.scene
     layout = self.layout
-    if scene.use_file_save_reload:
+    preferences = context.user_preferences.addons[__name__].preferences
+    if preferences.use_file_save_reload:
         layout.separator()
         layout.operator(
             WM_OT_save_reload.bl_idname,
@@ -158,11 +197,10 @@ def button_save_reload(self, context):
 def button_frame_current(self, context):
 
     scene = context.scene
-    if scene.use_frame_current:
+    preferences = context.user_preferences.addons[__name__].preferences
+    if preferences.use_frame_current:
         self.layout.separator()
-        self.layout.prop(
-            scene, "frame_current",
-            text="Set Current Frame")
+        self.layout.prop(scene, "frame_current", text="Set Current Frame")
 # // FEATURE: Current Frame
 
 # FEATURE: Timeline Time + Frames Left
@@ -170,7 +208,8 @@ def label_timeline_extra_info(self, context):
 
     layout = self.layout
     scene = context.scene
-    if scene.use_timeline_extra_info:
+    preferences = context.user_preferences.addons[__name__].preferences
+    if preferences.use_timeline_extra_info:
         row = layout.row(align=True)
 
         # Check for preview range
@@ -612,13 +651,14 @@ def button_camera_passepartout(self, context):
 
     view3d = context.space_data.region_3d
     cam = context.scene.camera.data
-    
-    if view3d.view_perspective == 'CAMERA':
-        layout = self.layout
-        if cam.show_passepartout:
-            layout.prop(cam, "passepartout_alpha", text="Passepartout")
-        else:
-            layout.prop(cam, "show_passepartout")
+    preferences = context.user_preferences.addons[__name__].preferences
+    if preferences.use_passepartout_slider:
+        if view3d.view_perspective == 'CAMERA':
+            layout = self.layout
+            if cam.show_passepartout:
+                layout.prop(cam, "passepartout_alpha", text="Passepartout")
+            else:
+                layout.prop(cam, "show_passepartout")
 
 # FEATURE: Show Only Render with Alt+Shift+Z
 class VIEW3D_OT_show_only_render(Operator):
@@ -627,7 +667,6 @@ class VIEW3D_OT_show_only_render(Operator):
 
     def execute(self, context):
         space = bpy.context.space_data
-        
         if space.show_only_render:
             space.show_only_render = False
         else:
@@ -648,7 +687,8 @@ class NODE_OT_show_active_node_image(Operator):
     bl_options = {'UNDO'}
 
     def execute(self, context):
-        if context.scene.use_image_node_display:
+        preferences = context.user_preferences.addons[__name__].preferences
+        if preferences.use_image_node_display:
             if context.active_node:
                 active_node = context.active_node
                 if active_node.bl_idname in image_nodes and active_node.image:
@@ -712,74 +752,8 @@ def material_cycles_settings_extra(self, context):
         row.active = obj.show_transparent
         row.prop(mat, "alpha", text="Alpha")
 
-# UI: Amaranth Options Panel
-class AmaranthToolsetPanel(bpy.types.Panel):
-    '''Amaranth Toolset Panel'''
-    bl_label = 'Amaranth Toolset'
-    bl_options = {'DEFAULT_CLOSED'}
-    bl_idname = 'SCENE_PT_amaranth_toolset'
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'scene'
 
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-
-        layout.label(text='Active Features', icon='SOLO_ON')
-
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_scene_refresh',
-                 text= 'Refresh Scene',
-                 icon='FILE_REFRESH')
-        sub = box.row()
-        sub.active = scene.use_scene_refresh
-        sub.label(text="Specials Menu [W], or hit F5")
-
-        # --
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_file_save_reload',
-                 text= 'Save & Reload File',
-                 icon='LOAD_FACTORY')
-        sub = box.row()
-        sub.active = scene.use_file_save_reload
-        sub.label(text="File menu > Save & Reload, or Ctrl + Shift + W")
-
-        # --
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_frame_current',
-                 text= 'Current Frame Slider',
-                 icon='PREVIEW_RANGE')
-        sub = box.row()
-        sub.active = scene.use_frame_current
-        sub.label(text="Specials Menu [W]")
-
-        # --
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_timeline_extra_info',
-                 text= 'Timeline Extra Info',
-                 icon='TIME')
-        sub = box.row()
-        sub.active = scene.use_timeline_extra_info
-        sub.label(text="Timeline Header")
-
-        # --
-        if bpy.app.version[1] > 67:
-            row = layout.row()
-            box = row.box()
-            box.prop(scene, 'use_image_node_display',
-                     text= 'Active Image Node in Editor',
-                     icon='IMAGE_COL')
-            sub = box.row()
-            sub.active = scene.use_timeline_extra_info
-            sub.label(text="Display active node image in image editor")
-
-classes = (AmaranthToolsetPanel,
-           SCENE_OT_refresh,
+classes = (SCENE_OT_refresh,
            WM_OT_save_reload,
            NODE_OT_AddTemplateVignette,
            NODE_MT_amaranth_templates,
@@ -799,6 +773,7 @@ kmi_defs = (
 )
 
 def register():
+    bpy.utils.register_class(AmaranthToolsetPreferences)
     # UI: Register the panel
     init_properties()
     for c in classes:
@@ -860,6 +835,7 @@ def register():
             addon_keymaps.append((km, kmi))
 
 def unregister():
+    bpy.utils.unregister_class(AmaranthToolsetPreferences)
     for c in classes:
         bpy.utils.unregister_class(c)
 
