@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 5),
+    "version": (0, 6),
     "blender": (2, 68),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -30,9 +30,97 @@ bl_info = {
 
 
 import bpy
-from bpy.types import Operator
+from bpy.types import Operator, AddonPreferences
+from bpy.props import BoolProperty
 from mathutils import Vector
 from bpy.app.handlers import persistent
+
+# Preferences
+class AmaranthToolsetPreferences(AddonPreferences):
+    bl_idname = __name__
+    use_frame_current = BoolProperty(
+            name="Current Frame Slider",
+            description="Set the current frame from the Specials menu in the 3D View",
+            default=True,
+            )
+    use_file_save_reload = BoolProperty(
+            name="Save & Reload File",
+            description="File menu > Save & Reload, or Ctrl + Shift + W",
+            default=True,
+            )
+
+    use_scene_refresh = BoolProperty(
+            name="Refresh Scene",
+            description="Specials Menu [W], or hit F5",
+            default=True,
+            )
+    use_timeline_extra_info = BoolProperty(
+            name="Timeline Extra Info",
+            description="Timeline Header",
+            default=True,
+            )
+    use_image_node_display = BoolProperty(
+            name="Active Image Node in Editor",
+            description="Display active node image in image editor",
+            default=True,
+            )
+    use_scene_stats = BoolProperty(
+            name="Extra Scene Statistics",
+            description="Display extra scene statistics in Info editor's header",
+            default=True,
+            )
+
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.label(
+            text="Here you can enable or disable specific tools, "
+                 "in case they interfere with others or are just plain annoying")
+
+        split = layout.split(percentage=0.25)
+
+        col = split.column()
+        sub = col.column(align=True)
+        sub.label(text="3D View", icon="VIEW3D")
+        sub.prop(self, "use_frame_current")
+        sub.prop(self, "use_scene_refresh")
+
+        sub.separator()
+
+        sub.label(text="General", icon="SCENE_DATA")
+        sub.prop(self, "use_file_save_reload")
+        sub.prop(self, "use_timeline_extra_info")
+        sub.prop(self, "use_scene_stats")
+
+        sub.separator()
+
+        sub.label(text="Nodes Editor", icon="NODETREE")        
+        sub.prop(self, "use_image_node_display")
+
+        col = split.column()
+        sub = col.column(align=True)
+        sub.label(text="")
+        sub.label(
+            text="Set the current frame from the Specials menu in the 3D View [W]")
+        sub.label(
+            text="Refresh the current Scene. Hotkey: F5 or in Specials menu [W]")
+
+        sub.separator()
+        sub.label(text="") # General
+        sub.label(
+            text="Quickly save and reload the current file (no warning!). "
+                 "File menu or Ctrl+Shift+W")
+        sub.label(
+            text="SMPTE Timecode and frames left/ahead on Timeline's header")
+        sub.label(
+            text="Display extra statistics for Scenes, Cameras, and Meshlights (Cycles)")
+
+        sub.separator()
+        sub.label(text="") # Nodes
+        sub.label(
+            text="When selecting an Image node, display it on the Image editor "
+                 "(if any)")
 
 # Properties
 def init_properties():
@@ -40,12 +128,6 @@ def init_properties():
     scene = bpy.types.Scene
     node = bpy.types.Node
     nodes_compo = bpy.types.CompositorNodeTree
-
-    scene.use_frame_current = bpy.props.BoolProperty(default=True)
-    scene.use_scene_refresh = bpy.props.BoolProperty(default=True)
-    scene.use_file_save_reload = bpy.props.BoolProperty(default=True)
-    scene.use_timeline_extra_info = bpy.props.BoolProperty(default=True)
-    scene.use_image_node_display = bpy.props.BoolProperty(default=True)
 
     scene.use_unsimplify_render = bpy.props.BoolProperty(
         default=False,
@@ -75,10 +157,6 @@ def init_properties():
 
 def clear_properties():
     props = (
-        "use_frame_current",
-        "use_scene_refresh",
-        "use_file_save_reload",
-        "use_timeline_extra_info",
         "use_unsimplify_render",
         "simplify_status",
         "use_matching_indices",
@@ -98,21 +176,23 @@ class SCENE_OT_refresh(Operator):
     bl_label = "Refresh!"
     
     def execute(self, context):
+        preferences = context.user_preferences.addons[__name__].preferences
         scene = context.scene
-        if scene.use_scene_refresh:    
+
+        if preferences.use_scene_refresh:    
             # Changing the frame is usually the best way to go
-            bpy.context.scene.frame_current = bpy.context.scene.frame_current
+            scene.frame_current = scene.frame_current
             self.report({"INFO"}, "Scene Refreshed!")
             
         return {'FINISHED'}
 
 def button_refresh(self, context):
 
-    scene = context.scene
-    layout = self.layout
-    if scene.use_scene_refresh:
-        layout.separator()
-        layout.operator(
+    preferences = context.user_preferences.addons[__name__].preferences
+
+    if preferences.use_scene_refresh:
+        self.layout.separator()
+        self.layout.operator(
             SCENE_OT_refresh.bl_idname,
             text="Refresh!",
             icon='FILE_REFRESH')
@@ -135,20 +215,17 @@ class WM_OT_save_reload(Operator):
 
     def execute(self, context):
 
-        scene = context.scene
-        if scene.use_file_save_reload:
-            path = bpy.data.filepath
-            save_reload(self, context, path)
-    
+        path = bpy.data.filepath
+        save_reload(self, context, path)
         return {'FINISHED'}
 
 def button_save_reload(self, context):
 
-    scene = context.scene
-    layout = self.layout
-    if scene.use_file_save_reload:
-        layout.separator()
-        layout.operator(
+    preferences = context.user_preferences.addons[__name__].preferences
+
+    if preferences.use_file_save_reload:
+        self.layout.separator()
+        self.layout.operator(
             WM_OT_save_reload.bl_idname,
             text="Save & Reload",
             icon='FILE_REFRESH')
@@ -157,8 +234,10 @@ def button_save_reload(self, context):
 # FEATURE: Current Frame
 def button_frame_current(self, context):
 
+    preferences = context.user_preferences.addons[__name__].preferences
     scene = context.scene
-    if scene.use_frame_current:
+
+    if preferences.use_frame_current:
         self.layout.separator()
         self.layout.prop(
             scene, "frame_current",
@@ -168,9 +247,11 @@ def button_frame_current(self, context):
 # FEATURE: Timeline Time + Frames Left
 def label_timeline_extra_info(self, context):
 
+    preferences = context.user_preferences.addons[__name__].preferences
     layout = self.layout
     scene = context.scene
-    if scene.use_timeline_extra_info:
+
+    if preferences.use_timeline_extra_info:
         row = layout.row(align=True)
 
         # Check for preview range
@@ -545,33 +626,37 @@ def unsimplify_ui(self,context):
 
 # FEATURE: Extra Info Stats
 def stats_scene(self, context):
-    scenes_count = str(len(bpy.data.scenes))
-    cameras_count = str(len(bpy.data.cameras))
-    cameras_selected = 0
-    meshlights = 0
-    meshlights_visible = 0
 
-    for ob in context.scene.objects:
-        if ob.material_slots:
-            for ma in ob.material_slots:
-                if ma.material:
-                    if ma.material.node_tree:
-                        for no in ma.material.node_tree.nodes:
-                            if no.type == 'EMISSION':
-                                meshlights = meshlights + 1
-                                if ob in context.visible_objects:
-                                    meshlights_visible = meshlights_visible + 1
-                                break
-        if ob in context.selected_objects:
-            if ob.type == 'CAMERA':
-                cameras_selected = cameras_selected + 1
+    preferences = context.user_preferences.addons[__name__].preferences
 
-    meshlights_string = '| Meshlights:{}/{}'.format(meshlights_visible, meshlights)
-
-    row = self.layout.row(align=True)
-    row.label(text="Scenes:{} | Cameras:{}/{} {}".format(
-               scenes_count, cameras_selected, cameras_count,
-               meshlights_string if context.scene.render.engine == 'CYCLES' else ''))
+    if preferences.use_scene_stats:
+        scenes_count = str(len(bpy.data.scenes))
+        cameras_count = str(len(bpy.data.cameras))
+        cameras_selected = 0
+        meshlights = 0
+        meshlights_visible = 0
+    
+        for ob in context.scene.objects:
+            if ob.material_slots:
+                for ma in ob.material_slots:
+                    if ma.material:
+                        if ma.material.node_tree:
+                            for no in ma.material.node_tree.nodes:
+                                if no.type == 'EMISSION':
+                                    meshlights = meshlights + 1
+                                    if ob in context.visible_objects:
+                                        meshlights_visible = meshlights_visible + 1
+                                    break
+            if ob in context.selected_objects:
+                if ob.type == 'CAMERA':
+                    cameras_selected = cameras_selected + 1
+    
+        meshlights_string = '| Meshlights:{}/{}'.format(meshlights_visible, meshlights)
+    
+        row = self.layout.row(align=True)
+        row.label(text="Scenes:{} | Cameras:{}/{} {}".format(
+                   scenes_count, cameras_selected, cameras_count,
+                   meshlights_string if context.scene.render.engine == 'CYCLES' else ''))
 
 # //FEATURE: Extra Info Stats
 
@@ -648,7 +733,8 @@ class NODE_OT_show_active_node_image(Operator):
     bl_options = {'UNDO'}
 
     def execute(self, context):
-        if context.scene.use_image_node_display:
+        preferences = context.user_preferences.addons[__name__].preferences
+        if preferences.use_image_node_display:
             if context.active_node:
                 active_node = context.active_node
                 if active_node.bl_idname in image_nodes and active_node.image:
@@ -712,74 +798,7 @@ def material_cycles_settings_extra(self, context):
         row.active = obj.show_transparent
         row.prop(mat, "alpha", text="Alpha")
 
-# UI: Amaranth Options Panel
-class AmaranthToolsetPanel(bpy.types.Panel):
-    '''Amaranth Toolset Panel'''
-    bl_label = 'Amaranth Toolset'
-    bl_options = {'DEFAULT_CLOSED'}
-    bl_idname = 'SCENE_PT_amaranth_toolset'
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'scene'
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-
-        layout.label(text='Active Features', icon='SOLO_ON')
-
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_scene_refresh',
-                 text= 'Refresh Scene',
-                 icon='FILE_REFRESH')
-        sub = box.row()
-        sub.active = scene.use_scene_refresh
-        sub.label(text="Specials Menu [W], or hit F5")
-
-        # --
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_file_save_reload',
-                 text= 'Save & Reload File',
-                 icon='LOAD_FACTORY')
-        sub = box.row()
-        sub.active = scene.use_file_save_reload
-        sub.label(text="File menu > Save & Reload, or Ctrl + Shift + W")
-
-        # --
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_frame_current',
-                 text= 'Current Frame Slider',
-                 icon='PREVIEW_RANGE')
-        sub = box.row()
-        sub.active = scene.use_frame_current
-        sub.label(text="Specials Menu [W]")
-
-        # --
-        row = layout.row()
-        box = row.box()
-        box.prop(scene, 'use_timeline_extra_info',
-                 text= 'Timeline Extra Info',
-                 icon='TIME')
-        sub = box.row()
-        sub.active = scene.use_timeline_extra_info
-        sub.label(text="Timeline Header")
-
-        # --
-        if bpy.app.version[1] > 67:
-            row = layout.row()
-            box = row.box()
-            box.prop(scene, 'use_image_node_display',
-                     text= 'Active Image Node in Editor',
-                     icon='IMAGE_COL')
-            sub = box.row()
-            sub.active = scene.use_timeline_extra_info
-            sub.label(text="Display active node image in image editor")
-
-classes = (AmaranthToolsetPanel,
-           SCENE_OT_refresh,
+classes = (SCENE_OT_refresh,
            WM_OT_save_reload,
            NODE_OT_AddTemplateVignette,
            NODE_MT_amaranth_templates,
@@ -799,6 +818,9 @@ kmi_defs = (
 )
 
 def register():
+
+    bpy.utils.register_class(AmaranthToolsetPreferences)
+
     # UI: Register the panel
     init_properties()
     for c in classes:
@@ -860,6 +882,9 @@ def register():
             addon_keymaps.append((km, kmi))
 
 def unregister():
+
+    bpy.utils.unregister_class(AmaranthToolsetPreferences)
+
     for c in classes:
         bpy.utils.unregister_class(c)
 
