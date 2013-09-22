@@ -797,6 +797,22 @@ def material_cycles_settings_extra(self, context):
         row.prop(obj, "show_transparent", text="Viewport Alpha")
         row.active = obj.show_transparent
         row.prop(mat, "alpha", text="Alpha")
+# // FEATURE: Cycles Viewport Extra Settings
+
+# FEATURE: Particles Material indicator
+def particles_material_info(self, context):
+
+    layout = self.layout
+
+    ob = context.object
+    psys = context.particle_system
+
+    layout.label(
+        text="Material: %s" % ob.material_slots[psys.settings.material-1].name \
+            if psys.settings.material <= len(ob.material_slots) \
+            else "No material with this index. Using '{}'".format( \
+                ob.material_slots[len(ob.material_slots)-1].name))
+# // FEATURE: Particles Material indicator
 
 classes = (SCENE_OT_refresh,
            WM_OT_save_reload,
@@ -849,6 +865,8 @@ def register():
     bpy.types.SCENE_PT_simplify.append(unsimplify_ui)
     bpy.types.CyclesScene_PT_simplify.append(unsimplify_ui)
 
+    bpy.types.PARTICLE_PT_render.prepend(particles_material_info)
+
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
 
@@ -865,6 +883,13 @@ def register():
         kmi.properties.data_path = 'space_data.viewport_shade'
         kmi.properties.value_1 = 'SOLID'
         kmi.properties.value_2 = 'RENDERED'
+
+        km = kc.keymaps.new(name='Property Editor', space_type='PROPERTIES')
+        kmi = km.keymap_items.new('wm.context_cycle_enum', 'WHEELUPMOUSE', 'PRESS', ctrl=True)
+        kmi.properties.data_path = 'space_data.context'
+        kmi = km.keymap_items.new('wm.context_cycle_enum', 'WHEELDOWNMOUSE', 'PRESS', ctrl=True)
+        kmi.properties.data_path = 'space_data.context'
+        kmi.properties.reverse = True
 
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
         km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'RELEASE')
@@ -910,6 +935,8 @@ def unregister():
 
     bpy.types.SCENE_PT_simplify.remove(unsimplify_ui)
     bpy.types.CyclesScene_PT_simplify.remove(unsimplify_ui)
+
+    bpy.types.PARTICLE_PT_render.remove(particles_material_info)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
