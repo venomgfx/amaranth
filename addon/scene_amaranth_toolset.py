@@ -19,8 +19,8 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 6),
-    "blender": (2, 68),
+    "version": (0, 7),
+    "blender": (2, 69),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
     "warning": "",
@@ -30,7 +30,7 @@ bl_info = {
 
 
 import bpy
-from bpy.types import Operator, AddonPreferences
+from bpy.types import Operator, AddonPreferences, Panel
 from bpy.props import BoolProperty
 from mathutils import Vector
 from bpy.app.handlers import persistent
@@ -291,6 +291,63 @@ def button_directory_current_blend(self, context):
             icon='APPEND_BLEND')
 # // FEATURE: Directory Current Blend
 
+# FEATURE: Libraries panel on file browser
+class FILE_PT_libraries(Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'CHANNELS'
+    bl_label = "Libraries"
+
+    def draw(self, context):
+        layout = self.layout
+
+        libs = bpy.data.libraries
+        libslist = []
+
+        # Build the list of folders from libraries
+        import os
+
+        for lib in libs:
+            directory_name = os.path.dirname(lib.filepath)
+            libslist.append(directory_name)
+
+        # Remove duplicates and sort by name
+        libslist = set(libslist)
+        libslist = sorted(libslist)
+
+        # Draw the box with libs
+        
+        row = layout.row()
+        box = row.box()
+       
+        if libslist:
+            for filepath in libslist:
+                if filepath != '//':
+                    split = box.split(percentage=0.85)
+                    col = split.column()
+                    sub = col.column(align=True)
+                    sub.label(text=filepath)
+            
+                    col = split.column()
+                    sub = col.column(align=True)
+                    props = sub.operator(
+                        FILE_OT_directory_go_to.bl_idname,
+                        text="", icon="BOOKMARKS")
+                    props.filepath = filepath
+        else:
+            box.label(text='No libraries loaded')
+
+class FILE_OT_directory_go_to(Operator):
+    """Go to this library's directory"""
+    bl_idname = "file.directory_go_to"
+    bl_label = "Go To"
+    
+    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+
+        bpy.ops.file.select_bookmark(dir=self.filepath)
+        return {'FINISHED'}
+    
 # FEATURE: Node Templates
 class NODE_OT_AddTemplateVignette(Operator):
     bl_idname = "node.template_add_vignette"
@@ -819,13 +876,15 @@ classes = (SCENE_OT_refresh,
            NODE_OT_AddTemplateVignette,
            NODE_MT_amaranth_templates,
            FILE_OT_directory_current_blend,
+           FILE_OT_directory_go_to,
            NODE_PT_indices,
            NODE_PT_simplify,
            NODE_OT_toggle_mute,
            NODE_OT_show_active_node_image,
            VIEW3D_OT_render_border_camera,
            VIEW3D_OT_show_only_render,
-           OBJECT_OT_select_meshlights)
+           OBJECT_OT_select_meshlights,
+           FILE_PT_libraries)
 
 addon_keymaps = []
 
@@ -883,13 +942,6 @@ def register():
         kmi.properties.data_path = 'space_data.viewport_shade'
         kmi.properties.value_1 = 'SOLID'
         kmi.properties.value_2 = 'RENDERED'
-
-        km = kc.keymaps.new(name='Property Editor', space_type='PROPERTIES')
-        kmi = km.keymap_items.new('wm.context_cycle_enum', 'WHEELUPMOUSE', 'PRESS', ctrl=True)
-        kmi.properties.data_path = 'space_data.context'
-        kmi = km.keymap_items.new('wm.context_cycle_enum', 'WHEELDOWNMOUSE', 'PRESS', ctrl=True)
-        kmi.properties.data_path = 'space_data.context'
-        kmi.properties.reverse = True
 
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
         km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'RELEASE')
@@ -949,3 +1001,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+
