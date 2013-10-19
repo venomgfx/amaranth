@@ -440,11 +440,13 @@ class NODE_MT_amaranth_templates(bpy.types.Menu):
             icon='COLOR')
 
 def node_templates_pulldown(self, context):
-    layout = self.layout
-    row = layout.row(align=True)
-    row.scale_x = 1.3
-    row.menu("NODE_MT_amaranth_templates",
-        icon="RADIO")
+
+    if context.space_data.tree_type == 'CompositorNodeTree':
+        layout = self.layout
+        row = layout.row(align=True)
+        row.scale_x = 1.3
+        row.menu("NODE_MT_amaranth_templates",
+            icon="RADIO")
 # // FEATURE: Node Templates
 
 def node_stats(self,context):
@@ -468,7 +470,14 @@ class NODE_PT_simplify(bpy.types.Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_label = 'Simplify'
-#    bl_options = {'DEFAULT_CLOSED'}
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        space = context.space_data
+        return space.type == 'NODE_EDITOR' \
+                and space.node_tree is not None \
+                and space.tree_type == 'CompositorNodeTree'
 
     def draw(self, context):
         layout = self.layout
@@ -998,6 +1007,49 @@ class MESH_OT_make_symmetric(Operator):
         return {'FINISHED'}
 # // FEATURE: Mesh Symmetry Tools by Sergey Sharybin
 
+# FEATURE: Cycles Render Samples per Scene
+def render_cycles_scene_samples(self, context):
+
+    layout = self.layout
+
+    scenes = bpy.data.scenes
+    scene = context.scene
+    cscene = scene.cycles
+
+    if (len(bpy.data.scenes) > 1):
+        layout.separator()
+
+        layout.label(text="Samples Per Scene:")
+
+        if cscene.progressive == 'PATH':
+            for s in bpy.data.scenes:
+                if s != scene:
+                    cscene = s.cycles
+    
+                    split = layout.split()
+                    col = split.column()
+                    sub = col.column(align=True)
+    
+                    sub.label(text="%s" % s.name)
+    
+                    col = split.column()
+                    sub = col.column(align=True)
+                    sub.prop(cscene, "samples", text="Render")
+        else:
+            for s in bpy.data.scenes:
+                if s != scene:
+                    cscene = s.cycles
+    
+                    split = layout.split()
+                    col = split.column()
+                    sub = col.column(align=True)
+    
+                    sub.label(text="%s" % s.name)
+    
+                    col = split.column()
+                    sub = col.column(align=True)
+                    sub.prop(cscene, "aa_samples", text="Render")
+# // FEATURE: Cycles Render Samples per Scene
 
 classes = (SCENE_OT_refresh,
            WM_OT_save_reload,
@@ -1048,6 +1100,7 @@ def register():
     bpy.types.NODE_HT_header.append(node_stats)
 
     bpy.types.CyclesMaterial_PT_settings.append(material_cycles_settings_extra)
+    bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
 
     bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
 
@@ -1112,6 +1165,7 @@ def unregister():
     bpy.types.NODE_HT_header.remove(node_stats)
 
     bpy.types.CyclesMaterial_PT_settings.remove(material_cycles_settings_extra)
+    bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
 
     bpy.types.FILEBROWSER_HT_header.remove(button_directory_current_blend)
 
@@ -1131,3 +1185,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+
