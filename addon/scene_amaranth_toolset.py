@@ -874,11 +874,20 @@ def particles_material_info(self, context):
     ob = context.object
     psys = context.particle_system
 
-    layout.label(
-        text="Material: %s" % ob.material_slots[psys.settings.material-1].name \
-            if psys.settings.material <= len(ob.material_slots) \
-            else "No material with this index. Using '{}'".format( \
-                ob.material_slots[len(ob.material_slots)-1].name))
+    mats = len(ob.material_slots)
+
+    if ob.material_slots:
+        if psys.settings.material <= len(ob.material_slots) \
+        and ob.material_slots[psys.settings.material-1].name == "":
+            layout.label(text="No material on this slot", icon="MATSPHERE")
+        else:
+            layout.label(
+                text="%s" % ob.material_slots[psys.settings.material-1].name \
+                    if psys.settings.material <= mats \
+                    else "No material with this index{}".format( \
+                        ". Using %s" % ob.material_slots[mats-1].name \
+                        if ob.material_slots[mats-1].name != "" else ""),
+                icon="MATERIAL_DATA")
 # // FEATURE: Particles Material indicator
 
 # FEATURE: Mesh Symmetry Tools by Sergey Sharybin
@@ -1185,4 +1194,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-
