@@ -876,6 +876,7 @@ def particles_material_info(self, context):
 
     mats = len(ob.material_slots)
 
+
     if ob.material_slots:
         if psys.settings.material <= len(ob.material_slots) \
         and ob.material_slots[psys.settings.material-1].name == "":
@@ -1134,6 +1135,22 @@ def register():
         kmi.properties.data_path = 'space_data.viewport_shade'
         kmi.properties.value_1 = 'SOLID'
         kmi.properties.value_2 = 'RENDERED'
+
+        km = kc.keymaps.new(name='Graph Editor', space_type='GRAPH_EDITOR')
+        kmi = km.keymap_items.new('wm.context_set_enum', 'TAB', 'PRESS', ctrl=True)
+        kmi.properties.data_path = 'area.type'
+        kmi.properties.value = 'DOPESHEET_EDITOR'
+
+        km = kc.keymaps.new(name='Dopesheet', space_type='DOPESHEET_EDITOR')
+        kmi = km.keymap_items.new('wm.context_set_enum', 'TAB', 'PRESS', ctrl=True)
+        kmi.properties.data_path = 'area.type'
+        kmi.properties.value = 'GRAPH_EDITOR'
+
+        km = kc.keymaps.new(name='Dopesheet', space_type='DOPESHEET_EDITOR')
+        kmi = km.keymap_items.new('wm.context_toggle_enum', 'TAB', 'PRESS', shift=True)
+        kmi.properties.data_path = 'space_data.mode'
+        kmi.properties.value_1 = 'ACTION'
+        kmi.properties.value_2 = 'DOPESHEET'
 
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
         km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'RELEASE')
