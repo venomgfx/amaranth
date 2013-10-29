@@ -1033,7 +1033,7 @@ def render_cycles_scene_samples(self, context):
 
         if cscene.progressive == 'PATH':
             for s in bpy.data.scenes:
-                if s != scene:
+                if s != scene and s.render.engine == 'CYCLES':
                     cscene = s.cycles
     
                     split = layout.split()
@@ -1047,7 +1047,7 @@ def render_cycles_scene_samples(self, context):
                     sub.prop(cscene, "samples", text="Render")
         else:
             for s in bpy.data.scenes:
-                if s != scene:
+                if s != scene and s.render.engine == 'CYCLES':
                     cscene = s.cycles
     
                     split = layout.split()
