@@ -1147,7 +1147,26 @@ def pose_motion_paths_ui(self, context):
 
     layout.separator()
     layout.operator(POSE_OT_paths_clear_all.bl_idname, icon="X")
-# // FEATURE
+# // FEATURE: Motion Paths Extras
+
+# FEATURE: Final Render Resolution Display
+def render_final_resolution_ui(self, context):
+
+    rd = context.scene.render
+    layout = self.layout
+
+    final_res_x = (rd.resolution_x * rd.resolution_percentage) / 100
+    final_res_y = (rd.resolution_y * rd.resolution_percentage) / 100
+
+    layout.label(text="Final Resolution: {} x {}".format(
+                 str(final_res_x)[:-2], str(final_res_y)[:-2]))
+
+    if rd.use_border:
+       final_res_x_border = round((final_res_x * (rd.border_max_x - rd.border_min_x)))
+       final_res_y_border = round((final_res_y * (rd.border_max_y - rd.border_min_y)))
+       layout.label(text="Final Resolution (border): {} x {}".format(
+                    str(final_res_x_border), str(final_res_y_border)))
+# // FEATURE: Final Render Resolution Display
 
 classes = (SCENE_OT_refresh,
            WM_OT_save_reload,
@@ -1210,6 +1229,8 @@ def register():
     bpy.types.PARTICLE_PT_render.prepend(particles_material_info)
 
     bpy.types.DATA_PT_display.append(pose_motion_paths_ui)
+
+    bpy.types.RENDER_PT_dimensions.append(render_final_resolution_ui)
 
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
@@ -1293,6 +1314,8 @@ def unregister():
     bpy.types.PARTICLE_PT_render.remove(particles_material_info)
 
     bpy.types.DATA_PT_display.remove(pose_motion_paths_ui)
+
+    bpy.types.RENDER_PT_dimensions.remove(render_final_resolution_ui)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
