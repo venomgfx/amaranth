@@ -1158,14 +1158,15 @@ def render_final_resolution_ui(self, context):
     final_res_x = (rd.resolution_x * rd.resolution_percentage) / 100
     final_res_y = (rd.resolution_y * rd.resolution_percentage) / 100
 
-    layout.label(text="Final Resolution: {} x {}".format(
-                 str(final_res_x)[:-2], str(final_res_y)[:-2]))
-
     if rd.use_border:
        final_res_x_border = round((final_res_x * (rd.border_max_x - rd.border_min_x)))
        final_res_y_border = round((final_res_y * (rd.border_max_y - rd.border_min_y)))
-       layout.label(text="Final Resolution (border): {} x {}".format(
-                    str(final_res_x_border), str(final_res_y_border)))
+       layout.label(text="Final Resolution: {} x {} [Border: {} x {}]".format(
+             str(final_res_x)[:-2], str(final_res_y)[:-2],
+             str(final_res_x_border), str(final_res_y_border)))
+    else:
+        layout.label(text="Final Resolution: {} x {}".format(
+             str(final_res_x)[:-2], str(final_res_y)[:-2]))
 # // FEATURE: Final Render Resolution Display
 
 classes = (SCENE_OT_refresh,
