@@ -1068,6 +1068,10 @@ class POSE_OT_paths_clear_all(Operator):
     bl_label = "Clear All Motion Paths"
     bl_options = {'UNDO'}
 
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'POSE'
+
     def execute(self, context):
         #silly but works
         for b in context.object.data.bones:
@@ -1108,9 +1112,9 @@ def pose_motion_paths_ui(self, context):
 
     layout = self.layout
     scene = context.scene
-    mpath = context.active_pose_bone.motion_path
     avs = context.object.pose.animation_visualization
-
+    if context.active_pose_bone:
+        mpath = context.active_pose_bone.motion_path
     layout.separator()    
     layout.label(text="Motion Paths Extras:")
 
