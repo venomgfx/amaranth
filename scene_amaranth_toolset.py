@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 7, 4),
+    "version": (0, 7, 5),
     "blender": (2, 69),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -710,10 +710,13 @@ def stats_scene(self, context):
                         if ma.material.node_tree:
                             for no in ma.material.node_tree.nodes:
                                 if no.type == 'EMISSION':
-                                    meshlights = meshlights + 1
-                                    if ob in context.visible_objects:
-                                        meshlights_visible = meshlights_visible + 1
-                                    break
+                                    for ou in no.outputs:
+                                        if ou.links: 
+                                            meshlights = meshlights + 1
+
+                                            if ob in context.visible_objects:
+                                                meshlights_visible = meshlights_visible + 1
+                                            break
             if ob in context.selected_objects:
                 if ob.type == 'CAMERA':
                     cameras_selected = cameras_selected + 1
