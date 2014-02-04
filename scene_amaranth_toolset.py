@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 7, 6),
+    "version": (0, 7, 7),
     "blender": (2, 69),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -154,6 +154,28 @@ def init_properties():
 
     nodes_compo.toggle_mute = bpy.props.BoolProperty(default=False)
     node.status = bpy.props.BoolProperty(default=False)
+
+    # Cycles Node Types
+    cycles_shader_node_types = [
+        ("BSDF_DIFFUSE", "Diffuse BSDF", "", 0),
+        ("BSDF_GLOSSY", "Glossy BSDF", "", 1),
+        ("BSDF_TRANSPARENT", "Transparent BSDF", "", 2),
+        ("BSDF_REFRACTION", "Refraction BSDF", "", 3),
+        ("BSDF_GLASS", "Glass BSDF", "", 4),
+        ("BSDF_TRANSLUCENT", "Translucent BSDF", "", 5),
+        ("BSDF_ANISOTROPIC", "Anisotropic BSDF", "", 6),
+        ("BSDF_VELVET", "Velvet BSDF", "", 7),
+        ("BSDF_TOON", "Toon BSDF", "", 8),
+        ("SUBSURFACE_SCATTERING", "Subsurface Scattering", "", 8),
+        ("EMISSION", "Emission", "", 9),
+        ("BSDF_HAIR", "Hair BSDF", "", 10),
+        ("BACKGROUND", "Background", "", 11),
+        ("AMBIENT_OCCLUSION", "Ambient Occlusion", "", 12),
+        ("HOLDOUT", "Holdout", "", 13),
+        ]
+
+    scene.amaranth_cycles_node_types = bpy.props.EnumProperty(
+        items=cycles_shader_node_types, name = "Shader Type")
 
 
 def clear_properties():
@@ -1193,7 +1215,80 @@ def node_shader_extra(self, context):
 
 # // FEATURE: Shader Nodes Extra Info
 
-classes = (SCENE_OT_refresh,
+# FEATURE: Scene Debug
+class SCENE_OT_cycles_shader_list_nodes(Operator):
+    """List Cycles nodes by type"""
+    bl_idname = "scene.cycles_list_nodes"
+    bl_label = "List Nodes"
+    
+    def execute(self, context):
+        node_type = context.scene.amaranth_cycles_node_types
+        count = 0
+
+        print("\n=== Cycles Nodes Type: %s === \n" % node_type)
+
+        for ob in bpy.context.scene.objects:
+            if ob.material_slots:
+                for ma in ob.material_slots:
+                    if ma.material:
+                        if ma.material.node_tree:
+                            for no in ma.material.node_tree.nodes:
+                                if no.type == node_type:
+                                    for ou in no.outputs:
+                                        count = count + 1
+
+                                        if ou.links:
+                                            if no.type == 'BSDF_GLOSSY' or 'BSDF_DIFFUSE' \
+                                                       or 'BSDF_GLASS':
+                                                print("%02d." % count,
+                                                      'OB: %s' % ob.name,
+                                                      '\n    MA: %s' % ma.material.name,
+                                                      '\n    Roughness: %s'
+                                                      % no.inputs['Roughness'].default_value,
+                                                      '\n')
+                                        else:
+                                            print("%02d." % count,
+                                                  'Output from "%s" node' % node_type,
+                                                  'in material "%s"' % ma.material.name,
+                                                  'is not connected')
+
+
+        if count == 0:
+            self.report({"INFO"},
+                "No nodes type %s found" % node_type)
+
+        else:
+            self.report({"INFO"},
+                "Total of %s Nodes type %s found" % (count, node_type))
+
+        return {'FINISHED'}
+
+class SCENE_PT_scene_debug(bpy.types.Panel):
+    '''Scene Debug'''
+    bl_label = 'Scene Debug'
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        if scene.render.engine == 'CYCLES':
+            layout.label(text="List Cycles Nodes:")
+            layout.prop(scene, 'amaranth_cycles_node_types')
+            layout.operator(SCENE_OT_cycles_shader_list_nodes.bl_idname,
+                            icon="SORTALPHA")
+        else:
+            layout.label(text="Only available for Cycles at the moment",
+                         icon="INFO")
+
+
+# // FEATURE
+
+classes = (SCENE_PT_scene_debug,
+           SCENE_OT_refresh,
+           SCENE_OT_cycles_shader_list_nodes,
            WM_OT_save_reload,
            MESH_OT_find_asymmetric,
            MESH_OT_make_symmetric,
