@@ -1238,13 +1238,19 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                                         count = count + 1
 
                                         if ou.links:
-                                            if no.type == 'BSDF_GLOSSY' or 'BSDF_DIFFUSE' \
-                                                       or 'BSDF_GLASS':
+                                            if no.type == 'BSDF_GLOSSY' or no.type == 'BSDF_DIFFUSE' \
+                                                or no.type == 'BSDF_GLASS':
+
                                                 print("%02d." % count,
                                                       'OB: %s' % ob.name,
                                                       '\n    MA: %s' % ma.material.name,
                                                       '\n    Roughness: %s'
                                                       % no.inputs['Roughness'].default_value,
+                                                      '\n')
+                                            else:
+                                                print("%02d." % count,
+                                                      'OB: %s' % ob.name,
+                                                      '\n    MA: %s' % ma.material.name,
                                                       '\n')
                                         else:
                                             print("%02d." % count,
@@ -1255,11 +1261,11 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
 
         if count == 0:
             self.report({"INFO"},
-                "No nodes type %s found" % node_type)
+                "No objects with nodes type %s found" % node_type)
 
         else:
             self.report({"INFO"},
-                "Total of %s Nodes type %s found" % (count, node_type))
+                "Total of %s objects with node %s found, check console!" % (count, node_type))
 
         return {'FINISHED'}
 
