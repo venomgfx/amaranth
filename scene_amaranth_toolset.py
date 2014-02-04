@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 7, 5),
+    "version": (0, 7, 6),
     "blender": (2, 69),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -711,9 +711,8 @@ def stats_scene(self, context):
                             for no in ma.material.node_tree.nodes:
                                 if no.type == 'EMISSION':
                                     for ou in no.outputs:
-                                        if ou.links: 
+                                        if ou.links:
                                             meshlights = meshlights + 1
-
                                             if ob in context.visible_objects:
                                                 meshlights_visible = meshlights_visible + 1
                                             break
@@ -1176,6 +1175,24 @@ def render_final_resolution_ui(self, context):
              str(final_res_x)[:-2], str(final_res_y)[:-2]))
 # // FEATURE: Final Render Resolution Display
 
+# FEATURE: Shader Nodes Extra Info
+def node_shader_extra(self, context):
+
+    if context.space_data.tree_type == 'ShaderNodeTree':
+        ob = context.active_object
+        layout = self.layout
+
+        if ob:
+            if ob.type == 'LAMP':
+                layout.label(text="%s" % ob.name,
+                             icon="LAMP_%s" % ob.data.type)        
+            else:
+                layout.label(text="%s" % ob.name,
+                             icon="OUTLINER_DATA_%s" % ob.type)
+             
+
+# // FEATURE: Shader Nodes Extra Info
+
 classes = (SCENE_OT_refresh,
            WM_OT_save_reload,
            MESH_OT_find_asymmetric,
@@ -1225,6 +1242,7 @@ def register():
 
     bpy.types.NODE_HT_header.append(node_templates_pulldown)
     bpy.types.NODE_HT_header.append(node_stats)
+    bpy.types.NODE_HT_header.append(node_shader_extra)
 
     bpy.types.CyclesMaterial_PT_settings.append(material_cycles_settings_extra)
     bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
@@ -1310,6 +1328,7 @@ def unregister():
 
     bpy.types.NODE_HT_header.remove(node_templates_pulldown)
     bpy.types.NODE_HT_header.remove(node_stats)
+    bpy.types.NODE_HT_header.remove(node_shader_extra)
 
     bpy.types.CyclesMaterial_PT_settings.remove(material_cycles_settings_extra)
     bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
