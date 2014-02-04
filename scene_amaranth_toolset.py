@@ -166,16 +166,16 @@ def init_properties():
         ("BSDF_ANISOTROPIC", "Anisotropic BSDF", "", 6),
         ("BSDF_VELVET", "Velvet BSDF", "", 7),
         ("BSDF_TOON", "Toon BSDF", "", 8),
-        ("SUBSURFACE_SCATTERING", "Subsurface Scattering", "", 8),
-        ("EMISSION", "Emission", "", 9),
-        ("BSDF_HAIR", "Hair BSDF", "", 10),
-        ("BACKGROUND", "Background", "", 11),
-        ("AMBIENT_OCCLUSION", "Ambient Occlusion", "", 12),
-        ("HOLDOUT", "Holdout", "", 13),
+        ("SUBSURFACE_SCATTERING", "Subsurface Scattering", "", 9),
+        ("EMISSION", "Emission", "", 10),
+        ("BSDF_HAIR", "Hair BSDF", "", 11),
+        ("BACKGROUND", "Background", "", 12),
+        ("AMBIENT_OCCLUSION", "Ambient Occlusion", "", 13),
+        ("HOLDOUT", "Holdout", "", 14),
         ]
 
     scene.amaranth_cycles_node_types = bpy.props.EnumProperty(
-        items=cycles_shader_node_types, name = "Shader Type")
+        items=cycles_shader_node_types, name = "Shader")
 
 
 def clear_properties():
@@ -1223,7 +1223,11 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
     
     def execute(self, context):
         node_type = context.scene.amaranth_cycles_node_types
-        count = 0
+        count_ob = 0
+        count_ma = 0
+
+        global materials
+        materials = []
 
         print("\n=== Cycles Nodes Type: %s === \n" % node_type)
 
@@ -1235,38 +1239,66 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                             for no in ma.material.node_tree.nodes:
                                 if no.type == node_type:
                                     for ou in no.outputs:
-                                        count = count + 1
+                                        count_ob = count_ob + 1
 
                                         if ou.links:
                                             if no.type == 'BSDF_GLOSSY' or no.type == 'BSDF_DIFFUSE' \
                                                 or no.type == 'BSDF_GLASS':
 
-                                                print("%02d." % count,
+                                                roughness = no.inputs['Roughness'].default_value,
+
+                                                print("%02d." % count_ob,
                                                       'OB: %s' % ob.name,
                                                       '\n    MA: %s' % ma.material.name,
                                                       '\n    Roughness: %s'
-                                                      % no.inputs['Roughness'].default_value,
+                                                      % roughness,
                                                       '\n')
                                             else:
-                                                print("%02d." % count,
+                                                roughness = False
+                                                print("%02d." % count_ob,
                                                       'OB: %s' % ob.name,
                                                       '\n    MA: %s' % ma.material.name,
                                                       '\n')
                                         else:
-                                            print("%02d." % count,
+                                            print("%02d." % count_ob,
                                                   'Output from "%s" node' % node_type,
                                                   'in material "%s"' % ma.material.name,
                                                   'is not connected')
 
+                                        if ma.material.name not in materials:
+                                            count_ma = count_ma + 1
+                                            if roughness:
+                                                materials.append('%s, %s' % (ma.material.name, roughness))
+                                            else:
+                                                materials.append(ma.material.name)
 
-        if count == 0:
+        if count_ob == 0:
             self.report({"INFO"},
                 "No objects with nodes type %s found" % node_type)
 
         else:
             self.report({"INFO"},
-                "Total of %s objects with node %s found, check console!" % (count, node_type))
+                "Total of %s objects with node %s found, check console!" % (count_ob, node_type))
+            print("* To sum up, a total of %s materials using %s was found \n" % (count_ma, node_type))
+            
+            count = 0
 
+            for mat in materials:
+                print('%02d. %s' % (count + 1, materials[count]))
+                count = count + 1
+            print("\n")
+
+        materials = list(set(materials))
+
+        return {'FINISHED'}
+
+class SCENE_OT_cycles_shader_list_nodes_clear(Operator):
+    """Clear List"""
+    bl_idname = "scene.cycles_list_nodes_clear"
+    bl_label = "Clear List Nodes"
+    
+    def execute(self, context):
+        materials[:] = []
         return {'FINISHED'}
 
 class SCENE_PT_scene_debug(bpy.types.Panel):
@@ -1281,10 +1313,28 @@ class SCENE_PT_scene_debug(bpy.types.Panel):
         scene = context.scene
 
         if scene.render.engine == 'CYCLES':
+
             layout.label(text="List Cycles Nodes:")
-            layout.prop(scene, 'amaranth_cycles_node_types')
-            layout.operator(SCENE_OT_cycles_shader_list_nodes.bl_idname,
+
+            split = layout.split(percentage=0.5)
+            split.prop(scene, 'amaranth_cycles_node_types')
+
+            row = split.row(align=True)
+            row.operator(SCENE_OT_cycles_shader_list_nodes.bl_idname,
                             icon="SORTALPHA")
+            row.operator(SCENE_OT_cycles_shader_list_nodes_clear.bl_idname,
+                            icon="X", text="")
+
+            if materials:
+                count = 0
+
+                layout.label(text="%s materials found!" % len(materials), icon="INFO")
+                for mat in materials:
+                    layout.label(text=materials[count], icon="MATERIAL")
+                    count = count + 1
+            else:
+                layout.label(text="No materials to show", icon="INFO")
+
         else:
             layout.label(text="Only available for Cycles at the moment",
                          icon="INFO")
@@ -1295,6 +1345,7 @@ class SCENE_PT_scene_debug(bpy.types.Panel):
 classes = (SCENE_PT_scene_debug,
            SCENE_OT_refresh,
            SCENE_OT_cycles_shader_list_nodes,
+           SCENE_OT_cycles_shader_list_nodes_clear,
            WM_OT_save_reload,
            MESH_OT_find_asymmetric,
            MESH_OT_make_symmetric,
