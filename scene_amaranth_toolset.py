@@ -884,7 +884,7 @@ def material_cycles_settings_extra(self, context):
     
     obj = context.object
     mat = context.material
-    if obj.type == 'MESH':
+    if obj and obj.type == 'MESH':
         row.prop(obj, "show_transparent", text="Viewport Alpha")
         row.active = obj.show_transparent
         row.prop(mat, "alpha", text="Alpha")
@@ -1225,6 +1225,7 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
         node_type = context.scene.amaranth_cycles_node_types
         count_ob = 0
         count_ma = 0
+        roughness = False
 
         global materials
         materials = []
