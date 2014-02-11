@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 7, 7),
+    "version": (0, 7, 8),
     "blender": (2, 69),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -31,7 +31,7 @@ bl_info = {
 
 import bpy
 import bmesh
-from bpy.types import Operator, AddonPreferences, Panel
+from bpy.types import Operator, AddonPreferences, Panel, Menu
 from bpy.props import BoolProperty
 from mathutils import Vector
 from bpy.app.handlers import persistent
@@ -176,6 +176,8 @@ def init_properties():
 
     scene.amaranth_cycles_node_types = bpy.props.EnumProperty(
         items=cycles_shader_node_types, name = "Shader")
+        
+    global materials
 
 
 def clear_properties():
@@ -448,7 +450,7 @@ class NODE_OT_AddTemplateVignette(Operator):
         return {'FINISHED'}
 
 # Node Templates Menu
-class NODE_MT_amaranth_templates(bpy.types.Menu):
+class NODE_MT_amaranth_templates(Menu):
     bl_idname = 'NODE_MT_amaranth_templates'
     bl_space_type = 'NODE_EDITOR'
     bl_label = "Templates"
@@ -487,7 +489,7 @@ def node_stats(self,context):
             row.label(text="Nodes: %s/%s" % (nodes_selected, str(nodes_total)))
 
 # FEATURE: Simplify Compo Nodes
-class NODE_PT_simplify(bpy.types.Panel):
+class NODE_PT_simplify(Panel):
     '''Simplify Compositor Panel'''
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
@@ -573,7 +575,7 @@ class NODE_OT_toggle_mute(Operator):
         
 
 # FEATURE: OB/MA ID panel in Node Editor
-class NODE_PT_indices(bpy.types.Panel):
+class NODE_PT_indices(Panel):
     '''Object / Material Indices Panel'''
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
@@ -884,6 +886,7 @@ def material_cycles_settings_extra(self, context):
     
     obj = context.object
     mat = context.material
+    
     if obj and obj.type == 'MESH':
         row.prop(obj, "show_transparent", text="Viewport Alpha")
         row.active = obj.show_transparent
@@ -1202,9 +1205,10 @@ def node_shader_extra(self, context):
 
     if context.space_data.tree_type == 'ShaderNodeTree':
         ob = context.active_object
+        snode = context.space_data
         layout = self.layout
 
-        if ob:
+        if ob and snode.shader_type != 'WORLD':
             if ob.type == 'LAMP':
                 layout.label(text="%s" % ob.name,
                              icon="LAMP_%s" % ob.data.type)        
@@ -1220,15 +1224,14 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
     """List Cycles nodes by type"""
     bl_idname = "scene.cycles_list_nodes"
     bl_label = "List Nodes"
-    
+
     def execute(self, context):
         node_type = context.scene.amaranth_cycles_node_types
         count_ob = 0
         count_ma = 0
         roughness = False
-
-        global materials
         materials = []
+        global materials
 
         print("\n=== Cycles Nodes Type: %s === \n" % node_type)
 
@@ -1237,7 +1240,8 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                 for ma in ob.material_slots:
                     if ma.material:
                         if ma.material.node_tree:
-                            for no in ma.material.node_tree.nodes:
+                            nodes = ma.material.node_tree.nodes
+                            for no in nodes:
                                 if no.type == node_type:
                                     for ou in no.outputs:
                                         count_ob = count_ob + 1
@@ -1246,11 +1250,13 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                                             if no.type == 'BSDF_GLOSSY' or no.type == 'BSDF_DIFFUSE' \
                                                 or no.type == 'BSDF_GLASS':
 
-                                                roughness = no.inputs['Roughness'].default_value,
+                                                roughness = 'R: %.4f' % no.inputs['Roughness'].default_value
 
                                                 print("%02d." % count_ob,
                                                       'OB: %s' % ob.name,
-                                                      '\n    MA: %s' % ma.material.name,
+                                                      '\n    MA: %s [%s] %s' % (ma.material.name,
+                                                        ma.material.users,
+                                                        'F' if ma.material.use_fake_user else ''),
                                                       '\n    Roughness: %s'
                                                       % roughness,
                                                       '\n')
@@ -1258,18 +1264,27 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                                                 roughness = False
                                                 print("%02d." % count_ob,
                                                       'OB: %s' % ob.name,
-                                                      '\n    MA: %s' % ma.material.name,
+                                                      '\n    MA: %s [%s] %s\n' % (ma.material.name,
+                                                        ma.material.users,
+                                                        'F' if ma.material.use_fake_user else ''),
                                                       '\n')
                                         else:
                                             print("%02d." % count_ob,
-                                                  'Output from "%s" node' % node_type,
-                                                  'in material "%s"' % ma.material.name,
-                                                  'is not connected')
+                                                  'OB: %s' % ob.name,
+                                                  '\n    MA: %s [%s] %s\n' % (ma.material.name,
+                                                    ma.material.users,
+                                                    'F' if ma.material.use_fake_user else ''),
+                                                  '   Note: Output from "%s" node' % node_type,
+                                                  'not connected',
+                                                  '\n')
+
+                                        materials = list(set(materials))
+
+                                        count_ma = len(materials) + 1
 
                                         if ma.material.name not in materials:
-                                            count_ma = count_ma + 1
                                             if roughness:
-                                                materials.append('%s, %s' % (ma.material.name, roughness))
+                                                materials.append('%s [%s] %s - [%s]' % (ma.material.name, ma.material.users, 'F' if ma.material.use_fake_user else '', roughness))
                                             else:
                                                 materials.append(ma.material.name)
 
@@ -1294,15 +1309,15 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
         return {'FINISHED'}
 
 class SCENE_OT_cycles_shader_list_nodes_clear(Operator):
-    """Clear List"""
+    """Clear Nodes List"""
     bl_idname = "scene.cycles_list_nodes_clear"
-    bl_label = "Clear List Nodes"
+    bl_label = "Clear Nodes List"
     
     def execute(self, context):
         materials[:] = []
         return {'FINISHED'}
 
-class SCENE_PT_scene_debug(bpy.types.Panel):
+class SCENE_PT_scene_debug(Panel):
     '''Scene Debug'''
     bl_label = 'Scene Debug'
     bl_space_type = "PROPERTIES"
@@ -1312,6 +1327,8 @@ class SCENE_PT_scene_debug(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        objects =  bpy.data.objects
+        ob_act = context.active_object
 
         if scene.render.engine == 'CYCLES':
 
@@ -1326,15 +1343,48 @@ class SCENE_PT_scene_debug(bpy.types.Panel):
             row.operator(SCENE_OT_cycles_shader_list_nodes_clear.bl_idname,
                             icon="X", text="")
 
-            if materials:
-                count = 0
-
-                layout.label(text="%s materials found!" % len(materials), icon="INFO")
-                for mat in materials:
-                    layout.label(text=materials[count], icon="MATERIAL")
-                    count = count + 1
-            else:
+            try:
+                materials
+            except NameError:
                 layout.label(text="No materials to show", icon="INFO")
+            else:
+                count = 0
+                layout.label(text="%s %s found" % (len(materials),
+                    'material' if len(materials) < 2 else 'materials'), icon="INFO")
+                for mat in materials:
+                    count = count + 1
+                    layout.label(text='%02d. %s' % (count, materials[count-1]), icon="MATERIAL")
+
+            # List Lamps
+            layout.label(text="List Lamps:")
+            
+            if objects:
+                split = layout.split()
+                row = split.row(align=True)
+                row.label(text="Name")
+                if scene.cycles.progressive == 'BRANCHED_PATH':
+                    row.label(text="Samples")
+                row.label(text="Size")
+                row.label(text="", icon="BLANK1")
+
+                for ob in objects:
+                    if ob.type == 'LAMP':
+                        lamp = ob.data
+                        clamp = ob.data.cycles
+
+                        split = layout.split()
+                        row = split.row(align=True)
+                        row.label(text=ob.name, icon="LAMP_%s" % ob.data.type)
+                        row.prop(clamp, "cast_shadow", text="")
+                        if scene.cycles.progressive == 'BRANCHED_PATH':
+                            row.prop(clamp, "samples", text="")
+
+                        if lamp.type == 'POINT':
+                            row.label(text="%.2f" % lamp.shadow_soft_size)
+                        else:
+                            row.label(text="%.2f" % lamp.size)
+
+                        row.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
 
         else:
             layout.label(text="Only available for Cycles at the moment",
