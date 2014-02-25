@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 7, 8),
+    "version": (0, 7, 9),
     "blender": (2, 69),
     "location": "Scene Properties > Amaranth Toolset Panel",
     "description": "A collection of tools and settings to improve productivity",
@@ -176,8 +176,6 @@ def init_properties():
 
     scene.amaranth_cycles_node_types = bpy.props.EnumProperty(
         items=cycles_shader_node_types, name = "Shader")
-        
-    global materials
 
 
 def clear_properties():
@@ -1247,8 +1245,7 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                                         count_ob = count_ob + 1
 
                                         if ou.links:
-                                            if no.type == 'BSDF_GLOSSY' or no.type == 'BSDF_DIFFUSE' \
-                                                or no.type == 'BSDF_GLASS':
+                                            if no.type in ['BSDF_GLOSSY','BSDF_DIFFUSE','BSDF_GLASS']:
 
                                                 roughness = 'R: %.4f' % no.inputs['Roughness'].default_value
 
@@ -1284,7 +1281,10 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
 
                                         if ma.material.name not in materials:
                                             if roughness:
-                                                materials.append('%s [%s] %s - [%s]' % (ma.material.name, ma.material.users, 'F' if ma.material.use_fake_user else '', roughness))
+                                                materials.append('%s [%s] %s - [%s]' % (
+                                                    ma.material.name, ma.material.users,
+                                                    '[F]' if ma.material.use_fake_user else '',
+                                                    roughness))
                                             else:
                                                 materials.append(ma.material.name)
 
@@ -1294,9 +1294,11 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
 
         else:
             self.report({"INFO"},
-                "Total of %s objects with node %s found, check console!" % (count_ob, node_type))
-            print("* To sum up, a total of %s materials using %s was found \n" % (count_ma, node_type))
-            
+                "Total of %s objects with node %s found, check console!" % (
+                    count_ob, node_type))
+            print("* To sum up, a total of %s objects and %s materials using %s was found \n" % (
+                    count_ob, count_ma, node_type))
+
             count = 0
 
             for mat in materials:
@@ -1379,8 +1381,10 @@ class SCENE_PT_scene_debug(Panel):
                         if scene.cycles.progressive == 'BRANCHED_PATH':
                             row.prop(clamp, "samples", text="")
 
-                        if lamp.type == 'POINT':
+                        if lamp.type in ['POINT','SUN', 'SPOT']:
                             row.label(text="%.2f" % lamp.shadow_soft_size)
+                        elif lamp.type == 'HEMI':
+                            row.label(text="N/A")
                         else:
                             row.label(text="%.2f" % lamp.size)
 
@@ -1389,7 +1393,6 @@ class SCENE_PT_scene_debug(Panel):
         else:
             layout.label(text="Only available for Cycles at the moment",
                          icon="INFO")
-
 
 # // FEATURE
 
@@ -1549,7 +1552,7 @@ def unregister():
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
-    
+
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
