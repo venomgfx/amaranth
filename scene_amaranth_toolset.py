@@ -267,14 +267,12 @@ def button_frame_current(self, context):
 
     preferences = context.user_preferences.addons[__name__].preferences
     scene = context.scene
-    amaranth = bpy.types.AmaranthToolsetPreferences
 
     if preferences.use_frame_current:
         self.layout.separator()
         self.layout.prop(
             scene, "frame_current",
             text="Set Current Frame")
-
 # // FEATURE: Current Frame
 
 # FEATURE: Timeline Time + Frames Left
