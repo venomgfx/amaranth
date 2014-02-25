@@ -130,13 +130,13 @@ def init_properties():
     node = bpy.types.Node
     nodes_compo = bpy.types.CompositorNodeTree
 
-    scene.use_unsimplify_render = bpy.props.BoolProperty(
+    scene.use_unsimplify_render = BoolProperty(
         default=False,
         name="Unsimplify Render",
         description="Disable Simplify during render")
-    scene.simplify_status = bpy.props.BoolProperty(default=False)
+    scene.simplify_status = BoolProperty(default=False)
 
-    node.use_matching_indices = bpy.props.BoolProperty(
+    node.use_matching_indices = BoolProperty(
         default=True,
         description="If disabled, display all available indices")
 
@@ -152,9 +152,10 @@ def init_properties():
     nodes_compo.types = bpy.props.EnumProperty(
         items=test_items, name = "Types")
 
-    nodes_compo.toggle_mute = bpy.props.BoolProperty(default=False)
-    node.status = bpy.props.BoolProperty(default=False)
+    nodes_compo.toggle_mute = BoolProperty(default=False)
+    node.status = BoolProperty(default=False)
 
+    # Scene Debug
     # Cycles Node Types
     cycles_shader_node_types = [
         ("BSDF_DIFFUSE", "Diffuse BSDF", "", 0),
@@ -176,6 +177,13 @@ def init_properties():
 
     scene.amaranth_cycles_node_types = bpy.props.EnumProperty(
         items=cycles_shader_node_types, name = "Shader")
+
+    scene.amaranth_debug_scene_list_lamps = BoolProperty(
+        default=False,
+        name="Lamps List",
+        description="Display a list of all the lamps")
+
+    global materials
 
 
 def clear_properties():
@@ -259,12 +267,14 @@ def button_frame_current(self, context):
 
     preferences = context.user_preferences.addons[__name__].preferences
     scene = context.scene
+    amaranth = bpy.types.AmaranthToolsetPreferences
 
     if preferences.use_frame_current:
         self.layout.separator()
         self.layout.prop(
             scene, "frame_current",
             text="Set Current Frame")
+
 # // FEATURE: Current Frame
 
 # FEATURE: Timeline Time + Frames Left
@@ -875,47 +885,6 @@ def button_select_meshlights(self, context):
         self.layout.operator('object.select_meshlights', icon="LAMP_SUN")
 # // FEATURE: Select Meshlights
 
-# FEATURE: Cycles Viewport Extra Settings
-def material_cycles_settings_extra(self, context):
-    
-    layout = self.layout
-    col = layout.column()
-    row = col.row(align=True)
-    
-    obj = context.object
-    mat = context.material
-    
-    if obj and obj.type == 'MESH':
-        row.prop(obj, "show_transparent", text="Viewport Alpha")
-        row.active = obj.show_transparent
-        row.prop(mat, "alpha", text="Alpha")
-# // FEATURE: Cycles Viewport Extra Settings
-
-# FEATURE: Particles Material indicator
-def particles_material_info(self, context):
-
-    layout = self.layout
-
-    ob = context.object
-    psys = context.particle_system
-
-    mats = len(ob.material_slots)
-
-
-    if ob.material_slots:
-        if psys.settings.material <= len(ob.material_slots) \
-        and ob.material_slots[psys.settings.material-1].name == "":
-            layout.label(text="No material on this slot", icon="MATSPHERE")
-        else:
-            layout.label(
-                text="%s" % ob.material_slots[psys.settings.material-1].name \
-                    if psys.settings.material <= mats \
-                    else "No material with this index{}".format( \
-                        ". Using %s" % ob.material_slots[mats-1].name \
-                        if ob.material_slots[mats-1].name != "" else ""),
-                icon="MATERIAL_DATA")
-# // FEATURE: Particles Material indicator
-
 # FEATURE: Mesh Symmetry Tools by Sergey Sharybin
 class MESH_OT_find_asymmetric(Operator):
     """
@@ -1058,18 +1027,21 @@ def render_cycles_scene_samples(self, context):
 
         if cscene.progressive == 'PATH':
             for s in bpy.data.scenes:
-                if s != scene and s.render.engine == 'CYCLES':
-                    cscene = s.cycles
-    
-                    split = layout.split()
-                    col = split.column()
-                    sub = col.column(align=True)
-    
-                    sub.label(text="%s" % s.name)
-    
-                    col = split.column()
-                    sub = col.column(align=True)
-                    sub.prop(cscene, "samples", text="Render")
+                if s != scene:
+                    if s.render.engine == 'CYCLES':
+                        cscene = s.cycles
+        
+                        split = layout.split()
+                        col = split.column()
+                        sub = col.column(align=True)
+        
+                        sub.label(text="%s" % s.name)
+        
+                        col = split.column()
+                        sub = col.column(align=True)
+                        sub.prop(cscene, "samples", text="Render")
+                    else:
+                        layout.label(text="Scene: '%s' is not using Cycles" % s.name)
         else:
             for s in bpy.data.scenes:
                 if s != scene and s.render.engine == 'CYCLES':
@@ -1084,6 +1056,8 @@ def render_cycles_scene_samples(self, context):
                     col = split.column()
                     sub = col.column(align=True)
                     sub.prop(cscene, "aa_samples", text="Render")
+                else:
+                    layout.label(text="Scene: '%s' is not using Cycles" % s.name)
 # // FEATURE: Cycles Render Samples per Scene
 
 # FEATURE: Motion Paths Extras
@@ -1331,6 +1305,7 @@ class SCENE_PT_scene_debug(Panel):
         scene = context.scene
         objects =  bpy.data.objects
         ob_act = context.active_object
+        list_lamps = scene.amaranth_debug_scene_list_lamps
 
         if scene.render.engine == 'CYCLES':
 
@@ -1358,10 +1333,16 @@ class SCENE_PT_scene_debug(Panel):
                     layout.label(text='%02d. %s' % (count, materials[count-1]), icon="MATERIAL")
 
             # List Lamps
-            layout.label(text="List Lamps:")
-            
-            if objects:
-                split = layout.split()
+            box = layout.box()
+            row = box.row(align=True)
+            row.alignment = 'LEFT'
+            row.prop(scene, 'amaranth_debug_scene_list_lamps',
+                        icon="%s" % 'TRIA_DOWN' if list_lamps else 'TRIA_RIGHT',
+                        emboss=False)
+
+            if objects and list_lamps:
+                row = box.row(align=True)
+                split = row.split()
                 row = split.row(align=True)
                 row.label(text="Name")
                 if scene.cycles.progressive == 'BRANCHED_PATH':
@@ -1374,7 +1355,8 @@ class SCENE_PT_scene_debug(Panel):
                         lamp = ob.data
                         clamp = ob.data.cycles
 
-                        split = layout.split()
+                        row = box.row(align=True)
+                        split = row.split()
                         row = split.row(align=True)
                         row.label(text=ob.name, icon="LAMP_%s" % ob.data.type)
                         row.prop(clamp, "cast_shadow", text="")
@@ -1450,15 +1432,12 @@ def register():
     bpy.types.NODE_HT_header.append(node_stats)
     bpy.types.NODE_HT_header.append(node_shader_extra)
 
-    bpy.types.CyclesMaterial_PT_settings.append(material_cycles_settings_extra)
     bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
 
     bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
 
     bpy.types.SCENE_PT_simplify.append(unsimplify_ui)
     bpy.types.CyclesScene_PT_simplify.append(unsimplify_ui)
-
-    bpy.types.PARTICLE_PT_render.prepend(particles_material_info)
 
     bpy.types.DATA_PT_display.append(pose_motion_paths_ui)
 
@@ -1536,15 +1515,12 @@ def unregister():
     bpy.types.NODE_HT_header.remove(node_stats)
     bpy.types.NODE_HT_header.remove(node_shader_extra)
 
-    bpy.types.CyclesMaterial_PT_settings.remove(material_cycles_settings_extra)
     bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
 
     bpy.types.FILEBROWSER_HT_header.remove(button_directory_current_blend)
 
     bpy.types.SCENE_PT_simplify.remove(unsimplify_ui)
     bpy.types.CyclesScene_PT_simplify.remove(unsimplify_ui)
-
-    bpy.types.PARTICLE_PT_render.remove(particles_material_info)
 
     bpy.types.DATA_PT_display.remove(pose_motion_paths_ui)
 
