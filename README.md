@@ -1,9 +1,9 @@
 Amaranth Toolset
 ========
 
-Repository for Amaranth, a Blender Addon and Theme.
+Repository for Amaranth, a Blender Addon focused on usability for production environments.
 
-Yet another addon for Blender 2.6+, basically a bunch of tools that I believe improve usability on production environments.
+Yet another addon for Blender 2.7+, basically a bunch of tools that I believe improve usability on production environments.
 
 
 ##How to Install
