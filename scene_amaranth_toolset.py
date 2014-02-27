@@ -35,6 +35,7 @@ from bpy.types import Operator, AddonPreferences, Panel, Menu
 from bpy.props import BoolProperty
 from mathutils import Vector
 from bpy.app.handlers import persistent
+from bl_operators.presets import AddPresetBase
 
 # Preferences
 class AmaranthToolsetPreferences(AddonPreferences):
@@ -1374,9 +1375,52 @@ class SCENE_PT_scene_debug(Panel):
             layout.label(text="Only available for Cycles at the moment",
                          icon="INFO")
 
-# // FEATURE
+# // FEATURE: Scene Debug
 
-classes = (SCENE_PT_scene_debug,
+# FEATURE: Color Management Presets
+class SCENE_MT_color_management_presets(Menu):
+    bl_label = "Color Management Presets"
+    preset_subdir = "color"
+    preset_operator = "script.execute_preset"
+    draw = Menu.draw_preset
+
+
+class AddPresetColorManagement(AddPresetBase, Operator):
+    """Add or remove a Render Preset"""
+    bl_idname = "scene.color_management_preset_add"
+    bl_label = "Add Color Management Preset"
+    preset_menu = "SCENE_MT_color_management_presets"
+
+    preset_defines = [
+        "scene = bpy.context.scene"
+    ]
+
+    preset_values = [
+        "scene.view_settings.view_transform",
+        "scene.display_settings.display_device",
+        "scene.view_settings.gamma",
+        "scene.view_settings.look",
+        "scene.view_settings.use_curve_mapping",
+        "scene.sequencer_colorspace_settings.name",
+    ]
+
+    preset_subdir = "color"
+
+def ui_color_management_presets(self, context):
+    
+    layout = self.layout
+
+    row = layout.row(align=True)
+    row.menu("SCENE_MT_color_management_presets", text=bpy.types.SCENE_MT_color_management_presets.bl_label)
+    row.operator("scene.color_management_preset_add", text="", icon="ZOOMIN")
+    row.operator("scene.color_management_preset_add", text="", icon="ZOOMOUT").remove_active = True
+    layout.separator()
+# // FEATURE: Color Management Presets
+
+
+classes = (SCENE_MT_color_management_presets,
+           AddPresetColorManagement,
+           SCENE_PT_scene_debug,
            SCENE_OT_refresh,
            SCENE_OT_cycles_shader_list_nodes,
            SCENE_OT_cycles_shader_list_nodes_clear,
@@ -1440,6 +1484,8 @@ def register():
     bpy.types.DATA_PT_display.append(pose_motion_paths_ui)
 
     bpy.types.RENDER_PT_dimensions.append(render_final_resolution_ui)
+
+    bpy.types.SCENE_PT_color_management.prepend(ui_color_management_presets)
 
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
@@ -1523,6 +1569,8 @@ def unregister():
     bpy.types.DATA_PT_display.remove(pose_motion_paths_ui)
 
     bpy.types.RENDER_PT_dimensions.remove(render_final_resolution_ui)
+
+    bpy.types.SCENE_PT_color_management.remove(ui_color_management_presets)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
