@@ -1299,7 +1299,11 @@ class SCENE_OT_amaranth_debug_lamp_select(Operator):
  
     def execute(self, context):
         if self.lamp:
-            context.scene.objects.active = bpy.data.objects[self.lamp]
+            lamp = bpy.data.objects[self.lamp]
+
+            bpy.ops.object.select_all(action='DESELECT')
+            lamp.select = True
+            context.scene.objects.active = lamp
 
         return{'FINISHED'}    
 
