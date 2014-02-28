@@ -1292,6 +1292,18 @@ class SCENE_OT_cycles_shader_list_nodes_clear(Operator):
         materials[:] = []
         return {'FINISHED'}
 
+class SCENE_OT_amaranth_debug_lamp_select(Operator):
+    bl_idname = "scene.amaranth_debug_lamp_select"
+    bl_label = "Select Lamp"
+    lamp = bpy.props.StringProperty()
+ 
+    def execute(self, context):
+        if self.lamp:
+            context.scene.objects.active = bpy.data.objects[self.lamp]
+
+        return{'FINISHED'}    
+
+
 class SCENE_PT_scene_debug(Panel):
     '''Scene Debug'''
     bl_label = 'Scene Debug'
@@ -1341,13 +1353,25 @@ class SCENE_PT_scene_debug(Panel):
 
             if objects and list_lamps:
                 row = box.row(align=True)
-                split = row.split()
-                row = split.row(align=True)
-                row.label(text="Name")
+                split = row.split(percentage=0.42)
+                col = split.column()
+                col.label(text="Name")
+
+                split = split.split(percentage=0.1)
+                col = split.column()
+                col.label(text="", icon="BLANK1")
                 if scene.cycles.progressive == 'BRANCHED_PATH':
-                    row.label(text="Samples")
-                row.label(text="Size")
-                row.label(text="", icon="BLANK1")
+                    split = split.split(percentage=0.35)
+                    col = split.column()
+                    col.label(text="Samples")
+
+                split = split.split(percentage=0.5)
+                col = split.column()
+                col.label(text="Size")
+
+                split = split.split(percentage=0.8)
+                col = split.column()
+                col.label(text="Visibility")
 
                 for ob in objects:
                     if ob.type == 'LAMP':
@@ -1355,21 +1379,38 @@ class SCENE_PT_scene_debug(Panel):
                         clamp = ob.data.cycles
 
                         row = box.row(align=True)
-                        split = row.split()
-                        row = split.row(align=True)
-                        row.label(text=ob.name, icon="LAMP_%s" % ob.data.type)
-                        row.prop(clamp, "cast_shadow", text="")
+                        split = row.split(percentage=0.5)
+                        col = split.column()
+                        row = col.row()
+                        row.alignment = 'LEFT'
+                        row.operator("scene.amaranth_debug_lamp_select",
+                                        text=' %s' % ob.name,
+                                        icon="LAMP_%s" % ob.data.type,
+                                        emboss=False).lamp = ob.name
+
                         if scene.cycles.progressive == 'BRANCHED_PATH':
-                            row.prop(clamp, "samples", text="")
+                            split = split.split(percentage=0.35)
+                            col = split.column()
+                            col.prop(clamp, "samples", text="")
 
+                        split = split.split(percentage=0.6)
+                        col = split.column()    
                         if lamp.type in ['POINT','SUN', 'SPOT']:
-                            row.label(text="%.2f" % lamp.shadow_soft_size)
+                            col.label(text="%.2f" % lamp.shadow_soft_size)
                         elif lamp.type == 'HEMI':
-                            row.label(text="N/A")
+                            col.label(text="N/A")
                         else:
-                            row.label(text="%.2f" % lamp.size)
+                            col.label(text="%.2f" % lamp.size)
 
-                        row.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
+                        split = split.split(percentage=0.8)
+                        col = split.column()
+                        row = col.row(align=True)
+                        row.prop(ob, "hide", text="", emboss=False)
+                        row.prop(ob, "hide_render", text="", emboss=False)
+
+                        split = split.split(percentage=0.3)
+                        col = split.column()
+                        col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
 
         else:
             layout.label(text="Only available for Cycles at the moment",
@@ -1424,6 +1465,7 @@ classes = (SCENE_MT_color_management_presets,
            SCENE_OT_refresh,
            SCENE_OT_cycles_shader_list_nodes,
            SCENE_OT_cycles_shader_list_nodes_clear,
+           SCENE_OT_amaranth_debug_lamp_select,
            WM_OT_save_reload,
            MESH_OT_find_asymmetric,
            MESH_OT_make_symmetric,
