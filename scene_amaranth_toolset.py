@@ -1387,10 +1387,13 @@ class SCENE_PT_scene_debug(Panel):
                         col = split.column()
                         row = col.row()
                         row.alignment = 'LEFT'
+                        row.active = ob.name in context.scene.objects
                         row.operator("scene.amaranth_debug_lamp_select",
-                                        text=' %s' % ob.name,
-                                        icon="LAMP_%s" % ob.data.type,
-                                        emboss=False).lamp = ob.name
+                                    text=' %s%s' % (
+                                        ob.name,
+                                        "" if ob.name in context.scene.objects else " [Not in Scene]"),
+                                    icon="LAMP_%s" % ob.data.type,
+                                    emboss=False).lamp = ob.name
 
                         if scene.cycles.progressive == 'BRANCHED_PATH':
                             split = split.split(percentage=0.35)
