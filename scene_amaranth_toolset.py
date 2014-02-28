@@ -1389,7 +1389,8 @@ class SCENE_PT_scene_debug(Panel):
                         row.alignment = 'LEFT'
                         row.active = ob.name in context.scene.objects
                         row.operator("scene.amaranth_debug_lamp_select",
-                                    text=' %s%s' % (
+                                    text='%s %s%s' % (
+                                        " [L] " if ob.library else "",
                                         ob.name,
                                         "" if ob.name in context.scene.objects else " [Not in Scene]"),
                                     icon="LAMP_%s" % ob.data.type,
