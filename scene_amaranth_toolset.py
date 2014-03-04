@@ -19,9 +19,9 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 7, 9),
-    "blender": (2, 69),
-    "location": "Scene Properties > Amaranth Toolset Panel",
+    "version": (0, 8, 0),
+    "blender": (2, 70),
+    "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
     "warning": "",
     "wiki_url": "http://pablovazquez.org/amaranth",
@@ -97,7 +97,7 @@ class AmaranthToolsetPreferences(AddonPreferences):
 
         sub.separator()
 
-        sub.label(text="Nodes Editor", icon="NODETREE")        
+        sub.label(text="Nodes Editor", icon="NODETREE")
         sub.prop(self, "use_image_node_display")
 
         col = split.column()
@@ -354,16 +354,12 @@ class FILE_PT_libraries(Panel):
         if libslist:
             for filepath in libslist:
                 if filepath != '//':
-                    split = box.split(percentage=0.85)
-                    col = split.column()
-                    sub = col.column(align=True)
-                    sub.label(text=filepath)
-            
-                    col = split.column()
-                    sub = col.column(align=True)
-                    props = sub.operator(
+                    row = box.row()
+                    row.alignment = 'LEFT'
+                    props = row.operator(
                         FILE_OT_directory_go_to.bl_idname,
-                        text="", icon="BOOKMARKS")
+                        text=filepath, icon="BOOKMARKS",
+                        emboss=False)
                     props.filepath = filepath
         else:
             box.label(text='No libraries loaded')
@@ -1038,25 +1034,26 @@ def render_cycles_scene_samples(self, context):
         
                         col = split.column()
                         sub = col.column(align=True)
-                        sub.prop(cscene, "samples", text="Render")
+                        sub.prop(cscene, "samples", text="Samples")
                     else:
                         layout.label(text="Scene: '%s' is not using Cycles" % s.name)
         else:
             for s in bpy.data.scenes:
-                if s != scene and s.render.engine == 'CYCLES':
-                    cscene = s.cycles
-    
-                    split = layout.split()
-                    col = split.column()
-                    sub = col.column(align=True)
-    
-                    sub.label(text="%s" % s.name)
-    
-                    col = split.column()
-                    sub = col.column(align=True)
-                    sub.prop(cscene, "aa_samples", text="Render")
-                else:
-                    layout.label(text="Scene: '%s' is not using Cycles" % s.name)
+                if s != scene:
+                    if s.render.engine == 'CYCLES':
+                        cscene = s.cycles
+        
+                        split = layout.split()
+                        col = split.column()
+                        sub = col.column(align=True)
+        
+                        sub.label(text="%s" % s.name)
+        
+                        col = split.column()
+                        sub = col.column(align=True)
+                        sub.prop(cscene, "aa_samples", text="AA Samples")
+                    else:
+                        layout.label(text="Scene: '%s' is not using Cycles" % s.name)
 # // FEATURE: Cycles Render Samples per Scene
 
 # FEATURE: Motion Paths Extras
@@ -1192,85 +1189,57 @@ def node_shader_extra(self, context):
 
 # FEATURE: Scene Debug
 class SCENE_OT_cycles_shader_list_nodes(Operator):
-    """List Cycles nodes by type"""
+    """List Cycles materials containing a specific shader"""
     bl_idname = "scene.cycles_list_nodes"
-    bl_label = "List Nodes"
+    bl_label = "List Materials"
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.render.engine == 'CYCLES'
 
     def execute(self, context):
         node_type = context.scene.amaranth_cycles_node_types
-        count_ob = 0
         count_ma = 0
         roughness = False
         materials = []
         global materials
 
-        print("\n=== Cycles Nodes Type: %s === \n" % node_type)
+        print("\n=== Cycles Shader Type: %s === \n" % node_type)
 
-        for ob in bpy.context.scene.objects:
-            if ob.material_slots:
-                for ma in ob.material_slots:
-                    if ma.material:
-                        if ma.material.node_tree:
-                            nodes = ma.material.node_tree.nodes
-                            for no in nodes:
-                                if no.type == node_type:
-                                    for ou in no.outputs:
-                                        count_ob = count_ob + 1
+        for ma in bpy.data.materials:
+            if ma.node_tree:
+                nodes = ma.node_tree.nodes
+                for no in nodes:
+                    if no.type == node_type:
+                        for ou in no.outputs:
+                            if ou.links:
+                                if no.type in ['BSDF_GLOSSY','BSDF_DIFFUSE','BSDF_GLASS']:
+                                    roughness = 'R: %.4f' % no.inputs['Roughness'].default_value
+                                else:
+                                    roughness = False
+                            else:
+                                print('Note: \nOutput from "%s" node' % node_type,
+                                      'in material "%s"' % ma.name,
+                                      'not connected',
+                                      '\n')
 
-                                        if ou.links:
-                                            if no.type in ['BSDF_GLOSSY','BSDF_DIFFUSE','BSDF_GLASS']:
+                            materials = list(set(materials))
 
-                                                roughness = 'R: %.4f' % no.inputs['Roughness'].default_value
+                            count_ma = len(materials)
 
-                                                print("%02d." % count_ob,
-                                                      'OB: %s' % ob.name,
-                                                      '\n    MA: %s [%s] %s' % (ma.material.name,
-                                                        ma.material.users,
-                                                        'F' if ma.material.use_fake_user else ''),
-                                                      '\n    Roughness: %s'
-                                                      % roughness,
-                                                      '\n')
-                                            else:
-                                                roughness = False
-                                                print("%02d." % count_ob,
-                                                      'OB: %s' % ob.name,
-                                                      '\n    MA: %s [%s] %s\n' % (ma.material.name,
-                                                        ma.material.users,
-                                                        'F' if ma.material.use_fake_user else ''),
-                                                      '\n')
-                                        else:
-                                            print("%02d." % count_ob,
-                                                  'OB: %s' % ob.name,
-                                                  '\n    MA: %s [%s] %s\n' % (ma.material.name,
-                                                    ma.material.users,
-                                                    'F' if ma.material.use_fake_user else ''),
-                                                  '   Note: Output from "%s" node' % node_type,
-                                                  'not connected',
-                                                  '\n')
+                            if ma.name not in materials:
+                                materials.append('%s%s [%s] %s%s' % (
+                                    '[L] ' if ma.library else '',
+                                    ma.name, ma.users,
+                                    '[F]' if ma.use_fake_user else '',
+                                    ' - [%s]' % roughness if roughness else ''))
 
-                                        materials = list(set(materials))
-
-                                        count_ma = len(materials) + 1
-
-                                        if ma.material.name not in materials:
-                                            if roughness:
-                                                materials.append('%s [%s] %s - [%s]' % (
-                                                    ma.material.name, ma.material.users,
-                                                    '[F]' if ma.material.use_fake_user else '',
-                                                    roughness))
-                                            else:
-                                                materials.append(ma.material.name)
-
-        if count_ob == 0:
-            self.report({"INFO"},
-                "No objects with nodes type %s found" % node_type)
+        if count_ma == 0:
+            print("* No materials with nodes type %s found" % node_type)
 
         else:
-            self.report({"INFO"},
-                "Total of %s objects with node %s found, check console!" % (
-                    count_ob, node_type))
-            print("* To sum up, a total of %s objects and %s materials using %s was found \n" % (
-                    count_ob, count_ma, node_type))
+            print("* A total of %s materials using %s was found \n" % (
+                    count_ma + 1, node_type))
 
             count = 0
 
@@ -1284,15 +1253,16 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
         return {'FINISHED'}
 
 class SCENE_OT_cycles_shader_list_nodes_clear(Operator):
-    """Clear Nodes List"""
+    """Clear the list below"""
     bl_idname = "scene.cycles_list_nodes_clear"
-    bl_label = "Clear Nodes List"
+    bl_label = "Clear Materials List"
     
     def execute(self, context):
         materials[:] = []
         return {'FINISHED'}
 
 class SCENE_OT_amaranth_debug_lamp_select(Operator):
+    '''Select Lamp'''
     bl_idname = "scene.amaranth_debug_lamp_select"
     bl_label = "Select Lamp"
     lamp = bpy.props.StringProperty()
@@ -1321,10 +1291,11 @@ class SCENE_PT_scene_debug(Panel):
         objects =  bpy.data.objects
         ob_act = context.active_object
         list_lamps = scene.amaranth_debug_scene_list_lamps
+        engine = scene.render.engine
 
-        if scene.render.engine == 'CYCLES':
+        if engine == 'CYCLES':
 
-            layout.label(text="List Cycles Nodes:")
+            layout.label(text="List Cycles Materials:")
 
             split = layout.split(percentage=0.5)
             split.prop(scene, 'amaranth_cycles_node_types')
@@ -1345,63 +1316,88 @@ class SCENE_PT_scene_debug(Panel):
                     'material' if len(materials) < 2 else 'materials'), icon="INFO")
                 for mat in materials:
                     count = count + 1
-                    layout.label(text='%02d. %s' % (count, materials[count-1]), icon="MATERIAL")
+                    layout.label(text='%s' % (materials[count-1]), icon="MATERIAL")
 
-            # List Lamps
-            box = layout.box()
+        # List Lamps
+        box = layout.box()
+        row = box.row(align=True)
+        row.alignment = 'LEFT'
+        row.prop(scene, 'amaranth_debug_scene_list_lamps',
+                    icon="%s" % 'TRIA_DOWN' if list_lamps else 'TRIA_RIGHT',
+                    emboss=False)
+
+        if objects and list_lamps:
             row = box.row(align=True)
-            row.alignment = 'LEFT'
-            row.prop(scene, 'amaranth_debug_scene_list_lamps',
-                        icon="%s" % 'TRIA_DOWN' if list_lamps else 'TRIA_RIGHT',
-                        emboss=False)
+            split = row.split(percentage=0.42)
+            col = split.column()
+            col.label(text="Name")
 
-            if objects and list_lamps:
-                row = box.row(align=True)
-                split = row.split(percentage=0.42)
-                col = split.column()
-                col.label(text="Name")
-
-                split = split.split(percentage=0.1)
-                col = split.column()
-                col.label(text="", icon="BLANK1")
-                if scene.cycles.progressive == 'BRANCHED_PATH':
+            split = split.split(percentage=0.1)
+            col = split.column()
+            col.label(text="", icon="BLANK1")
+            if engine in ['CYCLES', 'BLENDER_RENDER']:
+                if engine == 'BLENDER_RENDER':
+                    split = split.split(percentage=0.7)
+                else:
                     split = split.split(percentage=0.35)
-                    col = split.column()
-                    col.label(text="Samples")
+                col = split.column()
+                col.label(text="Samples")
 
-                split = split.split(percentage=0.5)
+            if engine == 'CYCLES':
+                split = split.split(percentage=0.35)
                 col = split.column()
                 col.label(text="Size")
 
-                split = split.split(percentage=0.8)
-                col = split.column()
-                col.label(text="Visibility")
+            split = split.split(percentage=0.8)
+            col = split.column()
+            col.label(text="Visibility")
 
-                for ob in objects:
-                    if ob.type == 'LAMP':
-                        lamp = ob.data
-                        clamp = ob.data.cycles
+            for ob in objects:
+                if ob.type == 'LAMP':
+                    lamp = ob.data
+                    clamp = ob.data.cycles
 
-                        row = box.row(align=True)
-                        split = row.split(percentage=0.5)
+                    row = box.row(align=True)
+                    split = row.split(percentage=0.5)
+                    col = split.column()
+                    row = col.row()
+                    row.alignment = 'LEFT'
+                    row.active = ob.name in context.scene.objects
+                    row.operator("scene.amaranth_debug_lamp_select",
+                                text='%s %s%s' % (
+                                    " [L] " if ob.library else "",
+                                    ob.name,
+                                    "" if ob.name in context.scene.objects else " [Not in Scene]"),
+                                icon="LAMP_%s" % ob.data.type,
+                                emboss=False).lamp = ob.name
+
+                    if engine == 'CYCLES':
+                        split = split.split(percentage=0.35)
                         col = split.column()
-                        row = col.row()
-                        row.alignment = 'LEFT'
-                        row.active = ob.name in context.scene.objects
-                        row.operator("scene.amaranth_debug_lamp_select",
-                                    text='%s %s%s' % (
-                                        " [L] " if ob.library else "",
-                                        ob.name,
-                                        "" if ob.name in context.scene.objects else " [Not in Scene]"),
-                                    icon="LAMP_%s" % ob.data.type,
-                                    emboss=False).lamp = ob.name
-
                         if scene.cycles.progressive == 'BRANCHED_PATH':
-                            split = split.split(percentage=0.35)
-                            col = split.column()
                             col.prop(clamp, "samples", text="")
+                        if scene.cycles.progressive == 'PATH':
+                           col.label(text="N/A")
+                       
+                    if engine == 'BLENDER_RENDER':
+                        split = split.split(percentage=0.7)
+                        col = split.column()
+                        if lamp.type == 'HEMI':
+                            col.label(text="Not Available")
+                        elif lamp.type == 'AREA' and lamp.shadow_method == 'RAY_SHADOW':
+                            row = col.row(align=True)
+                            row.prop(lamp, "shadow_ray_samples_x", text="X")
+                            if lamp.shape == 'RECTANGLE':
+                                row.prop(lamp, "shadow_ray_samples_y", text="Y")
+                        elif lamp.shadow_method == 'RAY_SHADOW':
+                            col.prop(lamp, "shadow_ray_samples", text="Ray Samples")
+                        elif lamp.shadow_method == 'BUFFER_SHADOW':
+                            col.prop(lamp, "shadow_buffer_samples", text="Buffer Samples")
+                        else:
+                            col.label(text="No Shadow")
 
-                        split = split.split(percentage=0.6)
+                    if engine == 'CYCLES':
+                        split = split.split(percentage=0.4)
                         col = split.column()    
                         if lamp.type in ['POINT','SUN', 'SPOT']:
                             col.label(text="%.2f" % lamp.shadow_soft_size)
@@ -1410,24 +1406,21 @@ class SCENE_PT_scene_debug(Panel):
                         else:
                             col.label(text="%.2f" % lamp.size)
 
-                        split = split.split(percentage=0.8)
-                        col = split.column()
-                        row = col.row(align=True)
-                        row.prop(ob, "hide", text="", emboss=False)
-                        row.prop(ob, "hide_render", text="", emboss=False)
+                    split = split.split(percentage=0.8)
+                    col = split.column()
+                    row = col.row(align=True)
+                    row.prop(ob, "hide", text="", emboss=False)
+                    row.prop(ob, "hide_render", text="", emboss=False)
 
-                        split = split.split(percentage=0.3)
-                        col = split.column()
-                        col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
-
-        else:
-            layout.label(text="Only available for Cycles at the moment",
-                         icon="INFO")
+                    split = split.split(percentage=0.3)
+                    col = split.column()
+                    col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
 
 # // FEATURE: Scene Debug
 
 # FEATURE: Color Management Presets
 class SCENE_MT_color_management_presets(Menu):
+    """List of Color Management presets"""
     bl_label = "Color Management Presets"
     preset_subdir = "color"
     preset_operator = "script.execute_preset"
@@ -1435,7 +1428,7 @@ class SCENE_MT_color_management_presets(Menu):
 
 
 class AddPresetColorManagement(AddPresetBase, Operator):
-    """Add or remove a Render Preset"""
+    """Add or remove a Color Management preset"""
     bl_idname = "scene.color_management_preset_add"
     bl_label = "Add Color Management Preset"
     preset_menu = "SCENE_MT_color_management_presets"
@@ -1549,10 +1542,6 @@ def register():
 
         km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new('view3d.show_only_render', 'Z', 'PRESS', shift=True, alt=True)
-        kmi = km.keymap_items.new('wm.context_toggle_enum', 'Z', 'PRESS', shift=True, alt=False)
-        kmi.properties.data_path = 'space_data.viewport_shade'
-        kmi.properties.value_1 = 'SOLID'
-        kmi.properties.value_2 = 'RENDERED'
 
         km = kc.keymaps.new(name='Graph Editor', space_type='GRAPH_EDITOR')
         kmi = km.keymap_items.new('wm.context_set_enum', 'TAB', 'PRESS', ctrl=True)
