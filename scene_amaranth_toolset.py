@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 8, 0),
+    "version": (0, 8, 1),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -183,6 +183,11 @@ def init_properties():
         default=False,
         name="Lamps List",
         description="Display a list of all the lamps")
+
+    scene.amaranth_debug_scene_list_missing_images = BoolProperty(
+        default=False,
+        name="List Missing Images",
+        description="Display a list of all the missing images")
 
     global materials
 
@@ -1290,7 +1295,11 @@ class SCENE_PT_scene_debug(Panel):
         scene = context.scene
         objects =  bpy.data.objects
         ob_act = context.active_object
+        images = bpy.data.images
+        lamps = bpy.data.lamps
+        images_missing = []
         list_lamps = scene.amaranth_debug_scene_list_lamps
+        list_missing_images = scene.amaranth_debug_scene_list_missing_images
         engine = scene.render.engine
 
         if engine == 'CYCLES':
@@ -1321,100 +1330,168 @@ class SCENE_PT_scene_debug(Panel):
         # List Lamps
         box = layout.box()
         row = box.row(align=True)
-        row.alignment = 'LEFT'
-        row.prop(scene, 'amaranth_debug_scene_list_lamps',
-                    icon="%s" % 'TRIA_DOWN' if list_lamps else 'TRIA_RIGHT',
-                    emboss=False)
+        split = row.split()
+        col = split.column()
+        
+        if lamps:
+            row = col.row(align=True)
+            row.alignment = 'LEFT'
+            row.prop(scene, 'amaranth_debug_scene_list_lamps',
+                        icon="%s" % 'TRIA_DOWN' if list_lamps else 'TRIA_RIGHT',
+                        emboss=False)
 
-        if objects and list_lamps:
-            row = box.row(align=True)
-            split = row.split(percentage=0.42)
-            col = split.column()
-            col.label(text="Name")
-
-            split = split.split(percentage=0.1)
-            col = split.column()
-            col.label(text="", icon="BLANK1")
-            if engine in ['CYCLES', 'BLENDER_RENDER']:
-                if engine == 'BLENDER_RENDER':
-                    split = split.split(percentage=0.7)
-                else:
-                    split = split.split(percentage=0.35)
+            if objects and list_lamps:
+                row = box.row(align=True)
+                split = row.split(percentage=0.42)
                 col = split.column()
-                col.label(text="Samples")
+                col.label(text="Name")
 
-            if engine == 'CYCLES':
-                split = split.split(percentage=0.35)
+                split = split.split(percentage=0.1)
                 col = split.column()
-                col.label(text="Size")
-
-            split = split.split(percentage=0.8)
-            col = split.column()
-            col.label(text="Visibility")
-
-            for ob in objects:
-                if ob.type == 'LAMP':
-                    lamp = ob.data
-                    clamp = ob.data.cycles
-
-                    row = box.row(align=True)
-                    split = row.split(percentage=0.5)
-                    col = split.column()
-                    row = col.row()
-                    row.alignment = 'LEFT'
-                    row.active = ob.name in context.scene.objects
-                    row.operator("scene.amaranth_debug_lamp_select",
-                                text='%s %s%s' % (
-                                    " [L] " if ob.library else "",
-                                    ob.name,
-                                    "" if ob.name in context.scene.objects else " [Not in Scene]"),
-                                icon="LAMP_%s" % ob.data.type,
-                                emboss=False).lamp = ob.name
-
-                    if engine == 'CYCLES':
-                        split = split.split(percentage=0.35)
-                        col = split.column()
-                        if scene.cycles.progressive == 'BRANCHED_PATH':
-                            col.prop(clamp, "samples", text="")
-                        if scene.cycles.progressive == 'PATH':
-                           col.label(text="N/A")
-                       
+                col.label(text="", icon="BLANK1")
+                if engine in ['CYCLES', 'BLENDER_RENDER']:
                     if engine == 'BLENDER_RENDER':
                         split = split.split(percentage=0.7)
+                    else:
+                        split = split.split(percentage=0.35)
+                    col = split.column()
+                    col.label(text="Samples")
+
+                if engine == 'CYCLES':
+                    split = split.split(percentage=0.35)
+                    col = split.column()
+                    col.label(text="Size")
+
+                split = split.split(percentage=0.8)
+                col = split.column()
+                col.label(text="Visibility")
+
+                for ob in objects:
+                    if ob and ob.type == 'LAMP':
+                        lamp = ob.data
+                        clamp = ob.data.cycles
+
+                        row = box.row(align=True)
+                        split = row.split(percentage=0.5)
                         col = split.column()
-                        if lamp.type == 'HEMI':
-                            col.label(text="Not Available")
-                        elif lamp.type == 'AREA' and lamp.shadow_method == 'RAY_SHADOW':
-                            row = col.row(align=True)
-                            row.prop(lamp, "shadow_ray_samples_x", text="X")
-                            if lamp.shape == 'RECTANGLE':
-                                row.prop(lamp, "shadow_ray_samples_y", text="Y")
-                        elif lamp.shadow_method == 'RAY_SHADOW':
-                            col.prop(lamp, "shadow_ray_samples", text="Ray Samples")
-                        elif lamp.shadow_method == 'BUFFER_SHADOW':
-                            col.prop(lamp, "shadow_buffer_samples", text="Buffer Samples")
-                        else:
-                            col.label(text="No Shadow")
+                        row = col.row()
+                        row.alignment = 'LEFT'
+                        row.active = ob.name in context.scene.objects
+                        row.operator("scene.amaranth_debug_lamp_select",
+                                    text='%s %s%s' % (
+                                        " [L] " if ob.library else "",
+                                        ob.name,
+                                        "" if ob.name in context.scene.objects else " [Not in Scene]"),
+                                    icon="LAMP_%s" % ob.data.type,
+                                    emboss=False).lamp = ob.name
 
-                    if engine == 'CYCLES':
-                        split = split.split(percentage=0.4)
-                        col = split.column()    
-                        if lamp.type in ['POINT','SUN', 'SPOT']:
-                            col.label(text="%.2f" % lamp.shadow_soft_size)
-                        elif lamp.type == 'HEMI':
-                            col.label(text="N/A")
-                        else:
-                            col.label(text="%.2f" % lamp.size)
+                        if engine == 'CYCLES':
+                            split = split.split(percentage=0.35)
+                            col = split.column()
+                            if scene.cycles.progressive == 'BRANCHED_PATH':
+                                col.prop(clamp, "samples", text="")
+                            if scene.cycles.progressive == 'PATH':
+                               col.label(text="N/A")
+                           
+                        if engine == 'BLENDER_RENDER':
+                            split = split.split(percentage=0.7)
+                            col = split.column()
+                            if lamp.type == 'HEMI':
+                                col.label(text="Not Available")
+                            elif lamp.type == 'AREA' and lamp.shadow_method == 'RAY_SHADOW':
+                                row = col.row(align=True)
+                                row.prop(lamp, "shadow_ray_samples_x", text="X")
+                                if lamp.shape == 'RECTANGLE':
+                                    row.prop(lamp, "shadow_ray_samples_y", text="Y")
+                            elif lamp.shadow_method == 'RAY_SHADOW':
+                                col.prop(lamp, "shadow_ray_samples", text="Ray Samples")
+                            elif lamp.shadow_method == 'BUFFER_SHADOW':
+                                col.prop(lamp, "shadow_buffer_samples", text="Buffer Samples")
+                            else:
+                                col.label(text="No Shadow")
 
-                    split = split.split(percentage=0.8)
-                    col = split.column()
-                    row = col.row(align=True)
-                    row.prop(ob, "hide", text="", emboss=False)
-                    row.prop(ob, "hide_render", text="", emboss=False)
+                        if engine == 'CYCLES':
+                            split = split.split(percentage=0.4)
+                            col = split.column()    
+                            if lamp.type in ['POINT','SUN', 'SPOT']:
+                                col.label(text="%.2f" % lamp.shadow_soft_size)
+                            elif lamp.type == 'HEMI':
+                                col.label(text="N/A")
+                            else:
+                                col.label(text="%.2f" % lamp.size)
 
-                    split = split.split(percentage=0.3)
-                    col = split.column()
-                    col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
+                        split = split.split(percentage=0.8)
+                        col = split.column()
+                        row = col.row(align=True)
+                        row.prop(ob, "hide", text="", emboss=False)
+                        row.prop(ob, "hide_render", text="", emboss=False)
+
+                        split = split.split(percentage=0.3)
+                        col = split.column()
+                        col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
+
+        else:
+            row = col.row(align=True)
+            row.alignment = 'LEFT'
+            row.label(text="Lamps List", icon="RIGHTARROW_THIN")
+
+            split = split.split()
+            col = split.column()
+
+            col.label(text="No Lamps", icon="LAMP_DATA")
+
+        # List Missing Images
+        if images:
+            import os.path
+
+            for im in images:
+                if im.type not in ['UV_TEST', 'RENDER_RESULT', 'COMPOSITING']: 
+                    if not os.path.exists(bpy.path.abspath(im.filepath, library=im.library)):
+                        images_missing.append(["%s%s [%s]%s" % (
+                            '[L] ' if im.library else '',
+                            im.name, im.users,
+                            ' [F]' if im.use_fake_user else ''),
+                            im.filepath if im.filepath else 'No Filepath'])
+
+            box = layout.box()
+            row = box.row(align=True)
+            split = row.split()
+            col = split.column()
+
+            if images_missing:
+                row = col.row(align=True)
+                row.alignment = 'LEFT'
+                row.prop(scene, 'amaranth_debug_scene_list_missing_images',
+                            icon="%s" % 'TRIA_DOWN' if list_missing_images else 'TRIA_RIGHT',
+                            emboss=False)
+
+                split = split.split()
+                col = split.column()
+
+                col.label(text="%s missing %s" % (
+                             str(len(images_missing)),
+                             'image' if len(images_missing) == 1 else 'images'),
+                             icon="ERROR")
+
+                if list_missing_images:
+                    col = box.column(align=True)
+                    for mis in images_missing:
+                        col.label(text=mis[0],
+                         icon="IMAGE_DATA")
+                        col.label(text=mis[1], icon="BLANK1")
+                        col.separator()
+            else:
+                row = col.row(align=True)
+                row.alignment = 'LEFT'
+                row.label(text="Great! No missing images", icon="RIGHTARROW_THIN")
+
+                split = split.split()
+                col = split.column()
+
+                col.label(text="%s %s loading correctly" % (
+                             str(len(bpy.data.images)),
+                             'image' if len(images_missing) == 1 else 'images'),
+                             icon="IMAGE_DATA")
 
 # // FEATURE: Scene Debug
 
