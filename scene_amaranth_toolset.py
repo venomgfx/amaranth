@@ -1440,6 +1440,7 @@ class AddPresetColorManagement(AddPresetBase, Operator):
     preset_values = [
         "scene.view_settings.view_transform",
         "scene.display_settings.display_device",
+        "scene.view_settings.exposure",
         "scene.view_settings.gamma",
         "scene.view_settings.look",
         "scene.view_settings.use_curve_mapping",
