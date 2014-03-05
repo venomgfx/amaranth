@@ -1489,8 +1489,8 @@ class SCENE_PT_scene_debug(Panel):
                 col = split.column()
 
                 col.label(text="%s %s loading correctly" % (
-                             str(len(bpy.data.images)),
-                             'image' if len(images_missing) == 1 else 'images'),
+                             str(len(images)),
+                             'image' if len(images) == 1 else 'images'),
                              icon="IMAGE_DATA")
 
 # // FEATURE: Scene Debug
