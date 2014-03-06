@@ -1565,10 +1565,6 @@ classes = (SCENE_MT_color_management_presets,
 
 addon_keymaps = []
 
-kmi_defs = (
-    ('wm.call_menu', 'W', False, False, False, (('name', NODE_MT_amaranth_templates.bl_idname),)),
-)
-
 def register():
 
     bpy.utils.register_class(AmaranthToolsetPreferences)
@@ -1614,6 +1610,14 @@ def register():
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
+        km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
+        km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'RELEASE')
+        km.keymap_items.new("node.show_active_node_image", 'SELECTMOUSE', 'RELEASE')
+
+        km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
+        kmi = km.keymap_items.new('wm.call_menu', 'W', 'PRESS')
+        kmi.properties.name = "NODE_MT_amaranth_templates"
+
         km = kc.keymaps.new(name='Window')
         kmi = km.keymap_items.new('scene.refresh', 'F5', 'PRESS', shift=False, ctrl=False)
         kmi = km.keymap_items.new('wm.save_reload', 'W', 'PRESS', shift=True, ctrl=True)
@@ -1637,20 +1641,7 @@ def register():
         kmi.properties.value_1 = 'ACTION'
         kmi.properties.value_2 = 'DOPESHEET'
 
-        km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
-        km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'RELEASE')
-        km.keymap_items.new("node.show_active_node_image", 'SELECTMOUSE', 'RELEASE')
-
         addon_keymaps.append((km, kmi))
-
-        # copypasted from the awesome node efficiency tools, future hotkeys proof!
-        km = kc.keymaps.new(name='Node Editor', space_type="NODE_EDITOR")
-        for (identifier, key, CTRL, SHIFT, ALT, props) in kmi_defs:
-            kmi = km.keymap_items.new(identifier, key, 'PRESS', ctrl=CTRL, shift=SHIFT, alt=ALT)
-            if props:
-                for prop, value in props:
-                    setattr(kmi.properties, prop, value)
-            addon_keymaps.append((km, kmi))
 
 def unregister():
 
