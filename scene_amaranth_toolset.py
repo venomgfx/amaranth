@@ -1550,6 +1550,13 @@ class SCENE_PT_scene_debug(Panel):
                         icon="NODETREE")
 
 # // FEATURE: Scene Debug
+# FEATURE: Dupli  Group Path
+def ui_dupli_group_library_path(self, context):
+
+    ob = context.object
+
+    if ob and ob.dupli_group and ob.dupli_group.library:
+        self.layout.label(text="Library: %s" % ob.dupli_group.library.filepath)
 
 # FEATURE: Color Management Presets
 class SCENE_MT_color_management_presets(Menu):
@@ -1685,6 +1692,8 @@ def register():
 
     bpy.types.SEQUENCER_HT_header.append(ui_sequencer_extra_info)
 
+    bpy.types.OBJECT_PT_duplication.append(ui_dupli_group_library_path)
+
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
 
@@ -1762,6 +1771,8 @@ def unregister():
     bpy.types.SCENE_PT_color_management.remove(ui_color_management_presets)
 
     bpy.types.SEQUENCER_HT_header.remove(ui_sequencer_extra_info)
+
+    bpy.types.OBJECT_PT_duplication.remove(ui_dupli_group_library_path)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
