@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 8, 1),
+    "version": (0, 8, 2),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -1280,8 +1280,57 @@ class SCENE_OT_amaranth_debug_lamp_select(Operator):
             lamp.select = True
             context.scene.objects.active = lamp
 
-        return{'FINISHED'}    
+        return{'FINISHED'}
 
+class SCENE_OT_list_missing_node_tree(Operator):
+    '''Print a list of missing (link lost) node groups'''
+    bl_idname = "scene.list_missing_node_tree"
+    bl_label = "List Missing Node Groups"
+
+    def execute(self, context):
+        count = 0
+        missing = []
+        libraries = []
+
+        print("\n* Missing Node Groups\n")
+        for ma in bpy.data.materials:
+            if ma.node_tree:
+                for no in ma.node_tree.nodes:
+                    if no.type == 'GROUP':
+                        if not no.node_tree:
+                            count = count + 1
+
+                            missing.append("%02d. %s%s%s [%s]%s" % (
+                                count,
+                                "[L] " if ma.library else "",
+                                "[F] " if ma.use_fake_user else "",
+                                ma.name, ma.users,
+                                "\n    %s" % 
+                                ma.library.filepath if ma.library else ""))
+
+                            if ma.library:
+                                libraries.append(ma.library.filepath)
+
+        # Remove duplicates and sort
+        missing = list(set(missing))
+        missing = sorted(missing)
+        libraries = list(set(libraries))
+
+        for mi in missing:
+            print(mi)
+
+        if missing:
+            self.report({"INFO"}, "%d missing node %s found! Check console" %
+                    (count, "group" if count == 1 else "groups"))
+            if libraries:
+                print("\nThat's bad, run this check on %s:" % (
+                    "this library" if len(libraries) == 1 else "these libraries"))
+                for li in libraries:
+                    print(li)
+            print("\n")
+        else:
+            self.report({"INFO"}, "Yay! No missing node groups")
+        return{'FINISHED'}
 
 class SCENE_PT_scene_debug(Panel):
     '''Scene Debug'''
@@ -1493,6 +1542,13 @@ class SCENE_PT_scene_debug(Panel):
                              'image' if len(images) == 1 else 'images'),
                              icon="IMAGE_DATA")
 
+        layout.separator()
+        # List Missing Node Trees
+        split = layout.split()
+        split.label(text="Missing Node Groups")
+        split.operator(SCENE_OT_list_missing_node_tree.bl_idname,
+                        icon="NODETREE")
+
 # // FEATURE: Scene Debug
 
 # FEATURE: Color Management Presets
@@ -1537,6 +1593,28 @@ def ui_color_management_presets(self, context):
     layout.separator()
 # // FEATURE: Color Management Presets
 
+# FEATURE: Sequencer Extra Info
+def act_strip(context):
+    try:
+        return context.scene.sequence_editor.active_strip
+    except AttributeError:
+        return None
+
+def ui_sequencer_extra_info(self, context):
+
+    layout = self.layout
+    strip = act_strip(context)
+
+    if strip:
+        seq_type = strip.type
+
+        if seq_type and seq_type == 'IMAGE':
+            elem = strip.strip_elem_from_frame(context.scene.frame_current)
+            if elem:
+                layout.label(text="%s %s" % (
+                    elem.filename,
+                    "[%s]" % (context.scene.frame_current - strip.frame_start)))
+# // FEATURE: Sequencer Extra Info
 
 classes = (SCENE_MT_color_management_presets,
            AddPresetColorManagement,
@@ -1545,6 +1623,7 @@ classes = (SCENE_MT_color_management_presets,
            SCENE_OT_cycles_shader_list_nodes,
            SCENE_OT_cycles_shader_list_nodes_clear,
            SCENE_OT_amaranth_debug_lamp_select,
+           SCENE_OT_list_missing_node_tree,
            WM_OT_save_reload,
            MESH_OT_find_asymmetric,
            MESH_OT_make_symmetric,
@@ -1603,6 +1682,8 @@ def register():
     bpy.types.RENDER_PT_dimensions.append(render_final_resolution_ui)
 
     bpy.types.SCENE_PT_color_management.prepend(ui_color_management_presets)
+
+    bpy.types.SEQUENCER_HT_header.append(ui_sequencer_extra_info)
 
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
@@ -1679,6 +1760,8 @@ def unregister():
     bpy.types.RENDER_PT_dimensions.remove(render_final_resolution_ui)
 
     bpy.types.SCENE_PT_color_management.remove(ui_color_management_presets)
+
+    bpy.types.SEQUENCER_HT_header.remove(ui_sequencer_extra_info)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
