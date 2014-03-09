@@ -189,8 +189,6 @@ def init_properties():
         name="List Missing Images",
         description="Display a list of all the missing images")
 
-    global materials
-
 
 def clear_properties():
     props = (
@@ -1197,6 +1195,8 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
     """List Cycles materials containing a specific shader"""
     bl_idname = "scene.cycles_list_nodes"
     bl_label = "List Materials"
+    count_ma = 0
+    materials = []
 
     @classmethod
     def poll(cls, context):
@@ -1204,10 +1204,11 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
 
     def execute(self, context):
         node_type = context.scene.amaranth_cycles_node_types
-        count_ma = 0
         roughness = False
-        materials = []
-        global materials
+
+        # Reset the list and counter
+        self.__class__.materials = []
+        self.__class__.count_ma = 0
 
         print("\n=== Cycles Shader Type: %s === \n" % node_type)
 
@@ -1228,32 +1229,33 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                                       'not connected',
                                       '\n')
 
-                            materials = list(set(materials))
+                            self.__class__.materials = list(set(self.__class__.materials))
+                            self.__class__.count_ma += 1
 
-                            count_ma = len(materials)
-
-                            if ma.name not in materials:
-                                materials.append('%s%s [%s] %s%s' % (
+                            if ma.name not in self.__class__.materials:
+                                self.__class__.materials.append('%s%s [%s] %s%s' % (
                                     '[L] ' if ma.library else '',
                                     ma.name, ma.users,
                                     '[F]' if ma.use_fake_user else '',
                                     ' - [%s]' % roughness if roughness else ''))
 
-        if count_ma == 0:
-            print("* No materials with nodes type %s found" % node_type)
+        if self.__class__.count_ma == 0:
+            self.report({"INFO"}, "No materials with nodes type %s found" % node_type)
 
         else:
-            print("* A total of %s materials using %s was found \n" % (
-                    count_ma + 1, node_type))
+            print("* A total of %s %s using %s was found \n" % (
+                    self.__class__.count_ma,
+                    "material" if self.__class__.count_ma == 1 else "materials",
+                    node_type))
 
             count = 0
 
-            for mat in materials:
-                print('%02d. %s' % (count + 1, materials[count]))
-                count = count + 1
+            for mat in self.__class__.materials:
+                print('%02d. %s' % (count + 1, self.__class__.materials[count]))
+                count += 1
             print("\n")
 
-        materials = list(set(materials))
+        self.__class__.materials = list(set(self.__class__.materials))
 
         return {'FINISHED'}
 
@@ -1263,7 +1265,9 @@ class SCENE_OT_cycles_shader_list_nodes_clear(Operator):
     bl_label = "Clear Materials List"
     
     def execute(self, context):
-        materials[:] = []
+        SCENE_OT_cycles_shader_list_nodes.materials[:] = []
+        SCENE_OT_cycles_shader_list_nodes.count_ma = 0
+        print("* Cleared Cycles Materials List")
         return {'FINISHED'}
 
 class SCENE_OT_amaranth_debug_lamp_select(Operator):
@@ -1287,10 +1291,12 @@ class SCENE_OT_list_missing_node_tree(Operator):
     bl_idname = "scene.list_missing_node_tree"
     bl_label = "List Missing Node Groups"
 
+    count = 0
+
     def execute(self, context):
-        count = 0
         missing = []
         libraries = []
+        self.__class__.count = 0
 
         print("\n* Missing Node Groups\n")
         for ma in bpy.data.materials:
@@ -1298,10 +1304,10 @@ class SCENE_OT_list_missing_node_tree(Operator):
                 for no in ma.node_tree.nodes:
                     if no.type == 'GROUP':
                         if not no.node_tree:
-                            count = count + 1
+                            self.__class__.count += 1
 
                             missing.append("%02d. %s%s%s [%s]%s" % (
-                                count,
+                                self.__class__.count,
                                 "[L] " if ma.library else "",
                                 "[F] " if ma.use_fake_user else "",
                                 ma.name, ma.users,
@@ -1321,7 +1327,7 @@ class SCENE_OT_list_missing_node_tree(Operator):
 
         if missing:
             self.report({"INFO"}, "%d missing node %s found! Check console" %
-                    (count, "group" if count == 1 else "groups"))
+                    (self.__class__.count, "group" if self.__class__.count == 1 else "groups"))
             if libraries:
                 print("\nThat's bad, run this check on %s:" % (
                     "this library" if len(libraries) == 1 else "these libraries"))
@@ -1349,32 +1355,9 @@ class SCENE_PT_scene_debug(Panel):
         images_missing = []
         list_lamps = scene.amaranth_debug_scene_list_lamps
         list_missing_images = scene.amaranth_debug_scene_list_missing_images
+        materials = SCENE_OT_cycles_shader_list_nodes.materials
+        materials_count = SCENE_OT_cycles_shader_list_nodes.count_ma
         engine = scene.render.engine
-
-        if engine == 'CYCLES':
-
-            layout.label(text="List Cycles Materials:")
-
-            split = layout.split(percentage=0.5)
-            split.prop(scene, 'amaranth_cycles_node_types')
-
-            row = split.row(align=True)
-            row.operator(SCENE_OT_cycles_shader_list_nodes.bl_idname,
-                            icon="SORTALPHA")
-            row.operator(SCENE_OT_cycles_shader_list_nodes_clear.bl_idname,
-                            icon="X", text="")
-
-            try:
-                materials
-            except NameError:
-                layout.label(text="No materials to show", icon="INFO")
-            else:
-                count = 0
-                layout.label(text="%s %s found" % (len(materials),
-                    'material' if len(materials) < 2 else 'materials'), icon="INFO")
-                for mat in materials:
-                    count = count + 1
-                    layout.label(text='%s' % (materials[count-1]), icon="MATERIAL")
 
         # List Lamps
         box = layout.box()
@@ -1489,7 +1472,41 @@ class SCENE_PT_scene_debug(Panel):
 
             col.label(text="No Lamps", icon="LAMP_DATA")
 
+        # List Cycles Materials by Shader
+        if engine == 'CYCLES':
+            box = layout.box()
+            split = box.split()
+            col = split.column(align=True)
+            col.prop(scene, 'amaranth_cycles_node_types',
+                icon="MATERIAL")
+
+            row = split.row(align=True)
+            row.operator(SCENE_OT_cycles_shader_list_nodes.bl_idname,
+                            icon="SORTSIZE",
+                            text="List Materials Using Shader")
+            row.operator(SCENE_OT_cycles_shader_list_nodes_clear.bl_idname,
+                            icon="X", text="")
+            col.separator()
+
+            try:
+                materials
+            except NameError:
+                pass
+            else:
+                if materials_count != 0: 
+                    count = 0
+                    col.label(text="%s %s found" % (materials_count,
+                        'material' if materials_count == 1 else 'materials'), icon="INFO")
+                    for mat in materials:
+                        count += 1
+                        col.label(text='%s' % (materials[count-1]), icon="MATERIAL")
+
         # List Missing Images
+        box = layout.box()
+        row = box.row(align=True)
+        split = row.split()
+        col = split.column()
+
         if images:
             import os.path
 
@@ -1501,11 +1518,6 @@ class SCENE_PT_scene_debug(Panel):
                             im.name, im.users,
                             ' [F]' if im.use_fake_user else ''),
                             im.filepath if im.filepath else 'No Filepath'])
-
-            box = layout.box()
-            row = box.row(align=True)
-            split = row.split()
-            col = split.column()
 
             if images_missing:
                 row = col.row(align=True)
@@ -1541,13 +1553,24 @@ class SCENE_PT_scene_debug(Panel):
                              str(len(images)),
                              'image' if len(images) == 1 else 'images'),
                              icon="IMAGE_DATA")
+        else:
+            row = col.row(align=True)
+            row.alignment = 'LEFT'
+            row.label(text="No images loaded yet", icon="RIGHTARROW_THIN")
 
         layout.separator()
+
         # List Missing Node Trees
         split = layout.split()
         split.label(text="Missing Node Groups")
         split.operator(SCENE_OT_list_missing_node_tree.bl_idname,
                         icon="NODETREE")
+
+        if SCENE_OT_list_missing_node_tree.count != 0:
+            layout.label(text="%s" % ("%s missing %s found, check the console!" % (
+                     str(SCENE_OT_list_missing_node_tree.count),
+                     "group" if SCENE_OT_list_missing_node_tree.count == 1 else "groups")),
+                     icon="ERROR")
 
 # // FEATURE: Scene Debug
 # FEATURE: Dupli  Group Path
@@ -1557,7 +1580,7 @@ def ui_dupli_group_library_path(self, context):
 
     if ob and ob.dupli_group and ob.dupli_group.library:
         self.layout.label(text="Library: %s" % ob.dupli_group.library.filepath)
-
+# // FEATURE: Dupli  Group Path
 # FEATURE: Color Management Presets
 class SCENE_MT_color_management_presets(Menu):
     """List of Color Management presets"""
