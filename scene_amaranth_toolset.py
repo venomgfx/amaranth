@@ -1472,35 +1472,6 @@ class SCENE_PT_scene_debug(Panel):
 
             col.label(text="No Lamps", icon="LAMP_DATA")
 
-        # List Cycles Materials by Shader
-        if engine == 'CYCLES':
-            box = layout.box()
-            split = box.split()
-            col = split.column(align=True)
-            col.prop(scene, 'amaranth_cycles_node_types',
-                icon="MATERIAL")
-
-            row = split.row(align=True)
-            row.operator(SCENE_OT_cycles_shader_list_nodes.bl_idname,
-                            icon="SORTSIZE",
-                            text="List Materials Using Shader")
-            row.operator(SCENE_OT_cycles_shader_list_nodes_clear.bl_idname,
-                            icon="X", text="")
-            col.separator()
-
-            try:
-                materials
-            except NameError:
-                pass
-            else:
-                if materials_count != 0: 
-                    count = 0
-                    col.label(text="%s %s found" % (materials_count,
-                        'material' if materials_count == 1 else 'materials'), icon="INFO")
-                    for mat in materials:
-                        count += 1
-                        col.label(text='%s' % (materials[count-1]), icon="MATERIAL")
-
         # List Missing Images
         box = layout.box()
         row = box.row(align=True)
@@ -1558,7 +1529,35 @@ class SCENE_PT_scene_debug(Panel):
             row.alignment = 'LEFT'
             row.label(text="No images loaded yet", icon="RIGHTARROW_THIN")
 
-        layout.separator()
+        # List Cycles Materials by Shader
+        if engine == 'CYCLES':
+            box = layout.box()
+            split = box.split()
+            col = split.column(align=True)
+            col.prop(scene, 'amaranth_cycles_node_types',
+                icon="MATERIAL")
+
+            row = split.row(align=True)
+            row.operator(SCENE_OT_cycles_shader_list_nodes.bl_idname,
+                            icon="SORTSIZE",
+                            text="List Materials Using Shader")
+            if materials_count != 0: 
+                row.operator(SCENE_OT_cycles_shader_list_nodes_clear.bl_idname,
+                                icon="X", text="")
+            col.separator()
+
+            try:
+                materials
+            except NameError:
+                pass
+            else:
+                if materials_count != 0: 
+                    count = 0
+                    col.label(text="%s %s found" % (materials_count,
+                        'material' if materials_count == 1 else 'materials'), icon="INFO")
+                    for mat in materials:
+                        count += 1
+                        col.label(text='%s' % (materials[count-1]), icon="MATERIAL")
 
         # List Missing Node Trees
         split = layout.split()
