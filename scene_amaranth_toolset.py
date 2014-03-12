@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 8, 2),
+    "version": (0, 8, 3),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -1009,7 +1009,7 @@ class MESH_OT_make_symmetric(Operator):
         return {'FINISHED'}
 # // FEATURE: Mesh Symmetry Tools by Sergey Sharybin
 
-# FEATURE: Cycles Render Samples per Scene
+# FEATURE: Cycles Render Sampling Extra
 def render_cycles_scene_samples(self, context):
 
     layout = self.layout
@@ -1017,6 +1017,18 @@ def render_cycles_scene_samples(self, context):
     scenes = bpy.data.scenes
     scene = context.scene
     cscene = scene.cycles
+
+    col = layout.column(align=True)
+
+    if len(scene.render.layers) == 1 and \
+        scene.render.layers[0].samples == 0:
+        pass
+    else:
+        for rl in scene.render.layers:
+            row = col.row(align=True)
+            row.label(rl.name)
+            row.prop(rl, "samples", text="%s" %
+                "Samples" if rl.samples > 0 else "Samples [Auto]")
 
     if (len(bpy.data.scenes) > 1):
         layout.separator()
@@ -1057,7 +1069,9 @@ def render_cycles_scene_samples(self, context):
                         sub.prop(cscene, "aa_samples", text="AA Samples")
                     else:
                         layout.label(text="Scene: '%s' is not using Cycles" % s.name)
-# // FEATURE: Cycles Render Samples per Scene
+# // FEATURE: Dupli  Group Path
+
+# // FEATURE: Cycles Render Sampling Extra
 
 # FEATURE: Motion Paths Extras
 class POSE_OT_paths_clear_all(Operator):
@@ -1195,7 +1209,6 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
     """List Cycles materials containing a specific shader"""
     bl_idname = "scene.cycles_list_nodes"
     bl_label = "List Materials"
-    count_ma = 0
     materials = []
 
     @classmethod
@@ -1205,10 +1218,7 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
     def execute(self, context):
         node_type = context.scene.amaranth_cycles_node_types
         roughness = False
-
-        # Reset the list and counter
         self.__class__.materials = []
-        self.__class__.count_ma = 0
 
         print("\n=== Cycles Shader Type: %s === \n" % node_type)
 
@@ -1230,7 +1240,6 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                                       '\n')
 
                             self.__class__.materials = list(set(self.__class__.materials))
-                            self.__class__.count_ma += 1
 
                             if ma.name not in self.__class__.materials:
                                 self.__class__.materials.append('%s%s [%s] %s%s' % (
@@ -1239,19 +1248,18 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
                                     '[F]' if ma.use_fake_user else '',
                                     ' - [%s]' % roughness if roughness else ''))
 
-        if self.__class__.count_ma == 0:
+        if len(self.__class__.materials) == 0:
             self.report({"INFO"}, "No materials with nodes type %s found" % node_type)
-
         else:
-            print("* A total of %s %s using %s was found \n" % (
-                    self.__class__.count_ma,
-                    "material" if self.__class__.count_ma == 1 else "materials",
+            print("* A total of %d %s using %s was found \n" % (
+                    len(self.__class__.materials),
+                    "material" if len(self.__class__.materials) == 1 else "materials",
                     node_type))
 
             count = 0
 
             for mat in self.__class__.materials:
-                print('%02d. %s' % (count + 1, self.__class__.materials[count]))
+                print('%02d. %s' % (count+1, self.__class__.materials[count]))
                 count += 1
             print("\n")
 
@@ -1266,7 +1274,6 @@ class SCENE_OT_cycles_shader_list_nodes_clear(Operator):
     
     def execute(self, context):
         SCENE_OT_cycles_shader_list_nodes.materials[:] = []
-        SCENE_OT_cycles_shader_list_nodes.count_ma = 0
         print("* Cleared Cycles Materials List")
         return {'FINISHED'}
 
@@ -1286,28 +1293,30 @@ class SCENE_OT_amaranth_debug_lamp_select(Operator):
 
         return{'FINISHED'}
 
-class SCENE_OT_list_missing_node_tree(Operator):
-    '''Print a list of missing (link lost) node groups'''
-    bl_idname = "scene.list_missing_node_tree"
-    bl_label = "List Missing Node Groups"
+class SCENE_OT_list_missing_node_links(Operator):
+    '''Print a list of missing node links'''
+    bl_idname = "scene.list_missing_node_links"
+    bl_label = "List Missing Node Links"
 
-    count = 0
+    count_groups = 0
+    count_images = 0
 
     def execute(self, context):
-        missing = []
+        missing_groups = []
+        missing_images = []
         libraries = []
-        self.__class__.count = 0
+        self.__class__.count_groups = 0
+        self.__class__.count_images = 0
 
-        print("\n* Missing Node Groups\n")
         for ma in bpy.data.materials:
             if ma.node_tree:
                 for no in ma.node_tree.nodes:
                     if no.type == 'GROUP':
                         if not no.node_tree:
-                            self.__class__.count += 1
+                            self.__class__.count_groups += 1
 
-                            missing.append("%02d. %s%s%s [%s]%s" % (
-                                self.__class__.count,
+                            missing_groups.append("NG: %02d. %s%s%s [%s]%s\n" % (
+                                self.__class__.count_groups,
                                 "[L] " if ma.library else "",
                                 "[F] " if ma.use_fake_user else "",
                                 ma.name, ma.users,
@@ -1316,26 +1325,91 @@ class SCENE_OT_list_missing_node_tree(Operator):
 
                             if ma.library:
                                 libraries.append(ma.library.filepath)
+                    if no.type == 'TEX_IMAGE':
+                        if no.image:
+                            import os.path
+                            image_path_exists = os.path.exists(
+                                                    bpy.path.abspath(
+                                                        no.image.filepath, library=no.image.library))
+
+                        if not no.image or not image_path_exists:
+                            self.__class__.count_images += 1
+
+                            missing_images.append("MA: %02d. %s%s%s [%s]%s%s%s\n" % (
+                                self.__class__.count_images,
+                                "[L] " if ma.library else "",
+                                "[F] " if ma.use_fake_user else "",
+                                ma.name, ma.users,
+                                "\n    %s" % 
+                                ma.library.filepath if ma.library else "",
+                                "\nIM: %s" % no.image.name if no.image else "",
+                                "\n    %s" % no.image.filepath if no.image and no.image.filepath else ""))
+
+                            if ma.library:
+                                libraries.append(ma.library.filepath)
 
         # Remove duplicates and sort
-        missing = list(set(missing))
-        missing = sorted(missing)
+        missing_groups = list(set(missing_groups))
+        missing_groups = sorted(missing_groups)
+        missing_images = list(set(missing_images)) 
+        missing_images = sorted(missing_images)
         libraries = list(set(libraries))
 
-        for mi in missing:
-            print(mi)
+        print("\n\n== %s missing image %s and %s missing node %s ==" %
+            ("No" if self.__class__.count_images == 0 else str(self.__class__.count_images),
+            "node" if self.__class__.count_images == 1 else "nodes",
+            "no" if self.__class__.count_groups == 0 else str(self.__class__.count_groups),
+            "group" if self.__class__.count_groups == 1 else "groups"))
 
-        if missing:
-            self.report({"INFO"}, "%d missing node %s found! Check console" %
-                    (self.__class__.count, "group" if self.__class__.count == 1 else "groups"))
+        # List Missing Node Groups
+        if missing_groups:
+            print("\n* Missing Node Group Links [NG]\n")
+            for mig in missing_groups:
+                print(mig)
+
+        # List Missing Image Nodes
+        if missing_images:
+            print("\n* Missing Image Nodes Link [IM]\n")
+
+            for mii in missing_images:
+                print(mii)
+
+        if missing_groups or missing_images:
             if libraries:
-                print("\nThat's bad, run this check on %s:" % (
+                print("\nThat's bad, run check on %s:" % (
                     "this library" if len(libraries) == 1 else "these libraries"))
                 for li in libraries:
                     print(li)
-            print("\n")
         else:
-            self.report({"INFO"}, "Yay! No missing node groups")
+            self.report({"INFO"}, "Yay! No missing node links")            
+
+        print("\n")
+
+        if missing_groups and missing_images:
+            self.report({"WARNING"}, "%d missing image %s and %d missing node %s found" %
+                (self.__class__.count_images, "node" if self.__class__.count_images == 1 else "nodes",
+                self.__class__.count_groups, "group" if self.__class__.count_groups == 1 else "groups"))
+
+        return{'FINISHED'}
+
+class SCENE_OT_blender_instance_open(Operator):
+    '''Open in a new Blender instance'''
+    bl_idname = "scene.blender_instance_open"
+    bl_label = "Open Blender Instance"
+    filepath = bpy.props.StringProperty()
+ 
+    def execute(self, context):
+        if self.filepath:
+            filepath = bpy.path.abspath(self.filepath)
+
+            import subprocess
+            try:
+                subprocess.Popen([bpy.app.binary_path, filepath])
+            except:
+                print("Error on the new Blender instance")
+                import traceback
+                traceback.print_exc()
+
         return{'FINISHED'}
 
 class SCENE_PT_scene_debug(Panel):
@@ -1356,7 +1430,7 @@ class SCENE_PT_scene_debug(Panel):
         list_lamps = scene.amaranth_debug_scene_list_lamps
         list_missing_images = scene.amaranth_debug_scene_list_missing_images
         materials = SCENE_OT_cycles_shader_list_nodes.materials
-        materials_count = SCENE_OT_cycles_shader_list_nodes.count_ma
+        materials_count = len(SCENE_OT_cycles_shader_list_nodes.materials)
         engine = scene.render.engine
 
         # List Lamps
@@ -1488,7 +1562,8 @@ class SCENE_PT_scene_debug(Panel):
                             '[L] ' if im.library else '',
                             im.name, im.users,
                             ' [F]' if im.use_fake_user else ''),
-                            im.filepath if im.filepath else 'No Filepath'])
+                            im.filepath if im.filepath else 'No Filepath',
+                            im.library.filepath if im.library else ''])
 
             if images_missing:
                 row = col.row(align=True)
@@ -1510,7 +1585,14 @@ class SCENE_PT_scene_debug(Panel):
                     for mis in images_missing:
                         col.label(text=mis[0],
                          icon="IMAGE_DATA")
-                        col.label(text=mis[1], icon="BLANK1")
+                        col.label(text=mis[1], icon="LIBRARY_DATA_DIRECT")
+                        if mis[2]:
+                            row = col.row(align=True)
+                            row.alignment = "LEFT"
+                            row.operator(SCENE_OT_blender_instance_open.bl_idname,
+                                         text=mis[2],
+                                         icon="LINK_BLEND",
+                                         emboss=False).filepath=mis[2]
                         col.separator()
             else:
                 row = col.row(align=True)
@@ -1552,6 +1634,7 @@ class SCENE_PT_scene_debug(Panel):
                 pass
             else:
                 if materials_count != 0: 
+                    col = box.column(align=True)
                     count = 0
                     col.label(text="%s %s found" % (materials_count,
                         'material' if materials_count == 1 else 'materials'), icon="INFO")
@@ -1560,16 +1643,30 @@ class SCENE_PT_scene_debug(Panel):
                         col.label(text='%s' % (materials[count-1]), icon="MATERIAL")
 
         # List Missing Node Trees
-        split = layout.split()
-        split.label(text="Missing Node Groups")
-        split.operator(SCENE_OT_list_missing_node_tree.bl_idname,
+        box = layout.box()
+        row = box.row(align=True)
+        split = row.split()
+        col = split.column(align=True)
+
+        split = col.split()
+        split.label(text="Node Links")
+        split.operator(SCENE_OT_list_missing_node_links.bl_idname,
                         icon="NODETREE")
 
-        if SCENE_OT_list_missing_node_tree.count != 0:
-            layout.label(text="%s" % ("%s missing %s found, check the console!" % (
-                     str(SCENE_OT_list_missing_node_tree.count),
-                     "group" if SCENE_OT_list_missing_node_tree.count == 1 else "groups")),
-                     icon="ERROR")
+        if SCENE_OT_list_missing_node_links.count_groups != 0 or \
+            SCENE_OT_list_missing_node_links.count_images != 0:
+            col.label(text="Warning! Check Console", icon="ERROR")
+
+        if SCENE_OT_list_missing_node_links.count_groups != 0:
+            col.label(text="%s" % ("%s node %s missing link" % (
+                     str(SCENE_OT_list_missing_node_links.count_groups),
+                     "group" if SCENE_OT_list_missing_node_links.count_groups == 1 else "groups")),
+                     icon="NODETREE")
+        if SCENE_OT_list_missing_node_links.count_images != 0:
+            col.label(text="%s" % ("%s image %s missing link" % (
+                     str(SCENE_OT_list_missing_node_links.count_images),
+                     "node" if SCENE_OT_list_missing_node_links.count_images == 1 else "nodes")),
+                     icon="IMAGE_DATA")
 
 # // FEATURE: Scene Debug
 # FEATURE: Dupli  Group Path
@@ -1652,7 +1749,8 @@ classes = (SCENE_MT_color_management_presets,
            SCENE_OT_cycles_shader_list_nodes,
            SCENE_OT_cycles_shader_list_nodes_clear,
            SCENE_OT_amaranth_debug_lamp_select,
-           SCENE_OT_list_missing_node_tree,
+           SCENE_OT_list_missing_node_links,
+           SCENE_OT_blender_instance_open,
            WM_OT_save_reload,
            MESH_OT_find_asymmetric,
            MESH_OT_make_symmetric,
