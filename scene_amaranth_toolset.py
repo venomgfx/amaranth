@@ -1315,13 +1315,22 @@ class SCENE_OT_list_missing_node_links(Operator):
                         if not no.node_tree:
                             self.__class__.count_groups += 1
 
-                            missing_groups.append("NG: %02d. %s%s%s [%s]%s\n" % (
-                                self.__class__.count_groups,
+                            users_ngroup = []
+
+                            for ob in bpy.data.objects:
+                                if ob.material_slots and ma.name in ob.material_slots:
+                                    users_ngroup.append("%s%s%s" % (
+                                        "[L] " if ob.library else "",
+                                        "[F] " if ob.use_fake_user else "",
+                                        ob.name))
+
+                            missing_groups.append("NG: %s%s%s [%s]%s%s\n" % (
                                 "[L] " if ma.library else "",
                                 "[F] " if ma.use_fake_user else "",
                                 ma.name, ma.users,
-                                "\n    %s" % 
-                                ma.library.filepath if ma.library else ""))
+                                "\nLI: %s" % 
+                                ma.library.filepath if ma.library else "",
+                                "\nOB: %s" % ',  '.join(users_ngroup) if users_ngroup else ""))
 
                             if ma.library:
                                 libraries.append(ma.library.filepath)
@@ -1335,15 +1344,24 @@ class SCENE_OT_list_missing_node_links(Operator):
                         if not no.image or not image_path_exists:
                             self.__class__.count_images += 1
 
-                            missing_images.append("MA: %02d. %s%s%s [%s]%s%s%s\n" % (
-                                self.__class__.count_images,
+                            users_images = []
+
+                            for ob in bpy.data.objects:
+                                if ob.material_slots and ma.name in ob.material_slots:
+                                    users_images.append("%s%s%s" % (
+                                        "[L] " if ob.library else "",
+                                        "[F] " if ob.use_fake_user else "",
+                                        ob.name))
+
+                            missing_images.append("MA: %s%s%s [%s]%s%s%s%s\n" % (
                                 "[L] " if ma.library else "",
                                 "[F] " if ma.use_fake_user else "",
                                 ma.name, ma.users,
-                                "\n    %s" % 
+                                "\nLI: %s" % 
                                 ma.library.filepath if ma.library else "",
                                 "\nIM: %s" % no.image.name if no.image else "",
-                                "\n    %s" % no.image.filepath if no.image and no.image.filepath else ""))
+                                "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
+                                "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
 
                             if ma.library:
                                 libraries.append(ma.library.filepath)
@@ -1674,8 +1692,15 @@ def ui_dupli_group_library_path(self, context):
 
     ob = context.object
 
+    row = self.layout.row()
+    row.alignment = 'LEFT'
+
     if ob and ob.dupli_group and ob.dupli_group.library:
-        self.layout.label(text="Library: %s" % ob.dupli_group.library.filepath)
+        row.operator(SCENE_OT_blender_instance_open.bl_idname,
+            text="Library: %s" % ob.dupli_group.library.filepath,
+            emboss=False,
+            icon="LINK_BLEND").filepath=ob.dupli_group.library.filepath
+
 # // FEATURE: Dupli  Group Path
 # FEATURE: Color Management Presets
 class SCENE_MT_color_management_presets(Menu):
