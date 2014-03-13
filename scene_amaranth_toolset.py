@@ -36,6 +36,8 @@ from bpy.props import BoolProperty
 from mathutils import Vector
 from bpy.app.handlers import persistent
 from bl_operators.presets import AddPresetBase
+from datetime import datetime, timedelta
+from time import strftime
 
 # Preferences
 class AmaranthToolsetPreferences(AddonPreferences):
@@ -189,6 +191,7 @@ def init_properties():
         name="List Missing Images",
         description="Display a list of all the missing images")
 
+    scene.average_rendertime = bpy.props.FloatProperty(min=0, default=5, max = 200)
 
 def clear_properties():
     props = (
@@ -1315,22 +1318,13 @@ class SCENE_OT_list_missing_node_links(Operator):
                         if not no.node_tree:
                             self.__class__.count_groups += 1
 
-                            users_ngroup = []
-
-                            for ob in bpy.data.objects:
-                                if ob.material_slots and ma.name in ob.material_slots:
-                                    users_ngroup.append("%s%s%s" % (
-                                        "[L] " if ob.library else "",
-                                        "[F] " if ob.use_fake_user else "",
-                                        ob.name))
-
-                            missing_groups.append("NG: %s%s%s [%s]%s%s\n" % (
+                            missing_groups.append("NG: %02d. %s%s%s [%s]%s\n" % (
+                                self.__class__.count_groups,
                                 "[L] " if ma.library else "",
                                 "[F] " if ma.use_fake_user else "",
                                 ma.name, ma.users,
-                                "\nLI: %s" % 
-                                ma.library.filepath if ma.library else "",
-                                "\nOB: %s" % ',  '.join(users_ngroup) if users_ngroup else ""))
+                                "\n    %s" % 
+                                ma.library.filepath if ma.library else ""))
 
                             if ma.library:
                                 libraries.append(ma.library.filepath)
@@ -1344,24 +1338,15 @@ class SCENE_OT_list_missing_node_links(Operator):
                         if not no.image or not image_path_exists:
                             self.__class__.count_images += 1
 
-                            users_images = []
-
-                            for ob in bpy.data.objects:
-                                if ob.material_slots and ma.name in ob.material_slots:
-                                    users_images.append("%s%s%s" % (
-                                        "[L] " if ob.library else "",
-                                        "[F] " if ob.use_fake_user else "",
-                                        ob.name))
-
-                            missing_images.append("MA: %s%s%s [%s]%s%s%s%s\n" % (
+                            missing_images.append("MA: %02d. %s%s%s [%s]%s%s%s\n" % (
+                                self.__class__.count_images,
                                 "[L] " if ma.library else "",
                                 "[F] " if ma.use_fake_user else "",
                                 ma.name, ma.users,
-                                "\nLI: %s" % 
+                                "\n    %s" % 
                                 ma.library.filepath if ma.library else "",
                                 "\nIM: %s" % no.image.name if no.image else "",
-                                "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
-                                "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
+                                "\n    %s" % no.image.filepath if no.image and no.image.filepath else ""))
 
                             if ma.library:
                                 libraries.append(ma.library.filepath)
@@ -1686,21 +1671,51 @@ class SCENE_PT_scene_debug(Panel):
                      "node" if SCENE_OT_list_missing_node_links.count_images == 1 else "nodes")),
                      icon="IMAGE_DATA")
 
+# // FEATURE: Estimate time to render an Animation
+def hours_float_to_str(rendertime): 
+    #hours_float = rendertime_in_minutes/60
+    hours_int = int(rendertime)
+    left_mins = (rendertime - hours_int)*60
+    if left_mins > 0:
+        return "%d:%02d" % (hours_int,left_mins)
+    else:
+        return hours_int
+ 
+def estimate_render_animation_time(self, context):
+    layout = self.layout
+    scene = context.scene
+        
+    total_frames = scene.frame_end - scene.frame_start
+    
+    avg = scene.average_rendertime 
+    estimated_rendertime = total_frames * avg/60
+
+    rendertime_in_hours = hours_float_to_str(estimated_rendertime)
+    
+    estimated_finish_time = datetime.now() + timedelta(hours=estimated_rendertime)
+    formatted_finish_time = '{:%a, %d %b @ %H:%M}'.format(estimated_finish_time)
+
+    row = layout.row()
+    split =layout.split()
+    split.label("Average rendertime: ")
+    
+    split.prop(scene,"average_rendertime", text="mins")
+
+    row = layout.row()
+    row = row.label("Expected rendertime for %s frames is:"  % total_frames)
+    row = layout.row()
+    row = row.label("%s hours (ETA %s)"  % (rendertime_in_hours,formatted_finish_time))
+    #row = row.label("ETA: %s " %formatted_finish_time)
+
+
 # // FEATURE: Scene Debug
 # FEATURE: Dupli  Group Path
 def ui_dupli_group_library_path(self, context):
 
     ob = context.object
 
-    row = self.layout.row()
-    row.alignment = 'LEFT'
-
     if ob and ob.dupli_group and ob.dupli_group.library:
-        row.operator(SCENE_OT_blender_instance_open.bl_idname,
-            text="Library: %s" % ob.dupli_group.library.filepath,
-            emboss=False,
-            icon="LINK_BLEND").filepath=ob.dupli_group.library.filepath
-
+        self.layout.label(text="Library: %s" % ob.dupli_group.library.filepath)
 # // FEATURE: Dupli  Group Path
 # FEATURE: Color Management Presets
 class SCENE_MT_color_management_presets(Menu):
@@ -1832,12 +1847,14 @@ def register():
     bpy.types.DATA_PT_display.append(pose_motion_paths_ui)
 
     bpy.types.RENDER_PT_dimensions.append(render_final_resolution_ui)
+    bpy.types.RENDER_PT_render.append(estimate_render_animation_time)
 
     bpy.types.SCENE_PT_color_management.prepend(ui_color_management_presets)
 
     bpy.types.SEQUENCER_HT_header.append(ui_sequencer_extra_info)
 
     bpy.types.OBJECT_PT_duplication.append(ui_dupli_group_library_path)
+
 
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
@@ -1912,6 +1929,7 @@ def unregister():
     bpy.types.DATA_PT_display.remove(pose_motion_paths_ui)
 
     bpy.types.RENDER_PT_dimensions.remove(render_final_resolution_ui)
+    bpy.types.RENDER_PT_render.remove(estimate_render_animation_time)
 
     bpy.types.SCENE_PT_color_management.remove(ui_color_management_presets)
 
