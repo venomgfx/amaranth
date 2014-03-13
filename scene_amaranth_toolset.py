@@ -37,7 +37,6 @@ from mathutils import Vector
 from bpy.app.handlers import persistent
 from bl_operators.presets import AddPresetBase
 from datetime import datetime, timedelta
-from time import strftime
 
 # Preferences
 class AmaranthToolsetPreferences(AddonPreferences):
@@ -1670,10 +1669,10 @@ class SCENE_PT_scene_debug(Panel):
                      str(SCENE_OT_list_missing_node_links.count_images),
                      "node" if SCENE_OT_list_missing_node_links.count_images == 1 else "nodes")),
                      icon="IMAGE_DATA")
+# // FEATURE: Scene Debug
 
-# // FEATURE: Estimate time to render an Animation
+# FEATURE: Estimate Time to Render an Animation
 def hours_float_to_str(rendertime): 
-    #hours_float = rendertime_in_minutes/60
     hours_int = int(rendertime)
     left_mins = (rendertime - hours_int)*60
     if left_mins > 0:
@@ -1705,10 +1704,8 @@ def estimate_render_animation_time(self, context):
     row = row.label("Expected rendertime for %s frames is:"  % total_frames)
     row = layout.row()
     row = row.label("%s hours (ETA %s)"  % (rendertime_in_hours,formatted_finish_time))
-    #row = row.label("ETA: %s " %formatted_finish_time)
+# // FEATURE: Estimate Time to Render an Animation
 
-
-# // FEATURE: Scene Debug
 # FEATURE: Dupli  Group Path
 def ui_dupli_group_library_path(self, context):
 
@@ -1717,6 +1714,7 @@ def ui_dupli_group_library_path(self, context):
     if ob and ob.dupli_group and ob.dupli_group.library:
         self.layout.label(text="Library: %s" % ob.dupli_group.library.filepath)
 # // FEATURE: Dupli  Group Path
+
 # FEATURE: Color Management Presets
 class SCENE_MT_color_management_presets(Menu):
     """List of Color Management presets"""
