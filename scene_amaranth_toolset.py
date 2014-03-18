@@ -32,7 +32,7 @@ bl_info = {
 import bpy
 import bmesh
 from bpy.types import Operator, AddonPreferences, Panel, Menu
-from bpy.props import BoolProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty
 from mathutils import Vector
 from bpy.app.handlers import persistent
 from bl_operators.presets import AddPresetBase
@@ -150,7 +150,7 @@ def init_properties():
         ("R_LAYERS", "Render Layer", "", 5)
         ]
 
-    nodes_compo.types = bpy.props.EnumProperty(
+    nodes_compo.types = EnumProperty(
         items=test_items, name = "Types")
 
     nodes_compo.toggle_mute = BoolProperty(default=False)
@@ -176,7 +176,7 @@ def init_properties():
         ("HOLDOUT", "Holdout", "", 14),
         ]
 
-    scene.amaranth_cycles_node_types = bpy.props.EnumProperty(
+    scene.amaranth_cycles_node_types = EnumProperty(
         items=cycles_shader_node_types, name = "Shader")
 
     scene.amaranth_debug_scene_list_lamps = BoolProperty(
@@ -189,6 +189,8 @@ def init_properties():
         name="List Missing Images",
         description="Display a list of all the missing images")
 
+    bpy.types.ShaderNodeNormal.normal_vector = prop_normal_vector
+    bpy.types.CompositorNodeNormal.normal_vector = prop_normal_vector
 
 def clear_properties():
     props = (
@@ -196,7 +198,13 @@ def clear_properties():
         "simplify_status",
         "use_matching_indices",
         "use_simplify_nodes_vector",
-        "status"
+        "status",
+        "types",
+        "toggle_mute",
+        "amaranth_cycles_node_types",
+        "amaranth_debug_scene_list_lamps",
+        "amaranth_debug_scene_list_missing_images",
+        "normal_vector",
     )
     
     wm = bpy.context.window_manager
@@ -1017,11 +1025,12 @@ def render_cycles_scene_samples(self, context):
     scenes = bpy.data.scenes
     scene = context.scene
     cscene = scene.cycles
+    render = scene.render
 
     col = layout.column(align=True)
 
     if len(scene.render.layers) == 1 and \
-        scene.render.layers[0].samples == 0:
+        render.layers[0].samples == 0:
         pass
     else:
         col.separator()
@@ -1031,7 +1040,8 @@ def render_cycles_scene_samples(self, context):
             row = col.row(align=True)
             row.label(rl.name)
             row.prop(rl, "samples", text="%s" %
-                "Samples" if rl.samples > 0 else "Samples [Auto]")
+                "Samples" if rl.samples > 0 else "Automatic (%s)" % (
+                    cscene.aa_samples if cscene.progressive == 'BRANCHED_PATH' else cscene.samples))
 
     if (len(bpy.data.scenes) > 1):
         col.separator()
@@ -1213,34 +1223,65 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
         node_type = context.scene.amaranth_cycles_node_types
         roughness = False
         self.__class__.materials = []
+        shaders_roughness = ['BSDF_GLOSSY','BSDF_DIFFUSE','BSDF_GLASS']
 
         print("\n=== Cycles Shader Type: %s === \n" % node_type)
 
         for ma in bpy.data.materials:
             if ma.node_tree:
                 nodes = ma.node_tree.nodes
+                
+                print_unconnected = ('Note: \nOutput from "%s" node' % node_type,
+                                        'in material "%s"' % ma.name, 'not connected\n')
+
                 for no in nodes:
                     if no.type == node_type:
                         for ou in no.outputs:
                             if ou.links:
-                                if no.type in ['BSDF_GLOSSY','BSDF_DIFFUSE','BSDF_GLASS']:
+                                connected = True
+                                if no.type in shaders_roughness:
                                     roughness = 'R: %.4f' % no.inputs['Roughness'].default_value
                                 else:
                                     roughness = False
                             else:
-                                print('Note: \nOutput from "%s" node' % node_type,
-                                      'in material "%s"' % ma.name,
-                                      'not connected',
-                                      '\n')
-
-                            self.__class__.materials = sorted(list(set(self.__class__.materials)))
+                                connected = False
+                                print(print_unconnected)
 
                             if ma.name not in self.__class__.materials:
-                                self.__class__.materials.append('%s%s [%s] %s%s' % (
+                                self.__class__.materials.append('%s%s [%s] %s%s%s' % (
                                     '[L] ' if ma.library else '',
                                     ma.name, ma.users,
                                     '[F]' if ma.use_fake_user else '',
-                                    ' - [%s]' % roughness if roughness else ''))
+                                    ' - [%s]' % roughness if roughness else '',
+                                    ' * Output not connected' if not connected else ''))
+
+                    elif no.type == 'GROUP':
+                        for nog in no.node_tree.nodes:
+                            if nog.type == node_type:
+                                for ou in nog.outputs:
+                                    if ou.links:
+                                        connected = True
+                                        if nog.type in shaders_roughness:
+                                            roughness = 'R: %.4f' % nog.inputs['Roughness'].default_value
+                                        else:
+                                            roughness = False
+                                    else:
+                                        connected = False
+                                        print(print_unconnected)
+
+                                    if ma.name not in self.__class__.materials:
+                                        self.__class__.materials.append('%s%s%s [%s] %s%s%s' % (
+                                            '[L] ' if ma.library else '',
+                                            'Node Group:  %s%s  ->  ' % (
+                                                '[L] ' if no.node_tree.library else '',
+                                                no.node_tree.name),
+                                            ma.name, ma.users,
+                                            '[F]' if ma.use_fake_user else '',
+                                            ' - [%s]' % roughness if roughness else '',
+                                            ' * Output not connected' if not connected else ''))
+                            
+
+                    self.__class__.materials = sorted(list(set(self.__class__.materials)))
 
         if len(self.__class__.materials) == 0:
             self.report({"INFO"}, "No materials with nodes type %s found" % node_type)
@@ -1840,6 +1881,39 @@ def ui_sequencer_extra_info(self, context):
                     "[%s]" % (context.scene.frame_current - strip.frame_start)))
 # // FEATURE: Sequencer Extra Info
 
+# FEATURE: Normal Node Values, by Lukas Tönne
+def normal_vector_get(self):
+    return self.outputs['Normal'].default_value
+
+def normal_vector_set(self, values):
+    # default_value allows un-normalized values,
+    # do this here to prevent awkward results
+    values = Vector(values).normalized()
+    self.outputs['Normal'].default_value = values
+
+prop_normal_vector = bpy.props.FloatVectorProperty(
+                        name="Normal", size=3,
+                        min=-1.0, max=1.0, soft_min=-1.0, soft_max=1.0,
+                        get=normal_vector_get, set=normal_vector_set
+                        )
+
+def act_node(context):
+    try:
+        return context.active_node
+    except AttributeError:
+        return None
+
+def ui_node_normal_values(self, context):
+
+    node = act_node(context)
+
+    if act_node:
+        if node and node.type == 'NORMAL':
+            self.layout.separator()
+            self.layout.prop(node, "normal_vector")
+
+# // FEATURE: Normal Node Values, by Lukas Tönne
+
 classes = (SCENE_MT_color_management_presets,
            AddPresetColorManagement,
            SCENE_PT_scene_debug,
@@ -1896,6 +1970,7 @@ def register():
     bpy.types.NODE_HT_header.append(node_templates_pulldown)
     bpy.types.NODE_HT_header.append(node_stats)
     bpy.types.NODE_HT_header.append(node_shader_extra)
+    bpy.types.NODE_PT_active_node_properties.append(ui_node_normal_values)
 
     bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
 
@@ -1976,6 +2051,7 @@ def unregister():
     bpy.types.NODE_HT_header.remove(node_templates_pulldown)
     bpy.types.NODE_HT_header.remove(node_stats)
     bpy.types.NODE_HT_header.remove(node_shader_extra)
+    bpy.types.NODE_PT_active_node_properties.remove(ui_node_normal_values)
 
     bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
 
