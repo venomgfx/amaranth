@@ -141,7 +141,7 @@ def init_properties():
         default=True,
         description="If disabled, display all available indices")
 
-    test_items = [
+    nodes_compo_types = [
         ("ALL", "All Types", "", 0),
         ("BLUR", "Blur", "", 1),
         ("BOKEHBLUR", "Bokeh Blur", "", 2),
@@ -151,7 +151,7 @@ def init_properties():
         ]
 
     nodes_compo.types = EnumProperty(
-        items=test_items, name = "Types")
+        items=nodes_compo_types, name = "Types")
 
     nodes_compo.toggle_mute = BoolProperty(default=False)
     node.status = BoolProperty(default=False)
@@ -174,6 +174,8 @@ def init_properties():
         ("BACKGROUND", "Background", "", 12),
         ("AMBIENT_OCCLUSION", "Ambient Occlusion", "", 13),
         ("HOLDOUT", "Holdout", "", 14),
+        ("VOLUME_ABSORPTION", "Volume Absorption", "", 15),
+        ("VOLUME_SCATTER", "Volume Scatter", "", 16)
         ]
 
     scene.amaranth_cycles_node_types = EnumProperty(
@@ -188,6 +190,10 @@ def init_properties():
         default=False,
         name="List Missing Images",
         description="Display a list of all the missing images")
+
+    scene.amaranth_cycles_list_sampling = BoolProperty(
+        default=False,
+        name="Samples Per:")
 
     bpy.types.ShaderNodeNormal.normal_vector = prop_normal_vector
     bpy.types.CompositorNodeNormal.normal_vector = prop_normal_vector
@@ -204,6 +210,7 @@ def clear_properties():
         "amaranth_cycles_node_types",
         "amaranth_debug_scene_list_lamps",
         "amaranth_debug_scene_list_missing_images",
+        "amarath_cycles_list_sampling",
         "normal_vector",
     )
     
@@ -1026,54 +1033,68 @@ def render_cycles_scene_samples(self, context):
     scene = context.scene
     cscene = scene.cycles
     render = scene.render
+    list_sampling = scene.amaranth_cycles_list_sampling
 
     col = layout.column(align=True)
 
-    if len(scene.render.layers) == 1 and \
-        render.layers[0].samples == 0:
-        pass
-    else:
-        col.separator()
-        col.label(text="Samples Per RenderLayer:")
+    # List Lamps
+    if (len(scene.render.layers) > 1) or \
+        (len(bpy.data.scenes) > 1):
 
-        for rl in scene.render.layers:
-            row = col.row(align=True)
-            row.label(rl.name)
-            row.prop(rl, "samples", text="%s" %
-                "Samples" if rl.samples > 0 else "Automatic (%s)" % (
-                    cscene.aa_samples if cscene.progressive == 'BRANCHED_PATH' else cscene.samples))
+        box = layout.box()
+        row = box.row(align=True)
+        col = row.column(align=True)
 
-    if (len(bpy.data.scenes) > 1):
-        col.separator()
-
-        col.label(text="Samples Per Scene:")
         row = col.row(align=True)
+        row.alignment = 'LEFT'
+        row.prop(scene, 'amaranth_cycles_list_sampling',
+                    icon="%s" % 'TRIA_DOWN' if list_sampling else 'TRIA_RIGHT',
+                    emboss=False)
 
-        if cscene.progressive == 'PATH':
-            for s in bpy.data.scenes:
-                if s != scene:
-                    row = col.row(align=True)
-                    if s.render.engine == 'CYCLES':
-                        cscene = s.cycles
-
-                        row.label(s.name)
-                        row.prop(cscene, "samples")
-                    else:
-                        row.label(text="Scene: '%s' is not using Cycles" % s.name)
+    if list_sampling:
+        if len(scene.render.layers) == 1 and \
+            render.layers[0].samples == 0:
+            pass
         else:
-            for s in bpy.data.scenes:
-                if s != scene:
-                    row = col.row(align=True)
-                    if s.render.engine == 'CYCLES':
-                        cscene = s.cycles
+            col.separator()
+            col.label(text="RenderLayers:", icon='RENDERLAYERS')
 
-                        row.label(s.name)
-                        row.prop(cscene, "aa_samples",
-                            text="AA Samples")
-                    else:
-                        row.label(text="Scene: '%s' is not using Cycles" % s.name)
+            for rl in scene.render.layers:
+                row = col.row(align=True)
+                row.label(rl.name, icon='BLANK1')
+                row.prop(rl, "samples", text="%s" %
+                    "Samples" if rl.samples > 0 else "Automatic (%s)" % (
+                        cscene.aa_samples if cscene.progressive == 'BRANCHED_PATH' else cscene.samples))
 
-# // FEATURE: Dupli  Group Path
+        if (len(bpy.data.scenes) > 1):
+            col.separator()
+
+            col.label(text="Scenes:", icon='SCENE_DATA')
+            row = col.row(align=True)
+
+            if cscene.progressive == 'PATH':
+                for s in bpy.data.scenes:
+                    if s != scene:
+                        row = col.row(align=True)
+                        if s.render.engine == 'CYCLES':
+                            cscene = s.cycles
+
+                            row.label(s.name)
+                            row.prop(cscene, "samples", icon='BLANK1')
+                        else:
+                            row.label(text="Scene: '%s' is not using Cycles" % s.name)
+            else:
+                for s in bpy.data.scenes:
+                    if s != scene:
+                        row = col.row(align=True)
+                        if s.render.engine == 'CYCLES':
+                            cscene = s.cycles
+
+                            row.label(s.name, icon='BLANK1')
+                            row.prop(cscene, "aa_samples",
+                                text="AA Samples")
+                        else:
+                            row.label(text="Scene: '%s' is not using Cycles" % s.name)
 
 # // FEATURE: Cycles Render Sampling Extra
 
@@ -1447,11 +1468,13 @@ class SCENE_OT_list_missing_material_slots(Operator):
     '''List objects with empty material slots'''
     bl_idname = "scene.list_missing_material_slots"
     bl_label = "List Empty Material Slots"
- 
+
     objects = []
- 
+    libraries = []
+
     def execute(self, context):
         self.__class__.objects = []
+        self.__class__.libraries = []
 
         for ob in bpy.data.objects:
             for ma in ob.material_slots:
@@ -1459,7 +1482,11 @@ class SCENE_OT_list_missing_material_slots(Operator):
                     self.__class__.objects.append('%s%s' % (
                         '[L] ' if ob.library else '',
                         ob.name))
+                    if ob.library:
+                        self.__class__.libraries.append(ob.library.filepath)
+
         self.__class__.objects = sorted(list(set(self.__class__.objects)))
+        self.__class__.libraries = sorted(list(set(self.__class__.libraries)))
 
         if len(self.__class__.objects) == 0:
             self.report({"INFO"}, "No objects with empty material slots found")
@@ -1469,10 +1496,22 @@ class SCENE_OT_list_missing_material_slots(Operator):
                     "object" if len(self.__class__.objects) == 1 else "objects"))
 
             count = 0
+            count_lib = 0
 
             for obs in self.__class__.objects:
-                print('%02d. %s' % (count+1, self.__class__.objects[count]))
+                print('%02d. %s' % (
+                    count+1, self.__class__.objects[count]))
                 count += 1
+
+            if self.__class__.libraries:
+                print("\n\n* Check %s:\n" % 
+                    ("this library" if len(self.__class__.libraries) == 1
+                        else "these libraries"))
+
+                for libs in self.__class__.libraries:
+                    print('%02d. %s' % (
+                        count_lib+1, self.__class__.libraries[count_lib]))
+                    count_lib += 1
             print("\n")
 
         return{'FINISHED'}
@@ -1528,6 +1567,7 @@ class SCENE_PT_scene_debug(Panel):
         materials_count = len(SCENE_OT_cycles_shader_list_nodes.materials)
         missing_material_slots_obs = SCENE_OT_list_missing_material_slots.objects
         missing_material_slots_count = len(SCENE_OT_list_missing_material_slots.objects)
+        missing_material_slots_lib = SCENE_OT_list_missing_material_slots.libraries
         engine = scene.render.engine
 
         # List Lamps
@@ -1579,7 +1619,6 @@ class SCENE_PT_scene_debug(Panel):
                         col = split.column()
                         row = col.row()
                         row.alignment = 'LEFT'
-                        row.active = ob.name in context.scene.objects
                         row.operator("scene.amaranth_debug_lamp_select",
                                     text='%s %s%s' % (
                                         " [L] " if ob.library else "",
@@ -1587,6 +1626,13 @@ class SCENE_PT_scene_debug(Panel):
                                         "" if ob.name in context.scene.objects else " [Not in Scene]"),
                                     icon="LAMP_%s" % ob.data.type,
                                     emboss=False).lamp = ob.name
+                        if ob.library:
+                            row = col.row(align=True)
+                            row.alignment = "LEFT"
+                            row.operator(SCENE_OT_blender_instance_open.bl_idname,
+                                         text=ob.library.filepath,
+                                         icon="LINK_BLEND",
+                                         emboss=False).filepath=ob.library.filepath
 
                         if engine == 'CYCLES':
                             split = split.split(percentage=0.35)
@@ -1788,6 +1834,7 @@ class SCENE_PT_scene_debug(Panel):
             if missing_material_slots_count != 0: 
                 col = box.column(align=True)
                 count = 0
+                count_lib = 0
                 col.label(text="%s %s with empty material slots found" % (
                     missing_material_slots_count,
                     'object' if missing_material_slots_count == 1 else 'objects'),
@@ -1798,6 +1845,22 @@ class SCENE_PT_scene_debug(Panel):
                     col.label(text='%s' % (
                         missing_material_slots_obs[count-1]),
                         icon="OBJECT_DATA")
+
+                if missing_material_slots_lib:
+                    col.separator()
+                    col.label("Check %s:" % (
+                        "this library" if
+                            len(missing_material_slots_lib) == 1
+                                else "these libraries"))
+                    
+                    for libs in missing_material_slots_lib:
+                        count_lib += 1
+                        row = col.row(align=True)
+                        row.alignment = "LEFT"
+                        row.operator(SCENE_OT_blender_instance_open.bl_idname,
+                                     text=missing_material_slots_lib[count_lib-1],
+                                     icon="LINK_BLEND",
+                                     emboss=False).filepath=missing_material_slots_lib[count_lib-1]
 
 # // FEATURE: Scene Debug
 # FEATURE: Dupli  Group Path
