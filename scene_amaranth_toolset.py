@@ -1688,11 +1688,13 @@ class SCENE_PT_scene_debug(Panel):
 
                         if engine == 'CYCLES':
                             split = split.split(percentage=0.4)
-                            col = split.column()    
+                            col = split.column()
                             if lamp.type in ['POINT','SUN', 'SPOT']:
                                 col.label(text="%.2f" % lamp.shadow_soft_size)
                             elif lamp.type == 'HEMI':
                                 col.label(text="N/A")
+                            elif lamp.type == 'AREA' and lamp.shape == 'RECTANGLE':
+                                col.label(text="%.2fx%.2f" % (lamp.size, lamp.size_y))
                             else:
                                 col.label(text="%.2f" % lamp.size)
 
