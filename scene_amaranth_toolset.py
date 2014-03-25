@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 8, 4),
+    "version": (0, 8, 5),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -218,6 +218,33 @@ def clear_properties():
     for p in props:
         if p in wm:
             del wm[p]
+
+# Some settings are bound to be saved on a startup py file
+def amaranth_text_startup(context):
+
+    amth_text_name = "AmaranthStartup.py"
+    amth_text_exists = False
+
+    global amth_text
+
+    try:
+        for tx in bpy.data.texts:
+            if tx.name == amth_text_name:
+                amth_text_exists = True
+                amth_text = bpy.data.texts[amth_text_name]
+                break
+            else:
+                amth_text_exists = False
+                bpy.ops.text.new()
+                amth_text = bpy.data.texts[len(bpy.data.texts)-1]
+                amth_text.name = amth_text_name
+                amth_text.write("# Amaranth Startup Script\nimport bpy\n\n")
+                amth_text.use_module = True
+                break
+
+        return amth_text_exists
+    except AttributeError:
+        return None
 
 # FEATURE: Refresh Scene!
 class SCENE_OT_refresh(Operator):
@@ -1867,12 +1894,13 @@ class SCENE_PT_scene_debug(Panel):
 def ui_dupli_group_library_path(self, context):
 
     ob = context.object
-    lib = ob.dupli_group.library.filepath
 
     row = self.layout.row()
     row.alignment = 'LEFT'
 
     if ob and ob.dupli_group and ob.dupli_group.library:
+        lib = ob.dupli_group.library.filepath
+
         row.operator(SCENE_OT_blender_instance_open.bl_idname,
             text="Library: %s" % lib,
             emboss=False,
@@ -1977,6 +2005,102 @@ def ui_node_normal_values(self, context):
 
 # // FEATURE: Normal Node Values, by Lukas Tönne
 
+# FEATURE: Object ID for objects inside DupliGroups
+class AMTH_OBJECT_OT_id_dupligroup(Operator):
+    '''Set the Object ID for objects in the dupli group'''
+    bl_idname = "object.amaranth_object_id_duplis"
+    bl_label = "Apply Object ID to Duplis"
+
+    clear = False
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.dupli_group
+
+    def execute(self, context):
+        self.__class__.clear = False
+        ob = context.active_object
+        amth_text_exists = amaranth_text_startup(context)
+
+        script_exists = False
+        script_intro = "# OB ID: %s" % ob.name
+        obdata = "bpy.data.objects['%s']" % ob.name
+        script = "%s" % (
+            "\nif %(obdata)s and %(obdata)s.dupli_group and %(obdata)s.pass_index != 0: %(obname)s \n"
+            "    for dob in %(obdata)s.dupli_group.objects: %(obname)s \n"
+            "        dob.pass_index = %(obdata)s.pass_index %(obname)s \n" %
+                {'obdata' : obdata, 'obname' : script_intro})
+
+        for txt in bpy.data.texts:
+            if txt.name == amth_text.name:
+                for li in txt.lines:
+                    if script_intro == li.body:
+                        script_exists = True
+                        continue
+
+        if not script_exists:
+            amth_text.write("\n")
+            amth_text.write(script_intro)
+            amth_text.write(script)
+
+        if ob and ob.dupli_group:
+            if ob.pass_index != 0:
+                for dob in ob.dupli_group.objects:
+                    dob.pass_index = ob.pass_index
+
+        self.report({'INFO'},
+            "%s ID: %s to all objects in this Dupli Group" % (
+                "Applied" if not script_exists else "Updated",
+                ob.pass_index))
+
+        return{'FINISHED'}
+
+class AMTH_OBJECT_OT_id_dupligroup_clear(Operator):
+    '''Clear the Object ID from objects in dupli group'''
+    bl_idname = "object.amaranth_object_id_duplis_clear"
+    bl_label = "Clear Object ID from Duplis"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.dupli_group
+
+    def execute(self, context):
+        context.active_object.pass_index = 0
+        AMTH_OBJECT_OT_id_dupligroup.clear = True
+        amth_text_exists = amaranth_text_startup(context)
+        match_first = "# OB ID: %s" % context.active_object.name
+
+        if amth_text_exists:
+            for txt in bpy.data.texts:
+                if txt.name == amth_text.name:
+                    for li in txt.lines:
+                        if match_first in li.body:
+                            li.body = ''
+                            continue
+
+        self.report({'INFO'}, "Object IDs back to normal")
+        return{'FINISHED'}
+
+def ui_object_id_duplis(self, context):
+
+    if context.active_object.dupli_group:
+        split = self.layout.split()
+        row = split.row(align=True)
+        row.enabled = context.active_object.pass_index != 0
+        row.operator(
+            AMTH_OBJECT_OT_id_dupligroup.bl_idname)
+        row.operator(
+            AMTH_OBJECT_OT_id_dupligroup_clear.bl_idname,
+            icon="X", text="")
+        split.separator()
+
+        if AMTH_OBJECT_OT_id_dupligroup.clear:
+            self.layout.label(text="Next time you save/reload this file, "
+                                        "object IDs will be back to normal",
+                              icon="INFO")
+
+# // FEATURE: Object ID for objects inside DupliGroups
+
 classes = (SCENE_MT_color_management_presets,
            AddPresetColorManagement,
            SCENE_PT_scene_debug,
@@ -2002,6 +2126,8 @@ classes = (SCENE_MT_color_management_presets,
            VIEW3D_OT_render_border_camera,
            VIEW3D_OT_show_only_render,
            OBJECT_OT_select_meshlights,
+           AMTH_OBJECT_OT_id_dupligroup,
+           AMTH_OBJECT_OT_id_dupligroup_clear,
            POSE_OT_paths_clear_all,
            POSE_OT_paths_frame_match,
            FILE_PT_libraries)
@@ -2051,6 +2177,8 @@ def register():
     bpy.types.SEQUENCER_HT_header.append(ui_sequencer_extra_info)
 
     bpy.types.OBJECT_PT_duplication.append(ui_dupli_group_library_path)
+
+    bpy.types.OBJECT_PT_relations.append(ui_object_id_duplis)
 
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
@@ -2132,6 +2260,8 @@ def unregister():
     bpy.types.SEQUENCER_HT_header.remove(ui_sequencer_extra_info)
 
     bpy.types.OBJECT_PT_duplication.remove(ui_dupli_group_library_path)
+
+    bpy.types.OBJECT_PT_relations.remove(ui_object_id_duplis)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
