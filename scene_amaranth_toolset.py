@@ -236,7 +236,7 @@ def amaranth_text_startup(context):
             else:
                 amth_text_exists = False
                 bpy.ops.text.new()
-                amth_text = bpy.data.texts[len(bpy.data.texts)-1]
+                amth_text = bpy.data.texts[-1]
                 amth_text.name = amth_text_name
                 amth_text.write("# Amaranth Startup Script\nimport bpy\n\n")
                 amth_text.use_module = True
@@ -247,7 +247,7 @@ def amaranth_text_startup(context):
         return None
 
 # FEATURE: Refresh Scene!
-class SCENE_OT_refresh(Operator):
+class AMTH_SCENE_OT_refresh(Operator):
     """Refresh the current scene"""
     bl_idname = "scene.refresh"
     bl_label = "Refresh!"
@@ -270,7 +270,7 @@ def button_refresh(self, context):
     if preferences.use_scene_refresh:
         self.layout.separator()
         self.layout.operator(
-            SCENE_OT_refresh.bl_idname,
+            AMTH_SCENE_OT_refresh.bl_idname,
             text="Refresh!",
             icon='FILE_REFRESH')
 # // FEATURE: Refresh Scene!
@@ -285,7 +285,7 @@ def save_reload(self, context, path):
     else:
         bpy.ops.wm.save_as_mainfile("INVOKE_AREA")
 
-class WM_OT_save_reload(Operator):
+class AMTH_WM_OT_save_reload(Operator):
     """Save and Reload the current blend file"""
     bl_idname = "wm.save_reload"
     bl_label = "Save & Reload"
@@ -303,7 +303,7 @@ def button_save_reload(self, context):
     if preferences.use_file_save_reload:
         self.layout.separator()
         self.layout.operator(
-            WM_OT_save_reload.bl_idname,
+            AMTH_WM_OT_save_reload.bl_idname,
             text="Save & Reload",
             icon='FILE_REFRESH')
 # // FEATURE: Save & Reload
@@ -350,7 +350,7 @@ def label_timeline_extra_info(self, context):
 # // FEATURE: Timeline Time + Frames Left
 
 # FEATURE: Directory Current Blend
-class FILE_OT_directory_current_blend(Operator):
+class AMTH_FILE_OT_directory_current_blend(Operator):
     """Go to the directory of the currently open blend file"""
     bl_idname = "file.directory_current_blend"
     bl_label = "Current Blend's Folder"
@@ -363,13 +363,13 @@ def button_directory_current_blend(self, context):
 
     if bpy.data.filepath:
         self.layout.operator(
-            FILE_OT_directory_current_blend.bl_idname,
+            AMTH_FILE_OT_directory_current_blend.bl_idname,
             text="Current Blend's Folder",
             icon='APPEND_BLEND')
 # // FEATURE: Directory Current Blend
 
 # FEATURE: Libraries panel on file browser
-class FILE_PT_libraries(Panel):
+class AMTH_FILE_PT_libraries(Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_region_type = 'CHANNELS'
     bl_label = "Libraries"
@@ -402,14 +402,14 @@ class FILE_PT_libraries(Panel):
                     row = box.row()
                     row.alignment = 'LEFT'
                     props = row.operator(
-                        FILE_OT_directory_go_to.bl_idname,
+                        AMTH_FILE_OT_directory_go_to.bl_idname,
                         text=filepath, icon="BOOKMARKS",
                         emboss=False)
                     props.filepath = filepath
         else:
             box.label(text='No libraries loaded')
 
-class FILE_OT_directory_go_to(Operator):
+class AMTH_FILE_OT_directory_go_to(Operator):
     """Go to this library's directory"""
     bl_idname = "file.directory_go_to"
     bl_label = "Go To"
@@ -422,7 +422,7 @@ class FILE_OT_directory_go_to(Operator):
         return {'FINISHED'}
     
 # FEATURE: Node Templates
-class NODE_OT_AddTemplateVignette(Operator):
+class AMTH_NODE_OT_AddTemplateVignette(Operator):
     bl_idname = "node.template_add_vignette"
     bl_label = "Add Vignette"
     bl_description = "Add a vignette effect"
@@ -498,8 +498,8 @@ class NODE_OT_AddTemplateVignette(Operator):
         return {'FINISHED'}
 
 # Node Templates Menu
-class NODE_MT_amaranth_templates(Menu):
-    bl_idname = 'NODE_MT_amaranth_templates'
+class AMTH_NODE_MT_amaranth_templates(Menu):
+    bl_idname = 'AMTH_NODE_MT_amaranth_templates'
     bl_space_type = 'NODE_EDITOR'
     bl_label = "Templates"
     bl_description = "List of Amaranth Templates"
@@ -507,7 +507,7 @@ class NODE_MT_amaranth_templates(Menu):
     def draw(self, context):
         layout = self.layout
         layout.operator(
-            NODE_OT_AddTemplateVignette.bl_idname,
+            AMTH_NODE_OT_AddTemplateVignette.bl_idname,
             text="Vignette",
             icon='COLOR')
 
@@ -517,7 +517,7 @@ def node_templates_pulldown(self, context):
         layout = self.layout
         row = layout.row(align=True)
         row.scale_x = 1.3
-        row.menu("NODE_MT_amaranth_templates",
+        row.menu("AMTH_NODE_MT_amaranth_templates",
             icon="RADIO")
 # // FEATURE: Node Templates
 
@@ -537,7 +537,7 @@ def node_stats(self,context):
             row.label(text="Nodes: %s/%s" % (nodes_selected, str(nodes_total)))
 
 # FEATURE: Simplify Compo Nodes
-class NODE_PT_simplify(Panel):
+class AMTH_NODE_PT_simplify(Panel):
     '''Simplify Compositor Panel'''
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
@@ -557,7 +557,7 @@ class NODE_PT_simplify(Panel):
 
         if node_tree is not None:
             layout.prop(node_tree, 'types')
-            layout.operator(NODE_OT_toggle_mute.bl_idname,
+            layout.operator(AMTH_NODE_OT_toggle_mute.bl_idname,
                 text="Turn On" if node_tree.toggle_mute else "Turn Off",
                 icon='RESTRICT_VIEW_OFF' if node_tree.toggle_mute else 'RESTRICT_VIEW_ON')
         
@@ -565,7 +565,7 @@ class NODE_PT_simplify(Panel):
                 layout.label(text="This will also toggle the Vector pass {}".format(
                                     "on" if node_tree.toggle_mute else "off"), icon="INFO")
 
-class NODE_OT_toggle_mute(Operator):
+class AMTH_NODE_OT_toggle_mute(Operator):
     """"""
     bl_idname = "node.toggle_mute"
     bl_label = "Toggle Mute"
@@ -623,7 +623,7 @@ class NODE_OT_toggle_mute(Operator):
         
 
 # FEATURE: OB/MA ID panel in Node Editor
-class NODE_PT_indices(Panel):
+class AMTH_NODE_PT_indices(Panel):
     '''Object / Material Indices Panel'''
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
@@ -802,7 +802,7 @@ def stats_scene(self, context):
 # //FEATURE: Extra Info Stats
 
 # FEATURE: Camera Bounds as Render Border
-class VIEW3D_OT_render_border_camera(Operator):
+class AMTH_VIEW3D_OT_render_border_camera(Operator):
     """Set camera bounds as render border"""
     bl_idname = "view3d.render_border_camera"
     bl_label = "Camera as Render Border"
@@ -828,7 +828,7 @@ def button_render_border_camera(self, context):
     if view3d.view_perspective == 'CAMERA':
         layout = self.layout
         layout.separator()
-        layout.operator(VIEW3D_OT_render_border_camera.bl_idname,
+        layout.operator(AMTH_VIEW3D_OT_render_border_camera.bl_idname,
                         text="Camera as Render Border", icon="FULLSCREEN_ENTER")
 
 # //FEATURE: Camera Bounds as Render Border
@@ -847,7 +847,7 @@ def button_camera_passepartout(self, context):
             layout.prop(cam, "show_passepartout")
 
 # FEATURE: Show Only Render with Alt+Shift+Z
-class VIEW3D_OT_show_only_render(Operator):
+class AMTH_VIEW3D_OT_show_only_render(Operator):
     bl_idname = "view3d.show_only_render"
     bl_label = "Show Only Render"
 
@@ -867,7 +867,7 @@ image_nodes = {"CompositorNodeImage",
                "ShaderNodeTexImage",
                "ShaderNodeTexEnvironment"}
 
-class NODE_OT_show_active_node_image(Operator):
+class AMTH_NODE_OT_show_active_node_image(Operator):
     """Show active image node image in the image editor"""
     bl_idname = "node.show_active_node_image"
     bl_label = "Show Active Node Node"
@@ -890,7 +890,7 @@ class NODE_OT_show_active_node_image(Operator):
 # // FEATURE: Display Active Image Node on Image Editor
 
 # FEATURE: Select Meshlights
-class OBJECT_OT_select_meshlights(Operator):
+class AMTH_OBJECT_OT_select_meshlights(Operator):
     """Select light emitting meshes"""
     bl_idname = "object.select_meshlights"
     bl_label = "Select Meshlights"
@@ -926,7 +926,7 @@ def button_select_meshlights(self, context):
 # // FEATURE: Select Meshlights
 
 # FEATURE: Mesh Symmetry Tools by Sergey Sharybin
-class MESH_OT_find_asymmetric(Operator):
+class AMTH_MESH_OT_find_asymmetric(Operator):
     """
     Find asymmetric vertices
     """
@@ -977,7 +977,7 @@ class MESH_OT_find_asymmetric(Operator):
 
         return {'FINISHED'}
 
-class MESH_OT_make_symmetric(Operator):
+class AMTH_MESH_OT_make_symmetric(Operator):
     """
     Make symmetric
     """
@@ -1126,7 +1126,7 @@ def render_cycles_scene_samples(self, context):
 # // FEATURE: Cycles Render Sampling Extra
 
 # FEATURE: Motion Paths Extras
-class POSE_OT_paths_clear_all(Operator):
+class AMTH_POSE_OT_paths_clear_all(Operator):
     """Clear motion paths from all bones"""
     bl_idname = "pose.paths_clear_all"
     bl_label = "Clear All Motion Paths"
@@ -1144,7 +1144,7 @@ class POSE_OT_paths_clear_all(Operator):
             b.select = False
         return {'FINISHED'}
 
-class POSE_OT_paths_frame_match(Operator):
+class AMTH_POSE_OT_paths_frame_match(Operator):
     """Match Start/End frame of scene to motion path range"""
     bl_idname = "pose.paths_frame_match"
     bl_label = "Match Frame Range"
@@ -1197,7 +1197,7 @@ def pose_motion_paths_ui(self, context):
         col.label(text="Select Bones First", icon="ERROR")
 
     col = split.column(align=True)
-    col.operator(POSE_OT_paths_frame_match.bl_idname,
+    col.operator(AMTH_POSE_OT_paths_frame_match.bl_idname,
         text="{}".format( "Set Preview Frame Range"
                 if scene.use_preview_range else "Set Frame Range"),
         icon="{}".format("PREVIEW_RANGE"
@@ -1214,7 +1214,7 @@ def pose_motion_paths_ui(self, context):
         row.prop(avs.motion_path, "frame_after", text="After")
 
     layout.separator()
-    layout.operator(POSE_OT_paths_clear_all.bl_idname, icon="X")
+    layout.operator(AMTH_POSE_OT_paths_clear_all.bl_idname, icon="X")
 # // FEATURE: Motion Paths Extras
 
 # FEATURE: Final Render Resolution Display
@@ -1257,7 +1257,7 @@ def node_shader_extra(self, context):
 # // FEATURE: Shader Nodes Extra Info
 
 # FEATURE: Scene Debug
-class SCENE_OT_cycles_shader_list_nodes(Operator):
+class AMTH_SCENE_OT_cycles_shader_list_nodes(Operator):
     """List Cycles materials containing a specific shader"""
     bl_idname = "scene.cycles_list_nodes"
     bl_label = "List Materials"
@@ -1350,17 +1350,17 @@ class SCENE_OT_cycles_shader_list_nodes(Operator):
 
         return {'FINISHED'}
 
-class SCENE_OT_cycles_shader_list_nodes_clear(Operator):
+class AMTH_SCENE_OT_cycles_shader_list_nodes_clear(Operator):
     """Clear the list below"""
     bl_idname = "scene.cycles_list_nodes_clear"
     bl_label = "Clear Materials List"
     
     def execute(self, context):
-        SCENE_OT_cycles_shader_list_nodes.materials[:] = []
+        AMTH_SCENE_OT_cycles_shader_list_nodes.materials[:] = []
         print("* Cleared Cycles Materials List")
         return {'FINISHED'}
 
-class SCENE_OT_amaranth_debug_lamp_select(Operator):
+class AMTH_SCENE_OT_amaranth_debug_lamp_select(Operator):
     '''Select Lamp'''
     bl_idname = "scene.amaranth_debug_lamp_select"
     bl_label = "Select Lamp"
@@ -1376,7 +1376,7 @@ class SCENE_OT_amaranth_debug_lamp_select(Operator):
 
         return{'FINISHED'}
 
-class SCENE_OT_list_missing_node_links(Operator):
+class AMTH_SCENE_OT_list_missing_node_links(Operator):
     '''Print a list of missing node links'''
     bl_idname = "scene.list_missing_node_links"
     bl_label = "List Missing Node Links"
@@ -1491,7 +1491,7 @@ class SCENE_OT_list_missing_node_links(Operator):
 
         return{'FINISHED'}
 
-class SCENE_OT_list_missing_material_slots(Operator):
+class AMTH_SCENE_OT_list_missing_material_slots(Operator):
     '''List objects with empty material slots'''
     bl_idname = "scene.list_missing_material_slots"
     bl_label = "List Empty Material Slots"
@@ -1543,17 +1543,17 @@ class SCENE_OT_list_missing_material_slots(Operator):
 
         return{'FINISHED'}
 
-class SCENE_OT_list_missing_material_slots_clear(Operator):
+class AMTH_SCENE_OT_list_missing_material_slots_clear(Operator):
     """Clear the list below"""
     bl_idname = "scene.list_missing_material_slots_clear"
     bl_label = "Clear Empty Material Slots List"
     
     def execute(self, context):
-        SCENE_OT_list_missing_material_slots.objects[:] = []
+        AMTH_SCENE_OT_list_missing_material_slots.objects[:] = []
         print("* Cleared Empty Material Slots List")
         return {'FINISHED'}
 
-class SCENE_OT_blender_instance_open(Operator):
+class AMTH_SCENE_OT_blender_instance_open(Operator):
     '''Open in a new Blender instance'''
     bl_idname = "scene.blender_instance_open"
     bl_label = "Open Blender Instance"
@@ -1573,7 +1573,7 @@ class SCENE_OT_blender_instance_open(Operator):
 
         return{'FINISHED'}
 
-class SCENE_PT_scene_debug(Panel):
+class AMTH_SCENE_PT_scene_debug(Panel):
     '''Scene Debug'''
     bl_label = 'Scene Debug'
     bl_space_type = "PROPERTIES"
@@ -1590,11 +1590,11 @@ class SCENE_PT_scene_debug(Panel):
         images_missing = []
         list_lamps = scene.amaranth_debug_scene_list_lamps
         list_missing_images = scene.amaranth_debug_scene_list_missing_images
-        materials = SCENE_OT_cycles_shader_list_nodes.materials
-        materials_count = len(SCENE_OT_cycles_shader_list_nodes.materials)
-        missing_material_slots_obs = SCENE_OT_list_missing_material_slots.objects
-        missing_material_slots_count = len(SCENE_OT_list_missing_material_slots.objects)
-        missing_material_slots_lib = SCENE_OT_list_missing_material_slots.libraries
+        materials = AMTH_SCENE_OT_cycles_shader_list_nodes.materials
+        materials_count = len(AMTH_SCENE_OT_cycles_shader_list_nodes.materials)
+        missing_material_slots_obs = AMTH_SCENE_OT_list_missing_material_slots.objects
+        missing_material_slots_count = len(AMTH_SCENE_OT_list_missing_material_slots.objects)
+        missing_material_slots_lib = AMTH_SCENE_OT_list_missing_material_slots.libraries
         engine = scene.render.engine
 
         # List Lamps
@@ -1656,7 +1656,7 @@ class SCENE_PT_scene_debug(Panel):
                         if ob.library:
                             row = col.row(align=True)
                             row.alignment = "LEFT"
-                            row.operator(SCENE_OT_blender_instance_open.bl_idname,
+                            row.operator(AMTH_SCENE_OT_blender_instance_open.bl_idname,
                                          text=ob.library.filepath,
                                          icon="LINK_BLEND",
                                          emboss=False).filepath=ob.library.filepath
@@ -1761,7 +1761,7 @@ class SCENE_PT_scene_debug(Panel):
                         if mis[2]:
                             row = col.row(align=True)
                             row.alignment = "LEFT"
-                            row.operator(SCENE_OT_blender_instance_open.bl_idname,
+                            row.operator(AMTH_SCENE_OT_blender_instance_open.bl_idname,
                                          text=mis[2],
                                          icon="LINK_BLEND",
                                          emboss=False).filepath=mis[2]
@@ -1792,11 +1792,11 @@ class SCENE_PT_scene_debug(Panel):
                 icon="MATERIAL")
 
             row = split.row(align=True)
-            row.operator(SCENE_OT_cycles_shader_list_nodes.bl_idname,
+            row.operator(AMTH_SCENE_OT_cycles_shader_list_nodes.bl_idname,
                             icon="SORTSIZE",
                             text="List Materials Using Shader")
             if materials_count != 0: 
-                row.operator(SCENE_OT_cycles_shader_list_nodes_clear.bl_idname,
+                row.operator(AMTH_SCENE_OT_cycles_shader_list_nodes_clear.bl_idname,
                                 icon="X", text="")
             col.separator()
 
@@ -1822,22 +1822,22 @@ class SCENE_PT_scene_debug(Panel):
 
         split = col.split()
         split.label(text="Node Links")
-        split.operator(SCENE_OT_list_missing_node_links.bl_idname,
+        split.operator(AMTH_SCENE_OT_list_missing_node_links.bl_idname,
                         icon="NODETREE")
 
-        if SCENE_OT_list_missing_node_links.count_groups != 0 or \
-            SCENE_OT_list_missing_node_links.count_images != 0:
+        if AMTH_SCENE_OT_list_missing_node_links.count_groups != 0 or \
+            AMTH_SCENE_OT_list_missing_node_links.count_images != 0:
             col.label(text="Warning! Check Console", icon="ERROR")
 
-        if SCENE_OT_list_missing_node_links.count_groups != 0:
+        if AMTH_SCENE_OT_list_missing_node_links.count_groups != 0:
             col.label(text="%s" % ("%s node %s missing link" % (
-                     str(SCENE_OT_list_missing_node_links.count_groups),
-                     "group" if SCENE_OT_list_missing_node_links.count_groups == 1 else "groups")),
+                     str(AMTH_SCENE_OT_list_missing_node_links.count_groups),
+                     "group" if AMTH_SCENE_OT_list_missing_node_links.count_groups == 1 else "groups")),
                      icon="NODETREE")
-        if SCENE_OT_list_missing_node_links.count_images != 0:
+        if AMTH_SCENE_OT_list_missing_node_links.count_images != 0:
             col.label(text="%s" % ("%s image %s missing link" % (
-                     str(SCENE_OT_list_missing_node_links.count_images),
-                     "node" if SCENE_OT_list_missing_node_links.count_images == 1 else "nodes")),
+                     str(AMTH_SCENE_OT_list_missing_node_links.count_images),
+                     "node" if AMTH_SCENE_OT_list_missing_node_links.count_images == 1 else "nodes")),
                      icon="IMAGE_DATA")
 
         # List Empty Materials Slots
@@ -1847,11 +1847,11 @@ class SCENE_PT_scene_debug(Panel):
         col.label(text="Material Slots")
 
         row = split.row(align=True)
-        row.operator(SCENE_OT_list_missing_material_slots.bl_idname,
+        row.operator(AMTH_SCENE_OT_list_missing_material_slots.bl_idname,
                         icon="MATERIAL",
                         text="List Empty Materials Slots")
         if missing_material_slots_count != 0: 
-            row.operator(SCENE_OT_list_missing_material_slots_clear.bl_idname,
+            row.operator(AMTH_SCENE_OT_list_missing_material_slots_clear.bl_idname,
                             icon="X", text="")
         col.separator()
 
@@ -1886,7 +1886,7 @@ class SCENE_PT_scene_debug(Panel):
                         count_lib += 1
                         row = col.row(align=True)
                         row.alignment = "LEFT"
-                        row.operator(SCENE_OT_blender_instance_open.bl_idname,
+                        row.operator(AMTH_SCENE_OT_blender_instance_open.bl_idname,
                                      text=missing_material_slots_lib[count_lib-1],
                                      icon="LINK_BLEND",
                                      emboss=False).filepath=missing_material_slots_lib[count_lib-1]
@@ -1903,14 +1903,14 @@ def ui_dupli_group_library_path(self, context):
     if ob and ob.dupli_group and ob.dupli_group.library:
         lib = ob.dupli_group.library.filepath
 
-        row.operator(SCENE_OT_blender_instance_open.bl_idname,
+        row.operator(AMTH_SCENE_OT_blender_instance_open.bl_idname,
             text="Library: %s" % lib,
             emboss=False,
             icon="LINK_BLEND").filepath=lib
 
 # // FEATURE: Dupli  Group Path
 # FEATURE: Color Management Presets
-class SCENE_MT_color_management_presets(Menu):
+class AMTH_SCENE_MT_color_management_presets(Menu):
     """List of Color Management presets"""
     bl_label = "Color Management Presets"
     preset_subdir = "color"
@@ -1918,11 +1918,11 @@ class SCENE_MT_color_management_presets(Menu):
     draw = Menu.draw_preset
 
 
-class AddPresetColorManagement(AddPresetBase, Operator):
+class AMTH_AddPresetColorManagement(AddPresetBase, Operator):
     """Add or remove a Color Management preset"""
     bl_idname = "scene.color_management_preset_add"
     bl_label = "Add Color Management Preset"
-    preset_menu = "SCENE_MT_color_management_presets"
+    preset_menu = "AMTH_SCENE_MT_color_management_presets"
 
     preset_defines = [
         "scene = bpy.context.scene"
@@ -1945,7 +1945,7 @@ def ui_color_management_presets(self, context):
     layout = self.layout
 
     row = layout.row(align=True)
-    row.menu("SCENE_MT_color_management_presets", text=bpy.types.SCENE_MT_color_management_presets.bl_label)
+    row.menu("AMTH_SCENE_MT_color_management_presets", text=bpy.types.AMTH_SCENE_MT_color_management_presets.bl_label)
     row.operator("scene.color_management_preset_add", text="", icon="ZOOMIN")
     row.operator("scene.color_management_preset_add", text="", icon="ZOOMOUT").remove_active = True
     layout.separator()
@@ -2103,36 +2103,36 @@ def ui_object_id_duplis(self, context):
 
 # // FEATURE: Object ID for objects inside DupliGroups
 
-classes = (SCENE_MT_color_management_presets,
-           AddPresetColorManagement,
-           SCENE_PT_scene_debug,
-           SCENE_OT_refresh,
-           SCENE_OT_cycles_shader_list_nodes,
-           SCENE_OT_cycles_shader_list_nodes_clear,
-           SCENE_OT_amaranth_debug_lamp_select,
-           SCENE_OT_list_missing_node_links,
-           SCENE_OT_list_missing_material_slots,
-           SCENE_OT_list_missing_material_slots_clear,
-           SCENE_OT_blender_instance_open,
-           WM_OT_save_reload,
-           MESH_OT_find_asymmetric,
-           MESH_OT_make_symmetric,
-           NODE_OT_AddTemplateVignette,
-           NODE_MT_amaranth_templates,
-           FILE_OT_directory_current_blend,
-           FILE_OT_directory_go_to,
-           NODE_PT_indices,
-           NODE_PT_simplify,
-           NODE_OT_toggle_mute,
-           NODE_OT_show_active_node_image,
-           VIEW3D_OT_render_border_camera,
-           VIEW3D_OT_show_only_render,
-           OBJECT_OT_select_meshlights,
+classes = (AMTH_SCENE_MT_color_management_presets,
+           AMTH_AddPresetColorManagement,
+           AMTH_SCENE_PT_scene_debug,
+           AMTH_SCENE_OT_refresh,
+           AMTH_SCENE_OT_cycles_shader_list_nodes,
+           AMTH_SCENE_OT_cycles_shader_list_nodes_clear,
+           AMTH_SCENE_OT_amaranth_debug_lamp_select,
+           AMTH_SCENE_OT_list_missing_node_links,
+           AMTH_SCENE_OT_list_missing_material_slots,
+           AMTH_SCENE_OT_list_missing_material_slots_clear,
+           AMTH_SCENE_OT_blender_instance_open,
+           AMTH_WM_OT_save_reload,
+           AMTH_MESH_OT_find_asymmetric,
+           AMTH_MESH_OT_make_symmetric,
+           AMTH_NODE_OT_AddTemplateVignette,
+           AMTH_NODE_MT_amaranth_templates,
+           AMTH_FILE_OT_directory_current_blend,
+           AMTH_FILE_OT_directory_go_to,
+           AMTH_NODE_PT_indices,
+           AMTH_NODE_PT_simplify,
+           AMTH_NODE_OT_toggle_mute,
+           AMTH_NODE_OT_show_active_node_image,
+           AMTH_VIEW3D_OT_render_border_camera,
+           AMTH_VIEW3D_OT_show_only_render,
+           AMTH_OBJECT_OT_select_meshlights,
            AMTH_OBJECT_OT_id_dupligroup,
            AMTH_OBJECT_OT_id_dupligroup_clear,
-           POSE_OT_paths_clear_all,
-           POSE_OT_paths_frame_match,
-           FILE_PT_libraries)
+           AMTH_POSE_OT_paths_clear_all,
+           AMTH_POSE_OT_paths_frame_match,
+           AMTH_FILE_PT_libraries)
 
 addon_keymaps = []
 
@@ -2194,7 +2194,7 @@ def register():
 
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
         kmi = km.keymap_items.new('wm.call_menu', 'W', 'PRESS')
-        kmi.properties.name = "NODE_MT_amaranth_templates"
+        kmi.properties.name = "AMTH_NODE_MT_amaranth_templates"
 
         km = kc.keymaps.new(name='Window')
         kmi = km.keymap_items.new('scene.refresh', 'F5', 'PRESS', shift=False, ctrl=False)
