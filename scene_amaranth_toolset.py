@@ -2102,6 +2102,22 @@ def ui_object_id_duplis(self, context):
                               icon="INFO")
 
 # // FEATURE: Object ID for objects inside DupliGroups
+# UI: Warning about Z not connected when using EXR
+def ui_render_output_z(self, context):
+
+    scene = bpy.context.scene
+    image = scene.render.image_settings
+    if scene.render.use_compositing and \
+        image.file_format == 'OPEN_EXR' and \
+        image.use_zbuffer:
+        for no in scene.node_tree.nodes:
+            if no.type == 'COMPOSITE':
+                if not no.inputs['Z'].is_linked:
+                    self.layout.label(
+                        text="The Z output in node \"%s\" is not connected" % 
+                            no.name, icon="ERROR")
+
+# // UI: Warning about Z not connected
 
 classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_AddPresetColorManagement,
@@ -2173,6 +2189,7 @@ def register():
     bpy.types.DATA_PT_display.append(pose_motion_paths_ui)
 
     bpy.types.RENDER_PT_dimensions.append(render_final_resolution_ui)
+    bpy.types.RENDER_PT_output.append(ui_render_output_z)
 
     bpy.types.SCENE_PT_color_management.prepend(ui_color_management_presets)
 
@@ -2256,6 +2273,7 @@ def unregister():
     bpy.types.DATA_PT_display.remove(pose_motion_paths_ui)
 
     bpy.types.RENDER_PT_dimensions.remove(render_final_resolution_ui)
+    bpy.types.RENDER_PT_output.remove(ui_render_output_z)
 
     bpy.types.SCENE_PT_color_management.remove(ui_color_management_presets)
 
