@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 8, 5),
+    "version": (0, 8, 6),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -392,14 +392,15 @@ class AMTH_FILE_PT_libraries(Panel):
         libslist = sorted(libslist)
 
         # Draw the box with libs
-        
+
         row = layout.row()
         box = row.box()
-       
+
         if libslist:
+            col = box.column()
             for filepath in libslist:
                 if filepath != '//':
-                    row = box.row()
+                    row = col.row()
                     row.alignment = 'LEFT'
                     props = row.operator(
                         AMTH_FILE_OT_directory_go_to.bl_idname,
@@ -413,14 +414,14 @@ class AMTH_FILE_OT_directory_go_to(Operator):
     """Go to this library's directory"""
     bl_idname = "file.directory_go_to"
     bl_label = "Go To"
-    
+
     filepath = bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
 
         bpy.ops.file.select_bookmark(dir=self.filepath)
         return {'FINISHED'}
-    
+
 # FEATURE: Node Templates
 class AMTH_NODE_OT_AddTemplateVignette(Operator):
     bl_idname = "node.template_add_vignette"
@@ -784,13 +785,13 @@ def stats_scene(self, context):
                                 if no.type == 'EMISSION':
                                     for ou in no.outputs:
                                         if ou.links:
-                                            meshlights = meshlights + 1
+                                            meshlights += 1
                                             if ob in context.visible_objects:
-                                                meshlights_visible = meshlights_visible + 1
+                                                meshlights_visible += 1
                                             break
             if ob in context.selected_objects:
                 if ob.type == 'CAMERA':
-                    cameras_selected = cameras_selected + 1
+                    cameras_selected += 1
     
         meshlights_string = '| Meshlights:{}/{}'.format(meshlights_visible, meshlights)
     
@@ -1304,30 +1305,30 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes(Operator):
                                     ' * Output not connected' if not connected else ''))
 
                     elif no.type == 'GROUP':
-                        for nog in no.node_tree.nodes:
-                            if nog.type == node_type:
-                                for ou in nog.outputs:
-                                    if ou.links:
-                                        connected = True
-                                        if nog.type in shaders_roughness:
-                                            roughness = 'R: %.4f' % nog.inputs['Roughness'].default_value
+                        if no.node_tree:
+                            for nog in no.node_tree.nodes:
+                                if nog.type == node_type:
+                                    for ou in nog.outputs:
+                                        if ou.links:
+                                            connected = True
+                                            if nog.type in shaders_roughness:
+                                                roughness = 'R: %.4f' % nog.inputs['Roughness'].default_value
+                                            else:
+                                                roughness = False
                                         else:
-                                            roughness = False
-                                    else:
-                                        connected = False
-                                        print(print_unconnected)
+                                            connected = False
+                                            print(print_unconnected)
 
-                                    if ma.name not in self.__class__.materials:
-                                        self.__class__.materials.append('%s%s%s [%s] %s%s%s' % (
-                                            '[L] ' if ma.library else '',
-                                            'Node Group:  %s%s  ->  ' % (
-                                                '[L] ' if no.node_tree.library else '',
-                                                no.node_tree.name),
-                                            ma.name, ma.users,
-                                            '[F]' if ma.use_fake_user else '',
-                                            ' - [%s]' % roughness if roughness else '',
-                                            ' * Output not connected' if not connected else ''))
-                            
+                                        if ma.name not in self.__class__.materials:
+                                            self.__class__.materials.append('%s%s%s [%s] %s%s%s' % (
+                                                '[L] ' if ma.library else '',
+                                                'Node Group:  %s%s  ->  ' % (
+                                                    '[L] ' if no.node_tree.library else '',
+                                                    no.node_tree.name),
+                                                ma.name, ma.users,
+                                                '[F]' if ma.use_fake_user else '',
+                                                ' - [%s]' % roughness if roughness else '',
+                                                ' * Output not connected' if not connected else ''))
 
                     self.__class__.materials = sorted(list(set(self.__class__.materials)))
 
@@ -1383,13 +1384,16 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
 
     count_groups = 0
     count_images = 0
+    count_image_node_unlinked = 0
 
     def execute(self, context):
         missing_groups = []
         missing_images = []
+        image_nodes_unlinked = []
         libraries = []
         self.__class__.count_groups = 0
         self.__class__.count_images = 0
+        self.__class__.count_image_node_unlinked = 0
 
         for ma in bpy.data.materials:
             if ma.node_tree:
@@ -1424,6 +1428,22 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
                                                     bpy.path.abspath(
                                                         no.image.filepath, library=no.image.library))
 
+                        if not no.outputs['Color'].is_linked and not no.outputs['Alpha'].is_linked:
+                            self.__class__.count_image_node_unlinked += 1
+
+                            users_images = []
+
+                            image_nodes_unlinked.append("MA: %s%s%s [%s]%s%s%s%s\n" % (
+                                "[L] " if ma.library else "",
+                                "[F] " if ma.use_fake_user else "",
+                                ma.name, ma.users,
+                                "\nLI: %s" % 
+                                ma.library.filepath if ma.library else "",
+                                "\nIM: %s" % no.image.name if no.image else "",
+                                "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
+                                "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
+                            
+
                         if not no.image or not image_path_exists:
                             self.__class__.count_images += 1
 
@@ -1452,13 +1472,16 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
         # Remove duplicates and sort
         missing_groups = sorted(list(set(missing_groups)))
         missing_images = sorted(list(set(missing_images)))
+        image_nodes_unlinked = sorted(list(set(image_nodes_unlinked)))
         libraries = sorted(list(set(libraries)))
 
-        print("\n\n== %s missing image %s and %s missing node %s ==" %
+        print("\n\n== %s missing image %s, %s missing node %s and %s image %s unlinked ==" %
             ("No" if self.__class__.count_images == 0 else str(self.__class__.count_images),
             "node" if self.__class__.count_images == 1 else "nodes",
             "no" if self.__class__.count_groups == 0 else str(self.__class__.count_groups),
-            "group" if self.__class__.count_groups == 1 else "groups"))
+            "group" if self.__class__.count_groups == 1 else "groups",
+            "no" if self.__class__.count_image_node_unlinked == 0 else str(self.__class__.count_image_node_unlinked),
+            "node" if self.__class__.count_groups == 1 else "nodes"))
 
         # List Missing Node Groups
         if missing_groups:
@@ -1473,7 +1496,16 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
             for mii in missing_images:
                 print(mii)
 
-        if missing_groups or missing_images:
+        # List Image Nodes with its outputs unlinked
+        if image_nodes_unlinked:
+            print("\n* Image Nodes Unlinked [IM]\n")
+
+            for nou in image_nodes_unlinked:
+                print(nou)
+
+        if missing_groups or \
+           missing_images or \
+           image_nodes_unlinked:
             if libraries:
                 print("\nThat's bad, run check on %s:" % (
                     "this library" if len(libraries) == 1 else "these libraries"))
@@ -1826,7 +1858,8 @@ class AMTH_SCENE_PT_scene_debug(Panel):
                         icon="NODETREE")
 
         if AMTH_SCENE_OT_list_missing_node_links.count_groups != 0 or \
-            AMTH_SCENE_OT_list_missing_node_links.count_images != 0:
+            AMTH_SCENE_OT_list_missing_node_links.count_images != 0 or \
+            AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked != 0:
             col.label(text="Warning! Check Console", icon="ERROR")
 
         if AMTH_SCENE_OT_list_missing_node_links.count_groups != 0:
@@ -1839,6 +1872,12 @@ class AMTH_SCENE_PT_scene_debug(Panel):
                      str(AMTH_SCENE_OT_list_missing_node_links.count_images),
                      "node" if AMTH_SCENE_OT_list_missing_node_links.count_images == 1 else "nodes")),
                      icon="IMAGE_DATA")
+
+        if AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked != 0:
+            col.label(text="%s" % ("%s image %s with no output conected" % (
+                     str(AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked),
+                     "node" if AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked == 1 else "nodes")),
+                     icon="NODE")
 
         # List Empty Materials Slots
         box = layout.box()
@@ -2119,6 +2158,65 @@ def ui_render_output_z(self, context):
 
 # // UI: Warning about Z not connected
 
+# FEATURE: Delete Materials not assigned to any verts
+class AMTH_OBJECT_OT_material_remove_unassigned(Operator):
+    '''Remove materials not assigned to any vertex'''
+    bl_idname = "object.amaranth_object_material_remove_unassigned"
+    bl_label = "Remove Unassigned Materials"
+
+    def execute(self, context):
+
+        act_ob = context.active_object
+        count = len(act_ob.material_slots)
+        materials_removed = []
+        act_ob.active_material_index = 0
+
+        for slot in act_ob.material_slots:
+            count -= 1
+
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='VERT')
+
+            act_ob.active_material_index = count
+            bpy.ops.object.material_slot_select()
+            
+            if act_ob.data.total_vert_sel == 0:
+                materials_removed.append(
+                    "%s" % act_ob.active_material.name if act_ob.active_material else "Empty")
+                bpy.ops.object.mode_set(mode='OBJECT')
+                bpy.ops.object.material_slot_remove()
+            else:
+                pass
+
+#        materials_removed = sorted(set(list(materials_removed)))
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+
+        if materials_removed:
+            print("\n* Removed %s Unassigned Materials \n" % len(materials_removed))
+
+            count_mr = 0
+
+            for mr in materials_removed:
+                count_mr += 1
+                print("%0.2d. %s" % (count_mr, materials_removed[count_mr - 1]))
+
+            print("\n")
+            self.report({'INFO'}, "Removed %s Unassigned Materials" %
+                len(materials_removed))
+
+        return{'FINISHED'}
+
+def ui_material_remove_unassigned(self, context):
+
+    self.layout.operator(
+        AMTH_OBJECT_OT_material_remove_unassigned.bl_idname,
+        icon="X")
+
+# // FEATURE: Delete Materials not assigned to any verts
+
 classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_AddPresetColorManagement,
            AMTH_SCENE_PT_scene_debug,
@@ -2146,6 +2244,7 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_OBJECT_OT_select_meshlights,
            AMTH_OBJECT_OT_id_dupligroup,
            AMTH_OBJECT_OT_id_dupligroup_clear,
+           AMTH_OBJECT_OT_material_remove_unassigned,
            AMTH_POSE_OT_paths_clear_all,
            AMTH_POSE_OT_paths_frame_match,
            AMTH_FILE_PT_libraries)
@@ -2198,6 +2297,8 @@ def register():
     bpy.types.OBJECT_PT_duplication.append(ui_dupli_group_library_path)
 
     bpy.types.OBJECT_PT_relations.append(ui_object_id_duplis)
+
+    bpy.types.MATERIAL_MT_specials.append(ui_material_remove_unassigned)
 
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
@@ -2282,6 +2383,8 @@ def unregister():
     bpy.types.OBJECT_PT_duplication.remove(ui_dupli_group_library_path)
 
     bpy.types.OBJECT_PT_relations.remove(ui_object_id_duplis)
+
+    bpy.types.MATERIAL_MT_specials.remove(ui_material_remove_unassigned)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
