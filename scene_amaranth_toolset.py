@@ -2048,8 +2048,7 @@ def ui_node_normal_values(self, context):
 
     if act_node:
         if node and node.type == 'NORMAL':
-            self.layout.separator()
-            self.layout.prop(node, "normal_vector")
+            self.layout.prop(node, "normal_vector", text="")
 
 # // FEATURE: Normal Node Values, by Lukas Tönne
 
@@ -2171,6 +2170,10 @@ class AMTH_OBJECT_OT_material_remove_unassigned(Operator):
     bl_idname = "object.amaranth_object_material_remove_unassigned"
     bl_label = "Remove Unassigned Materials"
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.material_slots
+
     def execute(self, context):
 
         act_ob = context.active_object
@@ -2181,15 +2184,14 @@ class AMTH_OBJECT_OT_material_remove_unassigned(Operator):
         for slot in act_ob.material_slots:
             count -= 1
 
-            bpy.ops.object.mode_set(mode='OBJECT')
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.mesh.select_all(action='DESELECT')
-            bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='VERT')
-
             act_ob.active_material_index = count
             bpy.ops.object.material_slot_select()
             
-            if act_ob.data.total_vert_sel == 0:
+            if act_ob.data.total_vert_sel == 0 or \
+                (len(act_ob.material_slots) == 1 and not \
+                    act_ob.material_slots[0].material):
                 materials_removed.append(
                     "%s" % act_ob.active_material.name if act_ob.active_material else "Empty")
                 bpy.ops.object.mode_set(mode='OBJECT')
@@ -2197,9 +2199,9 @@ class AMTH_OBJECT_OT_material_remove_unassigned(Operator):
             else:
                 pass
 
-#        materials_removed = sorted(set(list(materials_removed)))
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
 
         if materials_removed:
             print("\n* Removed %s Unassigned Materials \n" % len(materials_removed))
