@@ -1422,30 +1422,18 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
                             if ma.library:
                                 libraries.append(ma.library.filepath)
                     if no.type == 'TEX_IMAGE':
+
+                        outputs_empty = not no.outputs['Color'].is_linked and not no.outputs['Alpha'].is_linked
+
                         if no.image:
                             import os.path
                             image_path_exists = os.path.exists(
                                                     bpy.path.abspath(
                                                         no.image.filepath, library=no.image.library))
 
-                        if not no.outputs['Color'].is_linked and not no.outputs['Alpha'].is_linked:
-                            self.__class__.count_image_node_unlinked += 1
-
-                            users_images = []
-
-                            image_nodes_unlinked.append("MA: %s%s%s [%s]%s%s%s%s\n" % (
-                                "[L] " if ma.library else "",
-                                "[F] " if ma.use_fake_user else "",
-                                ma.name, ma.users,
-                                "\nLI: %s" % 
-                                ma.library.filepath if ma.library else "",
-                                "\nIM: %s" % no.image.name if no.image else "",
-                                "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
-                                "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
-                            
-
-                        if not no.image or not image_path_exists:
-                            self.__class__.count_images += 1
+                        if outputs_empty or not \
+                           no.image or not \
+                           image_path_exists:
 
                             users_images = []
 
@@ -1456,18 +1444,37 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
                                         "[F] " if ob.use_fake_user else "",
                                         ob.name))
 
-                            missing_images.append("MA: %s%s%s [%s]%s%s%s%s\n" % (
-                                "[L] " if ma.library else "",
-                                "[F] " if ma.use_fake_user else "",
-                                ma.name, ma.users,
-                                "\nLI: %s" % 
-                                ma.library.filepath if ma.library else "",
-                                "\nIM: %s" % no.image.name if no.image else "",
-                                "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
-                                "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
+                            if outputs_empty:
+                                self.__class__.count_image_node_unlinked += 1
 
-                            if ma.library:
-                                libraries.append(ma.library.filepath)
+                                image_nodes_unlinked.append("%s%s%s%s%s [%s]%s%s%s%s\n" % (
+                                    "NO: %s" % no.name,
+                                    "\nMA: ",
+                                    "[L] " if ma.library else "",
+                                    "[F] " if ma.use_fake_user else "",
+                                    ma.name, ma.users,
+                                    "\nLI: %s" % 
+                                    ma.library.filepath if ma.library else "",
+                                    "\nIM: %s" % no.image.name if no.image else "",
+                                    "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
+                                    "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
+                            
+
+                            if not no.image or not image_path_exists:
+                                self.__class__.count_images += 1
+
+                                missing_images.append("MA: %s%s%s [%s]%s%s%s%s\n" % (
+                                    "[L] " if ma.library else "",
+                                    "[F] " if ma.use_fake_user else "",
+                                    ma.name, ma.users,
+                                    "\nLI: %s" % 
+                                    ma.library.filepath if ma.library else "",
+                                    "\nIM: %s" % no.image.name if no.image else "",
+                                    "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
+                                    "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
+
+                                if ma.library:
+                                    libraries.append(ma.library.filepath)
 
         # Remove duplicates and sort
         missing_groups = sorted(list(set(missing_groups)))
