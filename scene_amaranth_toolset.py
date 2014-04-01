@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 8, 6),
+    "version": (0, 8, 7),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -32,7 +32,7 @@ bl_info = {
 import bpy
 import bmesh
 from bpy.types import Operator, AddonPreferences, Panel, Menu
-from bpy.props import BoolProperty, EnumProperty, FloatProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty
 from mathutils import Vector
 from bpy.app.handlers import persistent
 from bl_operators.presets import AddPresetBase
@@ -197,6 +197,9 @@ def init_properties():
 
     bpy.types.ShaderNodeNormal.normal_vector = prop_normal_vector
     bpy.types.CompositorNodeNormal.normal_vector = prop_normal_vector
+    
+    bpy.types.CyclesRenderSettings.use_samples_final = BoolProperty(default=False)
+    bpy.types.CyclesRenderSettings.use_samples_final_percentage = BoolProperty(default=False)
 
 def clear_properties():
     props = (
@@ -212,6 +215,8 @@ def clear_properties():
         "amaranth_debug_scene_list_missing_images",
         "amarath_cycles_list_sampling",
         "normal_vector",
+        "use_samples_final",
+        "use_samples_final_percentage"
     )
     
     wm = bpy.context.window_manager
@@ -418,7 +423,6 @@ class AMTH_FILE_OT_directory_go_to(Operator):
     filepath = bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-
         bpy.ops.file.select_bookmark(dir=self.filepath)
         return {'FINISHED'}
 
@@ -1063,7 +1067,32 @@ def render_cycles_scene_samples(self, context):
     render = scene.render
     list_sampling = scene.amaranth_cycles_list_sampling
 
-    col = layout.column(align=True)
+    if cscene.progressive == 'BRANCHED_PATH':
+        layout.separator()
+        split = layout.split()
+        col = split.column()
+
+        col.operator(
+            AMTH_RENDER_OT_cycles_samples_percentage_set.bl_idname,
+            text="%s" % 'Set New Render Samples' if cscene.use_samples_final_percentage else 'Set Render Samples',
+            icon="%s" % 'UNPINNED' if cscene.use_samples_final_percentage else 'PINNED')
+
+        col = split.column()
+        row = col.row(align=True)
+        row.enabled = cscene.use_samples_final
+
+        row.operator(
+            AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
+            text="100").percent=100
+        row.operator(
+            AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
+            text="75").percent=75
+        row.operator(
+            AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
+            text="50").percent=50
+        row.operator(
+            AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
+            text="25").percent=25
 
     # List Lamps
     if (len(scene.render.layers) > 1) or \
@@ -2226,6 +2255,58 @@ def ui_material_remove_unassigned(self, context):
 
 # // FEATURE: Delete Materials not assigned to any verts
 
+# FEATURE: Cycles Samples Percentage
+class AMTH_RENDER_OT_cycles_samples_percentage_set(Operator):
+    '''Save the current number of samples per shader'''
+    bl_idname = "scene.amaranth_cycles_samples_percentage_set"
+    bl_label = "Set Render Samples"
+
+    def execute(self, context):
+        global cycles_samples_final
+
+        cycles = context.scene.cycles
+        cycles.use_samples_final = True
+
+        cycles_samples_final = {}
+        cycles_samples_final = {
+            'diffuse_samples' : cycles.diffuse_samples,
+            'glossy_samples' : cycles.glossy_samples,
+            'transmission_samples' : cycles.transmission_samples,
+            'ao_samples' : cycles.ao_samples,
+            'mesh_light_samples' : cycles.mesh_light_samples,
+            'subsurface_samples' : cycles.subsurface_samples,
+            'volume_samples' : cycles.volume_samples}
+
+        return{'FINISHED'}
+
+
+class AMTH_RENDER_OT_cycles_samples_percentage(Operator):
+    '''Set a percentage of the final render samples'''
+    bl_idname = "scene.amaranth_cycles_samples_percentage"
+    bl_label = "Set Render Samples Percentage"
+
+    percent = IntProperty(default=0)
+
+    def execute(self, context):
+        percent = self.percent
+        cycles = context.scene.cycles
+
+        if self.percent == 100:
+            cycles.use_samples_final_percentage = False
+        else:
+            cycles.use_samples_final_percentage = True
+
+        if cycles.use_samples_final:
+            cycles.diffuse_samples = int((cycles_samples_final['diffuse_samples'] / 100) * percent)
+            cycles.glossy_samples = int((cycles_samples_final['glossy_samples'] / 100) * percent)
+            cycles.transmission_samples = int((cycles_samples_final['transmission_samples'] / 100) * percent)
+            cycles.ao_samples = int((cycles_samples_final['ao_samples'] / 100) * percent)
+            cycles.mesh_light_samples = int((cycles_samples_final['mesh_light_samples'] / 100) * percent)
+            cycles.subsurface_samples = int((cycles_samples_final['subsurface_samples'] / 100) * percent)
+            cycles.volume_samples = int((cycles_samples_final['volume_samples'] / 100) * percent)
+
+        return{'FINISHED'}
+
 classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_AddPresetColorManagement,
            AMTH_SCENE_PT_scene_debug,
@@ -2256,6 +2337,8 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_OBJECT_OT_material_remove_unassigned,
            AMTH_POSE_OT_paths_clear_all,
            AMTH_POSE_OT_paths_frame_match,
+           AMTH_RENDER_OT_cycles_samples_percentage,
+           AMTH_RENDER_OT_cycles_samples_percentage_set,
            AMTH_FILE_PT_libraries)
 
 addon_keymaps = []
