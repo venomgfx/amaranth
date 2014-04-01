@@ -2184,12 +2184,13 @@ def ui_render_output_z(self, context):
     if scene.render.use_compositing and \
         image.file_format == 'OPEN_EXR' and \
         image.use_zbuffer:
-        for no in scene.node_tree.nodes:
-            if no.type == 'COMPOSITE':
-                if not no.inputs['Z'].is_linked:
-                    self.layout.label(
-                        text="The Z output in node \"%s\" is not connected" % 
-                            no.name, icon="ERROR")
+        if scene.node_tree and scene.node_tree.nodes:
+            for no in scene.node_tree.nodes:
+                if no.type == 'COMPOSITE':
+                    if not no.inputs['Z'].is_linked:
+                        self.layout.label(
+                            text="The Z output in node \"%s\" is not connected" % 
+                                no.name, icon="ERROR")
 
 # // UI: Warning about Z not connected
 
