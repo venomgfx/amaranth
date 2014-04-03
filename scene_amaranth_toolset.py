@@ -2064,7 +2064,7 @@ def normal_vector_set(self, values):
     self.outputs['Normal'].default_value = values
 
 prop_normal_vector = bpy.props.FloatVectorProperty(
-                        name="Normal", size=3,
+                        name="Normal", size=3, subtype='XYZ',
                         min=-1.0, max=1.0, soft_min=-1.0, soft_max=1.0,
                         get=normal_vector_get, set=normal_vector_set
                         )
