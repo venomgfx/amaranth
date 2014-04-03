@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 8, 7),
+    "version": (0, 8, 8),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -32,7 +32,9 @@ bl_info = {
 import bpy
 import bmesh
 from bpy.types import Operator, AddonPreferences, Panel, Menu
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty
+from bpy.props import (BoolProperty, EnumProperty,
+                       FloatProperty, IntProperty,
+                       StringProperty)
 from mathutils import Vector
 from bpy.app.handlers import persistent
 from bl_operators.presets import AddPresetBase
@@ -198,8 +200,11 @@ def init_properties():
     bpy.types.ShaderNodeNormal.normal_vector = prop_normal_vector
     bpy.types.CompositorNodeNormal.normal_vector = prop_normal_vector
     
-    bpy.types.CyclesRenderSettings.use_samples_final = BoolProperty(default=False)
-    bpy.types.CyclesRenderSettings.use_samples_final_percentage = BoolProperty(default=False)
+    bpy.types.CyclesRenderSettings.use_samples_final = BoolProperty(
+        name="Use Final Render Samples",
+        description="Use current shader samples as final render samples",
+        default=False,)
+
 
 def clear_properties():
     props = (
@@ -215,8 +220,7 @@ def clear_properties():
         "amaranth_debug_scene_list_missing_images",
         "amarath_cycles_list_sampling",
         "normal_vector",
-        "use_samples_final",
-        "use_samples_final_percentage"
+        "use_samples_final"
     )
     
     wm = bpy.context.window_manager
@@ -1074,25 +1078,25 @@ def render_cycles_scene_samples(self, context):
 
         col.operator(
             AMTH_RENDER_OT_cycles_samples_percentage_set.bl_idname,
-            text="%s" % 'Set New Render Samples' if cscene.use_samples_final_percentage else 'Set Render Samples',
-            icon="%s" % 'UNPINNED' if cscene.use_samples_final_percentage else 'PINNED')
+            text="%s" % 'Set as Render Samples' if cscene.use_samples_final else 'Set New Render Samples',
+            icon="%s" % 'PINNED' if cscene.use_samples_final else 'UNPINNED')
 
         col = split.column()
         row = col.row(align=True)
-        row.enabled = cscene.use_samples_final
+        row.enabled = True if scene.get('amth_cycles_samples_final') else False
 
         row.operator(
             AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
-            text="100").percent=100
+            text="100%").percent=100
         row.operator(
             AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
-            text="75").percent=75
+            text="75%").percent=75
         row.operator(
             AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
-            text="50").percent=50
+            text="50%").percent=50
         row.operator(
             AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
-            text="25").percent=25
+            text="25%").percent=25
 
     # List Lamps
     if (len(scene.render.layers) > 1) or \
@@ -2258,25 +2262,24 @@ def ui_material_remove_unassigned(self, context):
 
 # FEATURE: Cycles Samples Percentage
 class AMTH_RENDER_OT_cycles_samples_percentage_set(Operator):
-    '''Save the current number of samples per shader'''
+    '''Save the current number of samples per shader as final (gets saved in .blend)'''
     bl_idname = "scene.amaranth_cycles_samples_percentage_set"
-    bl_label = "Set Render Samples"
+    bl_label = "Set as Render Samples"
 
     def execute(self, context):
-        global cycles_samples_final
-
         cycles = context.scene.cycles
         cycles.use_samples_final = True
 
-        cycles_samples_final = {}
-        cycles_samples_final = {
-            'diffuse_samples' : cycles.diffuse_samples,
-            'glossy_samples' : cycles.glossy_samples,
-            'transmission_samples' : cycles.transmission_samples,
-            'ao_samples' : cycles.ao_samples,
-            'mesh_light_samples' : cycles.mesh_light_samples,
-            'subsurface_samples' : cycles.subsurface_samples,
-            'volume_samples' : cycles.volume_samples}
+        context.scene['amth_cycles_samples_final'] = [
+            cycles.diffuse_samples,
+            cycles.glossy_samples,
+            cycles.transmission_samples,
+            cycles.ao_samples,
+            cycles.mesh_light_samples,
+            cycles.subsurface_samples,
+            cycles.volume_samples]
+
+        self.report({'INFO'}, "Render Samples Saved")
 
         return{'FINISHED'}
 
@@ -2286,25 +2289,29 @@ class AMTH_RENDER_OT_cycles_samples_percentage(Operator):
     bl_idname = "scene.amaranth_cycles_samples_percentage"
     bl_label = "Set Render Samples Percentage"
 
-    percent = IntProperty(default=0)
+    percent = IntProperty(
+                name="Percentage",
+                description="Percentage to divide render samples by",
+                subtype='PERCENTAGE',
+                default=0)
 
     def execute(self, context):
         percent = self.percent
         cycles = context.scene.cycles
+        cycles_samples_final = context.scene['amth_cycles_samples_final']
 
-        if self.percent == 100:
-            cycles.use_samples_final_percentage = False
-        else:
-            cycles.use_samples_final_percentage = True
+        cycles.use_samples_final = False
 
-        if cycles.use_samples_final:
-            cycles.diffuse_samples = int((cycles_samples_final['diffuse_samples'] / 100) * percent)
-            cycles.glossy_samples = int((cycles_samples_final['glossy_samples'] / 100) * percent)
-            cycles.transmission_samples = int((cycles_samples_final['transmission_samples'] / 100) * percent)
-            cycles.ao_samples = int((cycles_samples_final['ao_samples'] / 100) * percent)
-            cycles.mesh_light_samples = int((cycles_samples_final['mesh_light_samples'] / 100) * percent)
-            cycles.subsurface_samples = int((cycles_samples_final['subsurface_samples'] / 100) * percent)
-            cycles.volume_samples = int((cycles_samples_final['volume_samples'] / 100) * percent)
+        if percent == 100:
+            cycles.use_samples_final = True
+
+        cycles.diffuse_samples = int((cycles_samples_final[0] / 100) * percent)
+        cycles.glossy_samples = int((cycles_samples_final[1] / 100) * percent)
+        cycles.transmission_samples = int((cycles_samples_final[2] / 100) * percent)
+        cycles.ao_samples = int((cycles_samples_final[3] / 100) * percent)
+        cycles.mesh_light_samples = int((cycles_samples_final[4] / 100) * percent)
+        cycles.subsurface_samples = int((cycles_samples_final[5] / 100) * percent)
+        cycles.volume_samples = int((cycles_samples_final[6] / 100) * percent)
 
         return{'FINISHED'}
 
