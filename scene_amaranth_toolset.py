@@ -390,7 +390,7 @@ class AMTH_FILE_PT_libraries(Panel):
         libslist = []
 
         # Build the list of folders from libraries
-        import os
+        import os.path
 
         for lib in libs:
             directory_name = os.path.dirname(lib.filepath)
@@ -1633,7 +1633,8 @@ class AMTH_SCENE_OT_blender_instance_open(Operator):
  
     def execute(self, context):
         if self.filepath:
-            filepath = bpy.path.abspath(self.filepath)
+            import os.path
+            filepath = os.path.normpath(bpy.path.abspath(self.filepath))
 
             import subprocess
             try:
