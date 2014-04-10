@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin",
-    "version": (0, 8, 8),
+    "version": (0, 8, 9),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -73,6 +73,12 @@ class AmaranthToolsetPreferences(AddonPreferences):
             description="Display extra scene statistics in Info editor's header",
             default=True,
             )
+
+    frames_jump = IntProperty(
+                name="Frames",
+                description="Number of frames to jump forward/backward",
+                default=10,
+                min=1)
 
 
     def draw(self, context):
@@ -204,7 +210,6 @@ def init_properties():
         name="Use Final Render Samples",
         description="Use current shader samples as final render samples",
         default=False,)
-
 
 def clear_properties():
     props = (
@@ -1444,10 +1449,11 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
                                         "[F] " if ob.use_fake_user else "",
                                         ob.name))
 
-                            missing_groups.append("NG: %s%s%s [%s]%s%s\n" % (
+                            missing_groups.append("MA: %s%s%s [%s]%s%s%s\n" % (
                                 "[L] " if ma.library else "",
                                 "[F] " if ma.use_fake_user else "",
                                 ma.name, ma.users,
+                                " *** No users *** " if ma.users == 0 else "",
                                 "\nLI: %s" % 
                                 ma.library.filepath if ma.library else "",
                                 "\nOB: %s" % ',  '.join(users_ngroup) if users_ngroup else ""))
@@ -1480,12 +1486,13 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
                             if outputs_empty:
                                 self.__class__.count_image_node_unlinked += 1
 
-                                image_nodes_unlinked.append("%s%s%s%s%s [%s]%s%s%s%s\n" % (
+                                image_nodes_unlinked.append("%s%s%s%s%s [%s]%s%s%s%s%s\n" % (
                                     "NO: %s" % no.name,
                                     "\nMA: ",
                                     "[L] " if ma.library else "",
                                     "[F] " if ma.use_fake_user else "",
                                     ma.name, ma.users,
+                                    " *** No users *** " if ma.users == 0 else "",
                                     "\nLI: %s" % 
                                     ma.library.filepath if ma.library else "",
                                     "\nIM: %s" % no.image.name if no.image else "",
@@ -1496,10 +1503,11 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
                             if not no.image or not image_path_exists:
                                 self.__class__.count_images += 1
 
-                                missing_images.append("MA: %s%s%s [%s]%s%s%s%s\n" % (
+                                missing_images.append("MA: %s%s%s [%s]%s%s%s%s%s\n" % (
                                     "[L] " if ma.library else "",
                                     "[F] " if ma.use_fake_user else "",
                                     ma.name, ma.users,
+                                    " *** No users *** " if ma.users == 0 else "",
                                     "\nLI: %s" % 
                                     ma.library.filepath if ma.library else "",
                                     "\nIM: %s" % no.image.name if no.image else "",
@@ -1525,20 +1533,20 @@ class AMTH_SCENE_OT_list_missing_node_links(Operator):
 
         # List Missing Node Groups
         if missing_groups:
-            print("\n* Missing Node Group Links [NG]\n")
+            print("\n* Missing Node Group Links\n")
             for mig in missing_groups:
                 print(mig)
 
         # List Missing Image Nodes
         if missing_images:
-            print("\n* Missing Image Nodes Link [IM]\n")
+            print("\n* Missing Image Nodes Link\n")
 
             for mii in missing_images:
                 print(mii)
 
         # List Image Nodes with its outputs unlinked
         if image_nodes_unlinked:
-            print("\n* Image Nodes Unlinked [IM]\n")
+            print("\n* Image Nodes Unlinked\n")
 
             for nou in image_nodes_unlinked:
                 print(nou)
@@ -1630,7 +1638,7 @@ class AMTH_SCENE_OT_blender_instance_open(Operator):
     bl_idname = "scene.blender_instance_open"
     bl_label = "Open Blender Instance"
     filepath = bpy.props.StringProperty()
- 
+
     def execute(self, context):
         if self.filepath:
             import os.path
@@ -2316,6 +2324,36 @@ class AMTH_RENDER_OT_cycles_samples_percentage(Operator):
 
         return{'FINISHED'}
 
+# //FEATURE: Cycles Samples Percentage
+# FEATURE: Jump forward/backward every N frames
+class AMTH_SCREEN_OT_frame_jump(Operator):
+    '''Jump a number of frames forward/backwards'''
+    bl_idname = "screen.amaranth_frame_jump"
+    bl_label = "Jump Frames"
+
+    forward = BoolProperty(default=True)
+
+    def execute(self, context):
+        scene = context.scene
+        preferences = context.user_preferences.addons[__name__].preferences
+
+        if self.forward:
+            scene.frame_current = scene.frame_current + preferences.frames_jump
+        else:
+            scene.frame_current = scene.frame_current - preferences.frames_jump
+
+        return{'FINISHED'}
+
+def ui_userpreferences_edit(self, context):
+    preferences = context.user_preferences.addons[__name__].preferences
+
+    col = self.layout.column()
+    split = col.split(percentage=0.21)
+    split.prop(preferences, "frames_jump",
+               text="Frames to Jump")
+
+# // FEATURE: Jump forward/backward every N frames
+
 classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_AddPresetColorManagement,
            AMTH_SCENE_PT_scene_debug,
@@ -2348,7 +2386,8 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_POSE_OT_paths_frame_match,
            AMTH_RENDER_OT_cycles_samples_percentage,
            AMTH_RENDER_OT_cycles_samples_percentage_set,
-           AMTH_FILE_PT_libraries)
+           AMTH_FILE_PT_libraries,
+           AMTH_SCREEN_OT_frame_jump)
 
 addon_keymaps = []
 
@@ -2401,6 +2440,8 @@ def register():
 
     bpy.types.MATERIAL_MT_specials.append(ui_material_remove_unassigned)
 
+    bpy.types.USERPREF_PT_edit.append(ui_userpreferences_edit)
+
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
 
@@ -2418,6 +2459,12 @@ def register():
         km = kc.keymaps.new(name='Window')
         kmi = km.keymap_items.new('scene.refresh', 'F5', 'PRESS', shift=False, ctrl=False)
         kmi = km.keymap_items.new('wm.save_reload', 'W', 'PRESS', shift=True, ctrl=True)
+
+        km = kc.keymaps.new(name='Frames')
+        kmi = km.keymap_items.new('screen.amaranth_frame_jump', 'UP_ARROW', 'PRESS', shift=True)
+        kmi.properties.forward = True
+        kmi = km.keymap_items.new('screen.amaranth_frame_jump', 'DOWN_ARROW', 'PRESS', shift=True)
+        kmi.properties.forward = False
 
         km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new('view3d.show_only_render', 'Z', 'PRESS', shift=True, alt=True)
@@ -2486,6 +2533,8 @@ def unregister():
     bpy.types.OBJECT_PT_relations.remove(ui_object_id_duplis)
 
     bpy.types.MATERIAL_MT_specials.remove(ui_material_remove_unassigned)
+
+    bpy.types.USERPREF_PT_edit.remove(ui_userpreferences_edit)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
