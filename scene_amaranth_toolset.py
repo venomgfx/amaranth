@@ -1399,19 +1399,19 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes_clear(Operator):
         print("* Cleared Cycles Materials List")
         return {'FINISHED'}
 
-class AMTH_SCENE_OT_amaranth_debug_lamp_select(Operator):
-    '''Select Lamp'''
-    bl_idname = "scene.amaranth_debug_lamp_select"
-    bl_label = "Select Lamp"
-    lamp = bpy.props.StringProperty()
+class AMTH_SCENE_OT_amaranth_object_select(Operator):
+    '''Select object'''
+    bl_idname = "scene.amaranth_object_select"
+    bl_label = "Select Object"
+    object = bpy.props.StringProperty()
  
     def execute(self, context):
-        if self.lamp:
-            lamp = bpy.data.objects[self.lamp]
+        if self.object:
+            object = bpy.data.objects[self.object]
 
             bpy.ops.object.select_all(action='DESELECT')
-            lamp.select = True
-            context.scene.objects.active = lamp
+            object.select = True
+            context.scene.objects.active = object
 
         return{'FINISHED'}
 
@@ -1727,13 +1727,13 @@ class AMTH_SCENE_PT_scene_debug(Panel):
                         col = split.column()
                         row = col.row()
                         row.alignment = 'LEFT'
-                        row.operator("scene.amaranth_debug_lamp_select",
+                        row.operator(AMTH_SCENE_OT_amaranth_object_select.bl_idname,
                                     text='%s %s%s' % (
                                         " [L] " if ob.library else "",
                                         ob.name,
                                         "" if ob.name in context.scene.objects else " [Not in Scene]"),
                                     icon="LAMP_%s" % ob.data.type,
-                                    emboss=False).lamp = ob.name
+                                    emboss=False).object = ob.name
                         if ob.library:
                             row = col.row(align=True)
                             row.alignment = "LEFT"
@@ -1959,9 +1959,14 @@ class AMTH_SCENE_PT_scene_debug(Panel):
 
                 for obs in missing_material_slots_obs:
                     count += 1
-                    col.label(text='%s' % (
-                        missing_material_slots_obs[count-1]),
-                        icon="OBJECT_DATA")
+
+                    row = col.row()
+                    row.alignment = 'LEFT'
+                    row.operator(AMTH_SCENE_OT_amaranth_object_select.bl_idname,
+                                text='%s' % (
+                                    missing_material_slots_obs[count-1]),
+                                icon="OBJECT_DATA",
+                                emboss=False).object = missing_material_slots_obs[count-1]
 
                 if missing_material_slots_lib:
                     col.separator()
@@ -2360,7 +2365,7 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_SCENE_OT_refresh,
            AMTH_SCENE_OT_cycles_shader_list_nodes,
            AMTH_SCENE_OT_cycles_shader_list_nodes_clear,
-           AMTH_SCENE_OT_amaranth_debug_lamp_select,
+           AMTH_SCENE_OT_amaranth_object_select,
            AMTH_SCENE_OT_list_missing_node_links,
            AMTH_SCENE_OT_list_missing_material_slots,
            AMTH_SCENE_OT_list_missing_material_slots_clear,
