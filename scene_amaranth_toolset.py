@@ -260,6 +260,31 @@ def amaranth_text_startup(context):
     except AttributeError:
         return None
 
+# Is Emission Material? For select and stats
+def cycles_is_emission(context, ob):
+
+    is_emission = False
+
+    if ob.material_slots:
+        for ma in ob.material_slots:
+            if ma.material:
+                if ma.material.node_tree:
+                    for no in ma.material.node_tree.nodes:
+                        if no.type in {'EMISSION', 'GROUP'}:
+                            for ou in no.outputs:
+                                if ou.links:
+                                    if no.type == 'GROUP':
+                                        for gno in no.node_tree.nodes:
+                                            if gno.type == 'EMISSION':
+                                                for gou in gno.outputs:
+                                                    if ou.links and gou.links:
+                                                        is_emission = True
+
+                                    elif no.type == 'EMISSION':
+                                        if ou.links:
+                                            is_emission = True
+    return is_emission
+
 # FEATURE: Refresh Scene!
 class AMTH_SCENE_OT_refresh(Operator):
     """Refresh the current scene"""
@@ -788,20 +813,13 @@ def stats_scene(self, context):
         cameras_selected = 0
         meshlights = 0
         meshlights_visible = 0
-    
+
         for ob in context.scene.objects:
-            if ob.material_slots:
-                for ma in ob.material_slots:
-                    if ma.material:
-                        if ma.material.node_tree:
-                            for no in ma.material.node_tree.nodes:
-                                if no.type == 'EMISSION':
-                                    for ou in no.outputs:
-                                        if ou.links:
-                                            meshlights += 1
-                                            if ob in context.visible_objects:
-                                                meshlights_visible += 1
-                                            break
+            if cycles_is_emission(context, ob):
+                meshlights += 1
+                if ob in context.visible_objects:
+                    meshlights_visible += 1
+
             if ob in context.selected_objects:
                 if ob.type == 'CAMERA':
                     cameras_selected += 1
@@ -919,14 +937,9 @@ class AMTH_OBJECT_OT_select_meshlights(Operator):
         bpy.ops.object.select_all(action='DESELECT')
 
         for ob in context.scene.objects:
-            if ob.material_slots:
-                for ma in ob.material_slots:
-                    if ma.material:
-                        if ma.material.node_tree:
-                            for no in ma.material.node_tree.nodes:
-                                if no.type == 'EMISSION':
-                                    ob.select = True
-                                    context.scene.objects.active = ob
+            if cycles_is_emission(context, ob):
+                ob.select = True
+                context.scene.objects.active = ob
 
         if not context.selected_objects and not context.scene.objects.active:
             self.report({'INFO'}, "No meshlights to select")
