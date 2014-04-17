@@ -2451,9 +2451,9 @@ class AMTH_SCENE_OT_layers_render_set_individual(Operator):
         return{'FINISHED'}
 
 class AMTH_SCENE_OT_layers_render_clear(Operator):
-    '''Clear layers to render'''
+    '''Clear layers for render'''
     bl_idname = "scene.amaranth_layers_render_clear"
-    bl_label = "Clear Layers to Render"
+    bl_label = "Clear Layers for Render"
 
     def execute(self, context):
 
@@ -2469,6 +2469,7 @@ def ui_layers_for_render(self, context):
         lfr = context.scene['amth_layers_for_render']
 
     layout = self.layout
+    layout.label("Layers for Rendering:")
     split = layout.split()
     col = split.column(align=True)
     row = col.row(align=True)
