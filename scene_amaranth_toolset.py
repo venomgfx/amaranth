@@ -2390,8 +2390,8 @@ class AMTH_SCENE_OT_layers_render_save(Operator):
 
         return{'FINISHED'}
 
-class AMTH_SCENE_OT_layers_render_set(Operator):
-    '''Enable the layers that should be active for final renders'''
+class AMTH_SCENE_OT_layers_render_view(Operator):
+    '''Enable the scene layers that should be active for final renders'''
     bl_idname = "scene.amaranth_layers_render_view"
     bl_label = "View Layers for Render"
 
@@ -2421,7 +2421,7 @@ class AMTH_SCENE_OT_layers_render_set(Operator):
         return{'FINISHED'}
 
 class AMTH_SCENE_OT_layers_render_set_individual(Operator):
-    '''Wether this layer should be enabled for final render'''
+    '''Whether this layer should be enabled or not for final renders'''
     bl_idname = "scene.amaranth_layers_render_set_individual"
     bl_label = "Set This Layer for Render"
 
@@ -2485,7 +2485,7 @@ def ui_layers_for_render(self, context):
         col = col.column(align=True)
         col.enabled = True if lfr_available else False
         col.operator(
-            AMTH_SCENE_OT_layers_render_set.bl_idname,
+            AMTH_SCENE_OT_layers_render_view.bl_idname,
             icon="RESTRICT_VIEW_OFF")
 
         split = split.split()
@@ -2495,12 +2495,12 @@ def ui_layers_for_render(self, context):
         for n in range(0,5):
             row.operator(
                 AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
-                icon='LAYER_ACTIVE' if n in lfr else 'LAYER_USED').number = n
+                icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
         row = col.row(align=True)
         for n in range(10,15):
             row.operator(
                 AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
-                icon='LAYER_ACTIVE' if n in lfr else 'LAYER_USED').number = n
+                icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
 
         split = split.split()
         col = split.column(align=True)
@@ -2509,12 +2509,19 @@ def ui_layers_for_render(self, context):
         for n in range(5,10):
             row.operator(
                 AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
-                icon='LAYER_ACTIVE' if n in lfr else 'LAYER_USED').number = n
+                icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
         row = col.row(align=True)
         for n in range(15,20):
             row.operator(
                 AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
-                icon='LAYER_ACTIVE' if n in lfr else 'LAYER_USED').number = n
+                icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
+
+def ui_layers_for_render_header(self, context):
+    if context.scene.get('amth_layers_for_render'):
+        self.layout.operator(
+            AMTH_SCENE_OT_layers_render_view.bl_idname,
+            text="", icon="IMGDISPLAY")
+
 # // FEATURE: Set Layers to Render
 
 classes = (AMTH_SCENE_MT_color_management_presets,
@@ -2529,7 +2536,7 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_SCENE_OT_list_missing_material_slots_clear,
            AMTH_SCENE_OT_blender_instance_open,
            AMTH_SCENE_OT_layers_render_save,
-           AMTH_SCENE_OT_layers_render_set,
+           AMTH_SCENE_OT_layers_render_view,
            AMTH_SCENE_OT_layers_render_set_individual,
            AMTH_SCENE_OT_layers_render_clear,
            AMTH_WM_OT_save_reload,
@@ -2570,15 +2577,15 @@ def register():
     bpy.types.VIEW3D_MT_object_specials.append(button_refresh)
     bpy.types.VIEW3D_MT_object_specials.append(button_render_border_camera)
     bpy.types.VIEW3D_MT_object_specials.append(button_camera_passepartout)
+    bpy.types.VIEW3D_MT_object_specials.append(button_frame_current)
+    bpy.types.VIEW3D_MT_pose_specials.append(button_frame_current)
+    bpy.types.VIEW3D_MT_select_object.append(button_select_meshlights)
+    bpy.types.VIEW3D_HT_header.append(ui_layers_for_render_header)
 
     bpy.types.INFO_MT_file.append(button_save_reload)
     bpy.types.INFO_HT_header.append(stats_scene)
 
-    bpy.types.VIEW3D_MT_object_specials.append(button_frame_current) # Current Frame
-    bpy.types.VIEW3D_MT_pose_specials.append(button_frame_current)
-    bpy.types.VIEW3D_MT_select_object.append(button_select_meshlights)
-
-    bpy.types.TIME_HT_header.append(label_timeline_extra_info) # Timeline Extra Info
+    bpy.types.TIME_HT_header.append(label_timeline_extra_info)
 
     bpy.types.NODE_HT_header.append(node_templates_pulldown)
     bpy.types.NODE_HT_header.append(node_stats)
@@ -2666,13 +2673,13 @@ def unregister():
     bpy.types.VIEW3D_MT_object_specials.remove(button_refresh)
     bpy.types.VIEW3D_MT_object_specials.remove(button_render_border_camera)
     bpy.types.VIEW3D_MT_object_specials.remove(button_camera_passepartout)
-
-    bpy.types.INFO_MT_file.remove(button_save_reload)
-    bpy.types.INFO_HT_header.remove(stats_scene)
-
     bpy.types.VIEW3D_MT_object_specials.remove(button_frame_current)
     bpy.types.VIEW3D_MT_pose_specials.remove(button_frame_current)
     bpy.types.VIEW3D_MT_select_object.remove(button_select_meshlights)
+    bpy.types.VIEW3D_HT_header.remove(ui_layers_for_render_header)
+
+    bpy.types.INFO_MT_file.remove(button_save_reload)
+    bpy.types.INFO_HT_header.remove(stats_scene)
 
     bpy.types.TIME_HT_header.remove(label_timeline_extra_info)
 
