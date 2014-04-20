@@ -209,7 +209,7 @@ def init_properties():
     bpy.types.CyclesRenderSettings.use_samples_final = BoolProperty(
         name="Use Final Render Samples",
         description="Use current shader samples as final render samples",
-        default=False,)
+        default=False)
 
 def clear_properties():
     props = (
@@ -242,19 +242,21 @@ def amaranth_text_startup(context):
     global amth_text
 
     try:
-        for tx in bpy.data.texts:
-            if tx.name == amth_text_name:
-                amth_text_exists = True
-                amth_text = bpy.data.texts[amth_text_name]
-                break
-            else:
-                amth_text_exists = False
-                bpy.ops.text.new()
-                amth_text = bpy.data.texts[-1]
-                amth_text.name = amth_text_name
-                amth_text.write("# Amaranth Startup Script\nimport bpy\n\n")
-                amth_text.use_module = True
-                break
+        if bpy.data.texts:
+            for tx in bpy.data.texts:
+                if tx.name == amth_text_name:
+                    amth_text_exists = True
+                    amth_text = bpy.data.texts[amth_text_name]
+                    break
+                else:
+                    amth_text_exists = False
+
+        if not amth_text_exists:
+            bpy.ops.text.new()
+            amth_text = bpy.data.texts[-1]
+            amth_text.name = amth_text_name
+            amth_text.write("# Amaranth Startup Script\nimport bpy\n\n")
+            amth_text.use_module = True
 
         return amth_text_exists
     except AttributeError:
@@ -551,13 +553,12 @@ class AMTH_NODE_MT_amaranth_templates(Menu):
             icon='COLOR')
 
 def node_templates_pulldown(self, context):
-
     if context.space_data.tree_type == 'CompositorNodeTree':
         layout = self.layout
         row = layout.row(align=True)
         row.scale_x = 1.3
         row.menu("AMTH_NODE_MT_amaranth_templates",
-            icon="RADIO")
+            icon="NODETREE")
 # // FEATURE: Node Templates
 
 def node_stats(self,context):
@@ -1674,6 +1675,10 @@ class AMTH_SCENE_PT_scene_debug(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    def draw_header(self, context):
+        layout = self.layout
+        layout.label(text="", icon="RADIO")
+
     def draw(self, context):
         layout = self.layout
         scene = context.scene
@@ -1690,127 +1695,6 @@ class AMTH_SCENE_PT_scene_debug(Panel):
         missing_material_slots_count = len(AMTH_SCENE_OT_list_missing_material_slots.objects)
         missing_material_slots_lib = AMTH_SCENE_OT_list_missing_material_slots.libraries
         engine = scene.render.engine
-
-        # List Lamps
-        box = layout.box()
-        row = box.row(align=True)
-        split = row.split()
-        col = split.column()
-        
-        if lamps:
-            row = col.row(align=True)
-            row.alignment = 'LEFT'
-            row.prop(scene, 'amaranth_debug_scene_list_lamps',
-                        icon="%s" % 'TRIA_DOWN' if list_lamps else 'TRIA_RIGHT',
-                        emboss=False)
-
-            if objects and list_lamps:
-                row = box.row(align=True)
-                split = row.split(percentage=0.42)
-                col = split.column()
-                col.label(text="Name")
-
-                split = split.split(percentage=0.1)
-                col = split.column()
-                col.label(text="", icon="BLANK1")
-                if engine in ['CYCLES', 'BLENDER_RENDER']:
-                    if engine == 'BLENDER_RENDER':
-                        split = split.split(percentage=0.7)
-                    else:
-                        split = split.split(percentage=0.35)
-                    col = split.column()
-                    col.label(text="Samples")
-
-                if engine == 'CYCLES':
-                    split = split.split(percentage=0.35)
-                    col = split.column()
-                    col.label(text="Size")
-
-                split = split.split(percentage=0.8)
-                col = split.column()
-                col.label(text="Visibility")
-
-                for ob in objects:
-                    if ob and ob.type == 'LAMP':
-                        lamp = ob.data
-                        clamp = ob.data.cycles
-
-                        row = box.row(align=True)
-                        split = row.split(percentage=0.5)
-                        col = split.column()
-                        row = col.row()
-                        row.alignment = 'LEFT'
-                        row.operator(AMTH_SCENE_OT_amaranth_object_select.bl_idname,
-                                    text='%s %s%s' % (
-                                        " [L] " if ob.library else "",
-                                        ob.name,
-                                        "" if ob.name in context.scene.objects else " [Not in Scene]"),
-                                    icon="LAMP_%s" % ob.data.type,
-                                    emboss=False).object = ob.name
-                        if ob.library:
-                            row = col.row(align=True)
-                            row.alignment = "LEFT"
-                            row.operator(AMTH_SCENE_OT_blender_instance_open.bl_idname,
-                                         text=ob.library.filepath,
-                                         icon="LINK_BLEND",
-                                         emboss=False).filepath=ob.library.filepath
-
-                        if engine == 'CYCLES':
-                            split = split.split(percentage=0.35)
-                            col = split.column()
-                            if scene.cycles.progressive == 'BRANCHED_PATH':
-                                col.prop(clamp, "samples", text="")
-                            if scene.cycles.progressive == 'PATH':
-                               col.label(text="N/A")
-                           
-                        if engine == 'BLENDER_RENDER':
-                            split = split.split(percentage=0.7)
-                            col = split.column()
-                            if lamp.type == 'HEMI':
-                                col.label(text="Not Available")
-                            elif lamp.type == 'AREA' and lamp.shadow_method == 'RAY_SHADOW':
-                                row = col.row(align=True)
-                                row.prop(lamp, "shadow_ray_samples_x", text="X")
-                                if lamp.shape == 'RECTANGLE':
-                                    row.prop(lamp, "shadow_ray_samples_y", text="Y")
-                            elif lamp.shadow_method == 'RAY_SHADOW':
-                                col.prop(lamp, "shadow_ray_samples", text="Ray Samples")
-                            elif lamp.shadow_method == 'BUFFER_SHADOW':
-                                col.prop(lamp, "shadow_buffer_samples", text="Buffer Samples")
-                            else:
-                                col.label(text="No Shadow")
-
-                        if engine == 'CYCLES':
-                            split = split.split(percentage=0.4)
-                            col = split.column()
-                            if lamp.type in ['POINT','SUN', 'SPOT']:
-                                col.label(text="%.2f" % lamp.shadow_soft_size)
-                            elif lamp.type == 'HEMI':
-                                col.label(text="N/A")
-                            elif lamp.type == 'AREA' and lamp.shape == 'RECTANGLE':
-                                col.label(text="%.2fx%.2f" % (lamp.size, lamp.size_y))
-                            else:
-                                col.label(text="%.2f" % lamp.size)
-
-                        split = split.split(percentage=0.8)
-                        col = split.column()
-                        row = col.row(align=True)
-                        row.prop(ob, "hide", text="", emboss=False)
-                        row.prop(ob, "hide_render", text="", emboss=False)
-
-                        split = split.split(percentage=0.3)
-                        col = split.column()
-                        col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
-
-        else:
-            row = col.row(align=True)
-            row.alignment = 'LEFT'
-            row.label(text="Lamps List", icon="RIGHTARROW_THIN")
-
-            split = split.split()
-            col = split.column()
-
-            col.label(text="No Lamps", icon="LAMP_DATA")
 
         # List Missing Images
         box = layout.box()
@@ -1975,11 +1859,8 @@ class AMTH_SCENE_PT_scene_debug(Panel):
 
                     row = col.row()
                     row.alignment = 'LEFT'
-                    row.operator(AMTH_SCENE_OT_amaranth_object_select.bl_idname,
-                                text='%s' % (
-                                    missing_material_slots_obs[count-1]),
-                                icon="OBJECT_DATA",
-                                emboss=False).object = missing_material_slots_obs[count-1]
+                    row.label(text='%s' % missing_material_slots_obs[count-1],
+                                icon="OBJECT_DATA")
 
                 if missing_material_slots_lib:
                     col.separator()
@@ -2128,7 +2009,6 @@ class AMTH_OBJECT_OT_id_dupligroup(Operator):
         self.__class__.clear = False
         ob = context.active_object
         amth_text_exists = amaranth_text_startup(context)
-
         script_exists = False
         script_intro = "# OB ID: %s" % ob.name
         obdata = "bpy.data.objects['%s']" % ob.name
@@ -2523,9 +2403,147 @@ def ui_layers_for_render_header(self, context):
             text="", icon="IMGDISPLAY")
 
 # // FEATURE: Set Layers to Render
+# FEATURE: Lighters Corner
+class AMTH_LightersCorner(bpy.types.Panel):
+    """The Lighters Panel"""
+    bl_label = "Lighter's Corner"
+    bl_idname = "AMTH_SCENE_PT_lighters_corner"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        any_lamps = False
+        for ob in bpy.data.objects:
+            if ob.type == 'LAMP':
+                any_lamps = True
+            else:
+                pass
+        return any_lamps
+
+    def draw_header(self, context):
+        layout = self.layout
+        layout.label(text="", icon="LAMP_SUN")
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        objects =  bpy.data.objects
+        ob_act = context.active_object
+        lamps = bpy.data.lamps
+        list_lamps = scene.amaranth_debug_scene_list_lamps
+        engine = scene.render.engine
+
+        # List Lamps
+        box = layout.box()
+        if lamps:
+
+            if objects:
+                row = box.row(align=True)
+                split = row.split(percentage=0.42)
+                col = split.column()
+                col.label(text="Name")
+
+                split = split.split(percentage=0.1)
+                col = split.column()
+                col.label(text="", icon="BLANK1")
+                if engine in ['CYCLES', 'BLENDER_RENDER']:
+                    if engine == 'BLENDER_RENDER':
+                        split = split.split(percentage=0.7)
+                    else:
+                        split = split.split(percentage=0.35)
+                    col = split.column()
+                    col.label(text="Samples")
+
+                if engine == 'CYCLES':
+                    split = split.split(percentage=0.35)
+                    col = split.column()
+                    col.label(text="Size")
+
+                split = split.split(percentage=0.8)
+                col = split.column()
+                col.label(text="Visibility")
+
+                for ob in objects:
+                    if ob and ob.type == 'LAMP':
+                        lamp = ob.data
+                        clamp = ob.data.cycles
+
+                        row = box.row(align=True)
+                        split = row.split(percentage=0.5)
+                        col = split.column()
+                        row = col.row()
+                        row.alignment = 'LEFT'
+                        row.operator(AMTH_SCENE_OT_amaranth_object_select.bl_idname,
+                                    text='%s %s%s' % (
+                                        " [L] " if ob.library else "",
+                                        ob.name,
+                                        "" if ob.name in context.scene.objects else " [Not in Scene]"),
+                                    icon="LAMP_%s" % ob.data.type,
+                                    emboss=False).object = ob.name
+                        if ob.library:
+                            row = col.row(align=True)
+                            row.alignment = "LEFT"
+                            row.operator(AMTH_SCENE_OT_blender_instance_open.bl_idname,
+                                         text=ob.library.filepath,
+                                         icon="LINK_BLEND",
+                                         emboss=False).filepath=ob.library.filepath
+
+                        if engine == 'CYCLES':
+                            split = split.split(percentage=0.35)
+                            col = split.column()
+                            if scene.cycles.progressive == 'BRANCHED_PATH':
+                                col.prop(clamp, "samples", text="")
+                            if scene.cycles.progressive == 'PATH':
+                               col.label(text="N/A")
+                           
+                        if engine == 'BLENDER_RENDER':
+                            split = split.split(percentage=0.7)
+                            col = split.column()
+                            if lamp.type == 'HEMI':
+                                col.label(text="Not Available")
+                            elif lamp.type == 'AREA' and lamp.shadow_method == 'RAY_SHADOW':
+                                row = col.row(align=True)
+                                row.prop(lamp, "shadow_ray_samples_x", text="X")
+                                if lamp.shape == 'RECTANGLE':
+                                    row.prop(lamp, "shadow_ray_samples_y", text="Y")
+                            elif lamp.shadow_method == 'RAY_SHADOW':
+                                col.prop(lamp, "shadow_ray_samples", text="Ray Samples")
+                            elif lamp.shadow_method == 'BUFFER_SHADOW':
+                                col.prop(lamp, "shadow_buffer_samples", text="Buffer Samples")
+                            else:
+                                col.label(text="No Shadow")
+
+                        if engine == 'CYCLES':
+                            split = split.split(percentage=0.4)
+                            col = split.column()
+                            if lamp.type in ['POINT','SUN', 'SPOT']:
+                                col.label(text="%.2f" % lamp.shadow_soft_size)
+                            elif lamp.type == 'HEMI':
+                                col.label(text="N/A")
+                            elif lamp.type == 'AREA' and lamp.shape == 'RECTANGLE':
+                                col.label(text="%.2fx%.2f" % (lamp.size, lamp.size_y))
+                            else:
+                                col.label(text="%.2f" % lamp.size)
+
+                        split = split.split(percentage=0.8)
+                        col = split.column()
+                        row = col.row(align=True)
+                        row.prop(ob, "hide", text="", emboss=False)
+                        row.prop(ob, "hide_render", text="", emboss=False)
+
+                        split = split.split(percentage=0.3)
+                        col = split.column()
+                        col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
+
+        else:
+            box.label(text="No Lamps", icon="LAMP_DATA")
+
 
 classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_AddPresetColorManagement,
+           AMTH_LightersCorner,
            AMTH_SCENE_PT_scene_debug,
            AMTH_SCENE_OT_refresh,
            AMTH_SCENE_OT_cycles_shader_list_nodes,
