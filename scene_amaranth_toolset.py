@@ -2284,8 +2284,9 @@ class AMTH_SCENE_OT_layers_render_view(Operator):
 
             for area in screen.areas:
                 if area.type == 'VIEW_3D':
-                    override = {'window': window, 'screen': screen,
-                                'scene': scene, 'area': area}
+                    override = {'window': window, 'screen': screen, 'scene': scene, 
+                                'area': area, 'region': area.regions[4],
+                                'blend_data': context.blend_data}
 
                     if layers_render:
                         bpy.ops.view3d.layers(override, nr=layers_render[0]+1, extend=False, toggle=False)
@@ -2438,7 +2439,6 @@ class AMTH_LightersCorner(bpy.types.Panel):
         # List Lamps
         box = layout.box()
         if lamps:
-
             if objects:
                 row = box.row(align=True)
                 split = row.split(percentage=0.42)
@@ -2466,7 +2466,9 @@ class AMTH_LightersCorner(bpy.types.Panel):
                 col.label(text="Visibility")
 
                 for ob in objects:
-                    if ob and ob.type == 'LAMP':
+                    is_lamp = ob.type == 'LAMP'
+
+                    if ob and is_lamp or cycles_is_emission(context, ob):
                         lamp = ob.data
                         clamp = ob.data.cycles
 
@@ -2480,7 +2482,7 @@ class AMTH_LightersCorner(bpy.types.Panel):
                                         " [L] " if ob.library else "",
                                         ob.name,
                                         "" if ob.name in context.scene.objects else " [Not in Scene]"),
-                                    icon="LAMP_%s" % ob.data.type,
+                                    icon="%s" % ('LAMP_%s' % ob.data.type if is_lamp else 'MESH_GRID'),
                                     emboss=False).object = ob.name
                         if ob.library:
                             row = col.row(align=True)
@@ -2493,39 +2495,48 @@ class AMTH_LightersCorner(bpy.types.Panel):
                         if engine == 'CYCLES':
                             split = split.split(percentage=0.35)
                             col = split.column()
-                            if scene.cycles.progressive == 'BRANCHED_PATH':
-                                col.prop(clamp, "samples", text="")
-                            if scene.cycles.progressive == 'PATH':
-                               col.label(text="N/A")
-                           
+                            if is_lamp:
+                                if scene.cycles.progressive == 'BRANCHED_PATH':
+                                    col.prop(clamp, "samples", text="")
+                                if scene.cycles.progressive == 'PATH':
+                                   col.label(text="N/A")
+                            else:
+                              col.label(text="N/A")
+
                         if engine == 'BLENDER_RENDER':
                             split = split.split(percentage=0.7)
                             col = split.column()
-                            if lamp.type == 'HEMI':
-                                col.label(text="Not Available")
-                            elif lamp.type == 'AREA' and lamp.shadow_method == 'RAY_SHADOW':
-                                row = col.row(align=True)
-                                row.prop(lamp, "shadow_ray_samples_x", text="X")
-                                if lamp.shape == 'RECTANGLE':
-                                    row.prop(lamp, "shadow_ray_samples_y", text="Y")
-                            elif lamp.shadow_method == 'RAY_SHADOW':
-                                col.prop(lamp, "shadow_ray_samples", text="Ray Samples")
-                            elif lamp.shadow_method == 'BUFFER_SHADOW':
-                                col.prop(lamp, "shadow_buffer_samples", text="Buffer Samples")
+                            if is_lamp:
+                                if lamp.type == 'HEMI':
+                                    col.label(text="Not Available")
+                                elif lamp.type == 'AREA' and lamp.shadow_method == 'RAY_SHADOW':
+                                    row = col.row(align=True)
+                                    row.prop(lamp, "shadow_ray_samples_x", text="X")
+                                    if lamp.shape == 'RECTANGLE':
+                                        row.prop(lamp, "shadow_ray_samples_y", text="Y")
+                                elif lamp.shadow_method == 'RAY_SHADOW':
+                                    col.prop(lamp, "shadow_ray_samples", text="Ray Samples")
+                                elif lamp.shadow_method == 'BUFFER_SHADOW':
+                                    col.prop(lamp, "shadow_buffer_samples", text="Buffer Samples")
+                                else:
+                                    col.label(text="No Shadow")
                             else:
-                                col.label(text="No Shadow")
+                              col.label(text="N/A")
 
                         if engine == 'CYCLES':
                             split = split.split(percentage=0.4)
                             col = split.column()
-                            if lamp.type in ['POINT','SUN', 'SPOT']:
-                                col.label(text="%.2f" % lamp.shadow_soft_size)
-                            elif lamp.type == 'HEMI':
-                                col.label(text="N/A")
-                            elif lamp.type == 'AREA' and lamp.shape == 'RECTANGLE':
-                                col.label(text="%.2fx%.2f" % (lamp.size, lamp.size_y))
+                            if is_lamp:
+                                if lamp.type in ['POINT','SUN', 'SPOT']:
+                                    col.label(text="%.2f" % lamp.shadow_soft_size)
+                                elif lamp.type == 'HEMI':
+                                    col.label(text="N/A")
+                                elif lamp.type == 'AREA' and lamp.shape == 'RECTANGLE':
+                                    col.label(text="%.2fx%.2f" % (lamp.size, lamp.size_y))
+                                else:
+                                    col.label(text="%.2f" % lamp.size)
                             else:
-                                col.label(text="%.2f" % lamp.size)
+                              col.label(text="N/A")
 
                         split = split.split(percentage=0.8)
                         col = split.column()
@@ -2536,7 +2547,6 @@ class AMTH_LightersCorner(bpy.types.Panel):
                         split = split.split(percentage=0.3)
                         col = split.column()
                         col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
-
         else:
             box.label(text="No Lamps", icon="LAMP_DATA")
 
