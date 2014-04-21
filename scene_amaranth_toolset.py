@@ -189,10 +189,10 @@ def init_properties():
     scene.amaranth_cycles_node_types = EnumProperty(
         items=cycles_shader_node_types, name = "Shader")
 
-    scene.amaranth_debug_scene_list_lamps = BoolProperty(
+    scene.amaranth_lighterscorner_list_meshlights = BoolProperty(
         default=False,
-        name="Lamps List",
-        description="Display a list of all the lamps")
+        name="List Meshlights",
+        description="Include light emitting meshes on the list")
 
     scene.amaranth_debug_scene_list_missing_images = BoolProperty(
         default=False,
@@ -221,7 +221,7 @@ def clear_properties():
         "types",
         "toggle_mute",
         "amaranth_cycles_node_types",
-        "amaranth_debug_scene_list_lamps",
+        "amaranth_lighterscorner_list_meshlights",
         "amaranth_debug_scene_list_missing_images",
         "amarath_cycles_list_sampling",
         "normal_vector",
@@ -1687,7 +1687,6 @@ class AMTH_SCENE_PT_scene_debug(Panel):
         images = bpy.data.images
         lamps = bpy.data.lamps
         images_missing = []
-        list_lamps = scene.amaranth_debug_scene_list_lamps
         list_missing_images = scene.amaranth_debug_scene_list_missing_images
         materials = AMTH_SCENE_OT_cycles_shader_list_nodes.materials
         materials_count = len(AMTH_SCENE_OT_cycles_shader_list_nodes.materials)
@@ -2417,7 +2416,7 @@ class AMTH_LightersCorner(bpy.types.Panel):
     def poll(cls, context):
         any_lamps = False
         for ob in bpy.data.objects:
-            if ob.type == 'LAMP':
+            if ob.type == 'LAMP' or cycles_is_emission(context, ob):
                 any_lamps = True
             else:
                 pass
@@ -2433,10 +2432,11 @@ class AMTH_LightersCorner(bpy.types.Panel):
         objects =  bpy.data.objects
         ob_act = context.active_object
         lamps = bpy.data.lamps
-        list_lamps = scene.amaranth_debug_scene_list_lamps
+        list_meshlights = scene.amaranth_lighterscorner_list_meshlights
         engine = scene.render.engine
 
-        # List Lamps
+        layout.prop(scene, "amaranth_lighterscorner_list_meshlights")
+
         box = layout.box()
         if lamps:
             if objects:
@@ -2467,8 +2467,9 @@ class AMTH_LightersCorner(bpy.types.Panel):
 
                 for ob in objects:
                     is_lamp = ob.type == 'LAMP'
+                    is_emission = True if cycles_is_emission(context, ob) and list_meshlights else False
 
-                    if ob and is_lamp or cycles_is_emission(context, ob):
+                    if ob and is_lamp or is_emission:
                         lamp = ob.data
                         clamp = ob.data.cycles
 
