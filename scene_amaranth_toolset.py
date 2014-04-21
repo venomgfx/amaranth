@@ -270,12 +270,12 @@ def cycles_is_emission(context, ob):
     if ob.material_slots:
         for ma in ob.material_slots:
             if ma.material:
-                if ma.material.node_tree:
+                if ma.material.node_tree and ma.material.node_tree.nodes:
                     for no in ma.material.node_tree.nodes:
                         if no.type in {'EMISSION', 'GROUP'}:
                             for ou in no.outputs:
                                 if ou.links:
-                                    if no.type == 'GROUP':
+                                    if no.type == 'GROUP' and no.node_tree and no.node_tree.nodes:
                                         for gno in no.node_tree.nodes:
                                             if gno.type == 'EMISSION':
                                                 for gou in gno.outputs:
