@@ -211,6 +211,8 @@ def init_properties():
         description="Use current shader samples as final render samples",
         default=False)
 
+    bpy.types.Object.is_keyframe = is_keyframe
+
 def clear_properties():
     props = (
         "use_unsimplify_render",
@@ -262,7 +264,7 @@ def amaranth_text_startup(context):
     except AttributeError:
         return None
 
-# Is Emission Material? For select and stats
+# FUNCTION: Check if material has Emission (for select and stats)
 def cycles_is_emission(context, ob):
 
     is_emission = False
@@ -286,6 +288,14 @@ def cycles_is_emission(context, ob):
                                         if ou.links:
                                             is_emission = True
     return is_emission
+
+# FUNCTION: Check if object has keyframes for a specific frame
+def is_keyframe(ob, frame):
+    if ob is not None and ob.animation_data is not None and ob.animation_data.action is not None:
+        for fcu in ob.animation_data.action.fcurves:
+            if frame in (p.co.x for p in fcu.keyframe_points):
+                return True
+    return False
 
 # FEATURE: Refresh Scene!
 class AMTH_SCENE_OT_refresh(Operator):
@@ -371,6 +381,9 @@ def label_timeline_extra_info(self, context):
 
     if preferences.use_timeline_extra_info:
         row = layout.row(align=True)
+
+        row.operator(AMTH_SCREEN_OT_keyframe_jump_inbetween.bl_idname, icon="PREV_KEYFRAME", text="").backwards = True
+        row.operator(AMTH_SCREEN_OT_keyframe_jump_inbetween.bl_idname, icon="NEXT_KEYFRAME", text="").backwards = False
 
         # Check for preview range
         frame_start = scene.frame_preview_start if scene.use_preview_range else scene.frame_start
@@ -2551,6 +2564,66 @@ class AMTH_LightersCorner(bpy.types.Panel):
         else:
             box.label(text="No Lamps", icon="LAMP_DATA")
 
+# FEATURE: Jump to frame in-between next and previous keyframe
+class AMTH_SCREEN_OT_keyframe_jump_inbetween(Operator):
+    '''Jump to half in-between keyframes'''
+    bl_idname = "screen.amth_keyframe_jump_inbetween"
+    bl_label = "Jump to Keyframe In-between"
+
+    backwards = BoolProperty()
+
+    def execute(self, context):
+        back = self.backwards
+
+        scene = context.scene
+        ob = bpy.context.object
+        frame_start = scene.frame_start
+        frame_end = scene.frame_end
+
+        if not context.scene.get('amth_keyframes_jump'):
+            context.scene['amth_keyframes_jump'] = []
+
+        keyframes_list = context.scene['amth_keyframes_jump']
+
+        for f in range(frame_start, frame_end):
+            if ob.is_keyframe(f):
+                 keyframes_list = list(keyframes_list)
+                 keyframes_list.append(f)
+
+        if keyframes_list:
+            i = 0
+            keyframes_list_half = []
+
+            for item in keyframes_list:
+                try:
+                    keyframes_list_half.append(int((keyframes_list[i] + keyframes_list[i+1]) / 2))
+                    i += 1
+                except:
+                    pass
+
+            if back:
+                if scene.frame_current == keyframes_list_half[::-1][-1] or \
+                    scene.frame_current < keyframes_list_half[::-1][-1]:
+                    self.report({'INFO'}, "No keyframes behind")
+                else:
+                    for i in keyframes_list_half[::-1]:
+                        if scene.frame_current > i:
+                            scene.frame_current = i
+                            break
+            else:
+                if scene.frame_current == keyframes_list_half[-1] or \
+                    scene.frame_current > keyframes_list_half[-1]:
+                    self.report({'INFO'}, "No keyframes ahead")
+                else:
+                    for i in keyframes_list_half:
+                        if scene.frame_current < i:
+                            scene.frame_current = i
+                            break
+        else:
+            self.report({'INFO'}, "Object has no keyframes")
+
+        return{'FINISHED'}
+
 
 classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_AddPresetColorManagement,
@@ -2590,7 +2663,8 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_RENDER_OT_cycles_samples_percentage,
            AMTH_RENDER_OT_cycles_samples_percentage_set,
            AMTH_FILE_PT_libraries,
-           AMTH_SCREEN_OT_frame_jump)
+           AMTH_SCREEN_OT_frame_jump,
+           AMTH_SCREEN_OT_keyframe_jump_inbetween)
 
 addon_keymaps = []
 
@@ -2670,6 +2744,12 @@ def register():
         kmi.properties.forward = True
         kmi = km.keymap_items.new('screen.amaranth_frame_jump', 'DOWN_ARROW', 'PRESS', shift=True)
         kmi.properties.forward = False
+
+        km = kc.keymaps.new(name='Frames')
+        kmi = km.keymap_items.new('screen.amth_keyframe_jump_inbetween', 'UP_ARROW', 'PRESS', shift=True, ctrl=True)
+        kmi.properties.backwards = False
+        kmi = km.keymap_items.new('screen.amth_keyframe_jump_inbetween', 'DOWN_ARROW', 'PRESS', shift=True, ctrl=True)
+        kmi.properties.backwards = True
 
         km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new('view3d.show_only_render', 'Z', 'PRESS', shift=True, alt=True)
