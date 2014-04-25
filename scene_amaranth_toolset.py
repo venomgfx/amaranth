@@ -2454,29 +2454,27 @@ class AMTH_LightersCorner(bpy.types.Panel):
         if lamps:
             if objects:
                 row = box.row(align=True)
-                split = row.split(percentage=0.42)
+                split = row.split(percentage=0.45)
                 col = split.column()
+
                 col.label(text="Name")
 
-                split = split.split(percentage=0.1)
-                col = split.column()
-                col.label(text="", icon="BLANK1")
                 if engine in ['CYCLES', 'BLENDER_RENDER']:
                     if engine == 'BLENDER_RENDER':
                         split = split.split(percentage=0.7)
                     else:
-                        split = split.split(percentage=0.35)
+                        split = split.split(percentage=0.27)
                     col = split.column()
                     col.label(text="Samples")
 
                 if engine == 'CYCLES':
-                    split = split.split(percentage=0.35)
+                    split = split.split(percentage=0.2)
                     col = split.column()
                     col.label(text="Size")
 
-                split = split.split(percentage=0.8)
+                split = split.split(percentage=1.0)
                 col = split.column()
-                col.label(text="Visibility")
+                col.label(text="Rays / Render Visibility")
 
                 for ob in objects:
                     is_lamp = ob.type == 'LAMP'
@@ -2485,18 +2483,24 @@ class AMTH_LightersCorner(bpy.types.Panel):
                     if ob and is_lamp or is_emission:
                         lamp = ob.data
                         clamp = ob.data.cycles
+                        visibility = ob.cycles_visibility
 
                         row = box.row(align=True)
-                        split = row.split(percentage=0.5)
+                        split = row.split(percentage=1.0)
                         col = split.column()
-                        row = col.row()
+                        row = col.row(align=True)
+                        col.active = ob == ob_act
+                        row.label(icon="%s" % ('LAMP_%s' % ob.data.type if is_lamp else 'MESH_GRID'))
+                        split = row.split(percentage=.45)
+                        col = split.column()
+                        row = col.row(align=True)
                         row.alignment = 'LEFT'
+                        row.active = True
                         row.operator(AMTH_SCENE_OT_amaranth_object_select.bl_idname,
                                     text='%s %s%s' % (
                                         " [L] " if ob.library else "",
                                         ob.name,
                                         "" if ob.name in context.scene.objects else " [Not in Scene]"),
-                                    icon="%s" % ('LAMP_%s' % ob.data.type if is_lamp else 'MESH_GRID'),
                                     emboss=False).object = ob.name
                         if ob.library:
                             row = col.row(align=True)
@@ -2507,7 +2511,7 @@ class AMTH_LightersCorner(bpy.types.Panel):
                                          emboss=False).filepath=ob.library.filepath
 
                         if engine == 'CYCLES':
-                            split = split.split(percentage=0.35)
+                            split = split.split(percentage=0.25)
                             col = split.column()
                             if is_lamp:
                                 if scene.cycles.progressive == 'BRANCHED_PATH':
@@ -2538,7 +2542,7 @@ class AMTH_LightersCorner(bpy.types.Panel):
                               col.label(text="N/A")
 
                         if engine == 'CYCLES':
-                            split = split.split(percentage=0.4)
+                            split = split.split(percentage=0.2)
                             col = split.column()
                             if is_lamp:
                                 if lamp.type in ['POINT','SUN', 'SPOT']:
@@ -2552,15 +2556,16 @@ class AMTH_LightersCorner(bpy.types.Panel):
                             else:
                               col.label(text="N/A")
 
-                        split = split.split(percentage=0.8)
+                        split = split.split(percentage=1.0)
                         col = split.column()
                         row = col.row(align=True)
+                        row.prop(visibility, "camera", text="")
+                        row.prop(visibility, "diffuse", text="")
+                        row.prop(visibility, "glossy", text="")
+                        row.prop(visibility, "shadow", text="")
+                        row.separator()
                         row.prop(ob, "hide", text="", emboss=False)
                         row.prop(ob, "hide_render", text="", emboss=False)
-
-                        split = split.split(percentage=0.3)
-                        col = split.column()
-                        col.label(text="", icon="%s" % "TRIA_LEFT" if ob == ob_act else "BLANK1")
         else:
             box.label(text="No Lamps", icon="LAMP_DATA")
 
@@ -2601,24 +2606,27 @@ class AMTH_SCREEN_OT_keyframe_jump_inbetween(Operator):
                 except:
                     pass
 
-            if back:
-                if scene.frame_current == keyframes_list_half[::-1][-1] or \
-                    scene.frame_current < keyframes_list_half[::-1][-1]:
-                    self.report({'INFO'}, "No keyframes behind")
+            if len(keyframes_list_half) > 1:
+                if back:
+                    if scene.frame_current == keyframes_list_half[::-1][-1] or \
+                        scene.frame_current < keyframes_list_half[::-1][-1]:
+                        self.report({'INFO'}, "No keyframes behind")
+                    else:
+                        for i in keyframes_list_half[::-1]:
+                            if scene.frame_current > i:
+                                scene.frame_current = i
+                                break
                 else:
-                    for i in keyframes_list_half[::-1]:
-                        if scene.frame_current > i:
-                            scene.frame_current = i
-                            break
+                    if scene.frame_current == keyframes_list_half[-1] or \
+                        scene.frame_current > keyframes_list_half[-1]:
+                        self.report({'INFO'}, "No keyframes ahead")
+                    else:
+                        for i in keyframes_list_half:
+                            if scene.frame_current < i:
+                                scene.frame_current = i
+                                break
             else:
-                if scene.frame_current == keyframes_list_half[-1] or \
-                    scene.frame_current > keyframes_list_half[-1]:
-                    self.report({'INFO'}, "No keyframes ahead")
-                else:
-                    for i in keyframes_list_half:
-                        if scene.frame_current < i:
-                            scene.frame_current = i
-                            break
+                self.report({'INFO'}, "Object has only 1 keyframe")
         else:
             self.report({'INFO'}, "Object has no keyframes")
 
