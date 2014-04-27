@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin, Lukas Tönne",
-    "version": (0, 9, 1),
+    "version": (0, 9, 2),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -213,6 +213,24 @@ def init_properties():
 
     bpy.types.Object.is_keyframe = is_keyframe
 
+    scene.amth_wire_toggle_scene_all = BoolProperty(
+        default=False,
+        name="All Scenes",
+        description="Toggle wire on objects in all scenes")
+    scene.amth_wire_toggle_is_selected = BoolProperty(
+        default=False,
+        name="Only Selected",
+        description="Only toggle wire on selected objects")
+    scene.amth_wire_toggle_edges_all = BoolProperty(
+        default=True,
+        name="All Edges",
+        description="Draw all edges")
+    scene.amth_wire_toggle_optimal = BoolProperty(
+        default=False,
+        name="Optimal Display",
+        description="Skip drawing/rendering of interior subdivided edges "
+                    "on meshes with Subdivision Surface modifier")
+
 def clear_properties():
     props = (
         "use_unsimplify_render",
@@ -227,7 +245,11 @@ def clear_properties():
         "amaranth_debug_scene_list_missing_images",
         "amarath_cycles_list_sampling",
         "normal_vector",
-        "use_samples_final"
+        "use_samples_final",
+        'amth_wire_toggle_is_selected',
+        'amth_wire_toggle_scene_all',
+        "amth_wire_toggle_edges_all",
+        "amth_wire_toggle_optimal"
     )
     
     wm = bpy.context.window_manager
@@ -2631,6 +2653,74 @@ class AMTH_SCREEN_OT_keyframe_jump_inbetween(Operator):
             self.report({'INFO'}, "Object has no keyframes")
 
         return{'FINISHED'}
+# // FEATURE: Jump to frame in-between next and previous keyframe
+# FEATURE: Toggle Wire Display
+class AMTH_OBJECT_OT_wire_toggle(Operator):
+    '''Turn on/off wire display on mesh objects'''
+    bl_idname = "object.amth_wire_toggle"
+    bl_label = "Display Wireframe"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    clear = BoolProperty(
+        default=False, name="Clear Wireframe",
+        description="Clear Wireframe Display")
+
+    def execute(self, context):
+
+        scene = context.scene
+        is_all_scenes = scene.amth_wire_toggle_scene_all
+        is_selected = scene.amth_wire_toggle_is_selected
+        is_all_edges = scene.amth_wire_toggle_edges_all
+        is_optimal = scene.amth_wire_toggle_optimal
+        clear = self.clear
+
+        if is_all_scenes:
+            which = bpy.data.objects
+        elif is_selected:
+            if not context.selected_objects:
+                self.report({'INFO'}, "No selected objects")
+            which = context.selected_objects
+        else:
+            which = scene.objects
+
+        if which:
+            for ob in which:
+                if ob and ob.type in {'MESH', 'EMPTY'}:
+
+                    ob.show_wire = False if clear else True
+                    ob.show_all_edges = is_all_edges
+
+                    for mo in ob.modifiers:
+                        if mo and mo.type == 'SUBSURF':
+                            mo.show_only_control_edges = is_optimal
+
+        return{'FINISHED'}
+# // FEATURE: Toggle Wire Display
+
+def ui_object_wire_toggle(self, context):
+
+    scene = context.scene
+
+    self.layout.separator()
+    col = self.layout.column(align=True)
+    row = col.row(align=True)
+    row.operator(AMTH_OBJECT_OT_wire_toggle.bl_idname,
+        icon='MOD_WIREFRAME').clear = False
+    row.operator(AMTH_OBJECT_OT_wire_toggle.bl_idname,
+        icon='X', text="").clear = True
+    col.separator()
+    row = col.row(align=True)
+    row.prop(scene, "amth_wire_toggle_edges_all")
+    row.prop(scene, "amth_wire_toggle_optimal")
+    row = col.row(align=True)
+    sub = row.row(align=True)
+    sub.active = not scene.amth_wire_toggle_scene_all
+    sub.prop(scene, "amth_wire_toggle_is_selected")
+    sub = row.row(align=True)
+    sub.active = not scene.amth_wire_toggle_is_selected
+    sub.prop(scene, "amth_wire_toggle_scene_all")
+
+# //FEATURE: Toggle Wire Display
 
 
 classes = (AMTH_SCENE_MT_color_management_presets,
@@ -2728,6 +2818,8 @@ def register():
     bpy.types.USERPREF_PT_edit.append(ui_userpreferences_edit)
 
     bpy.types.RENDERLAYER_PT_layers.append(ui_layers_for_render)
+
+    bpy.types.VIEW3D_PT_view3d_display.append(ui_object_wire_toggle)
 
     bpy.app.handlers.render_pre.append(unsimplify_render_pre)
     bpy.app.handlers.render_post.append(unsimplify_render_post)
@@ -2830,6 +2922,8 @@ def unregister():
     bpy.types.USERPREF_PT_edit.remove(ui_userpreferences_edit)
 
     bpy.types.RENDERLAYER_PT_layers.remove(ui_layers_for_render)
+
+    bpy.types.VIEW3D_PT_view3d_display.remove(ui_object_wire_toggle)
 
     bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
     bpy.app.handlers.render_post.remove(unsimplify_render_post)
