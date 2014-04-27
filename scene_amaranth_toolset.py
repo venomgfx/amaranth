@@ -2685,7 +2685,9 @@ class AMTH_OBJECT_OT_wire_toggle(Operator):
 
         if which:
             for ob in which:
-                if ob and ob.type in {'MESH', 'EMPTY'}:
+                if ob and ob.type in {
+                    'MESH', 'EMPTY', 'CURVE',
+                    'META','SURFACE','FONT'}:
 
                     ob.show_wire = False if clear else True
                     ob.show_all_edges = is_all_edges
@@ -2695,7 +2697,6 @@ class AMTH_OBJECT_OT_wire_toggle(Operator):
                             mo.show_only_control_edges = is_optimal
 
         return{'FINISHED'}
-# // FEATURE: Toggle Wire Display
 
 def ui_object_wire_toggle(self, context):
 
@@ -2756,6 +2757,7 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_OBJECT_OT_id_dupligroup,
            AMTH_OBJECT_OT_id_dupligroup_clear,
            AMTH_OBJECT_OT_material_remove_unassigned,
+           AMTH_OBJECT_OT_wire_toggle,
            AMTH_POSE_OT_paths_clear_all,
            AMTH_POSE_OT_paths_frame_match,
            AMTH_RENDER_OT_cycles_samples_percentage,
