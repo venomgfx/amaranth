@@ -516,6 +516,7 @@ class AMTH_NODE_OT_AddTemplateVignette(Operator):
         scene = context.scene
         space = context.space_data
         tree = scene.node_tree
+        has_act = True if tree.nodes.active else False
 
         bpy.ops.node.select_all(action='DESELECT')
 
@@ -538,21 +539,27 @@ class AMTH_NODE_OT_AddTemplateVignette(Operator):
         tree.links.new(ellipse.outputs["Mask"],blur.inputs["Image"])
         tree.links.new(blur.outputs["Image"],ramp.inputs[0])
         tree.links.new(ramp.outputs["Image"],overlay.inputs[2])
+        if has_act:
+            tree.links.new(tree.nodes.active.outputs[0],overlay.inputs[1])
 
-        if tree.nodes.active:
-            blur.location = tree.nodes.active.location
-            blur.location += Vector((330.0, -250.0))
+        if has_act:
+            overlay.location = tree.nodes.active.location
+            overlay.location += Vector((350.0, 0.0))
         else:
-            blur.location += Vector((space.cursor_location[0], space.cursor_location[1]))
+            overlay.location += Vector((space.cursor_location[0], space.cursor_location[1]))
 
-        ellipse.location = blur.location
-        ellipse.location += Vector((-300.0, 0))
+        ellipse.location = overlay.location
+        ellipse.location += Vector((-715.0, -400))
+        ellipse.inputs[0].hide = True
+        ellipse.inputs[1].hide = True
+
+        blur.location = ellipse.location
+        blur.location += Vector((300.0, 0.0))
+        blur.inputs['Size'].hide = True
 
         ramp.location = blur.location
         ramp.location += Vector((175.0, 0))
-
-        overlay.location = ramp.location
-        overlay.location += Vector((240.0, 275.0))
+        ramp.outputs['Alpha'].hide = True
 
         for node in {ellipse, blur, ramp, overlay}:
             node.select = True
@@ -563,10 +570,61 @@ class AMTH_NODE_OT_AddTemplateVignette(Operator):
         frame = ellipse.parent
         frame.label = 'Vignette'
         frame.use_custom_color = True
-        frame.color = (0.783538, 0.0241576, 0.0802198)
+        frame.color = (0.1, 0.1, 0.1)
         
         overlay.parent = None
         overlay.label = 'Vignette Overlay'
+
+    def execute(self, context):
+        self._setupNodes(context)
+
+        return {'FINISHED'}
+
+class AMTH_NODE_OT_AddTemplateVectorBlur(Operator):
+    bl_idname = "node.template_add_vectorblur"
+    bl_label = "Add Vector Blur"
+    bl_description = "Add a vector blur filter"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        space = context.space_data
+        tree = context.scene.node_tree
+        return space.type == 'NODE_EDITOR' \
+                and space.node_tree is not None \
+                and space.tree_type == 'CompositorNodeTree' \
+                and tree \
+                and tree.nodes.active \
+                and tree.nodes.active.type == 'R_LAYERS'
+
+    def _setupNodes(self, context):
+        scene = context.scene
+        space = context.space_data
+        tree = scene.node_tree
+
+        bpy.ops.node.select_all(action='DESELECT')
+
+        act_node = tree.nodes.active
+        rlayer = act_node.scene.render.layers[act_node.layer]
+
+        if not rlayer.use_pass_vector:
+            rlayer.use_pass_vector = True
+
+        vblur = tree.nodes.new(type='CompositorNodeVecBlur')
+        vblur.use_curved = True
+        vblur.factor = 0.5
+
+        tree.links.new(act_node.outputs["Image"],vblur.inputs["Image"])
+        tree.links.new(act_node.outputs["Z"],vblur.inputs["Z"])
+        tree.links.new(act_node.outputs["Speed"],vblur.inputs["Speed"])
+
+        if tree.nodes.active:
+            vblur.location = tree.nodes.active.location
+            vblur.location += Vector((250.0, 0.0))
+        else:
+            vblur.location += Vector((space.cursor_location[0], space.cursor_location[1]))
+
+        vblur.select = True
 
     def execute(self, context):
         self._setupNodes(context)
@@ -582,6 +640,10 @@ class AMTH_NODE_MT_amaranth_templates(Menu):
 
     def draw(self, context):
         layout = self.layout
+        layout.operator(
+            AMTH_NODE_OT_AddTemplateVectorBlur.bl_idname,
+            text="Vector Blur",
+            icon='FORCE_HARMONIC')
         layout.operator(
             AMTH_NODE_OT_AddTemplateVignette.bl_idname,
             text="Vignette",
@@ -1118,13 +1180,13 @@ class AMTH_MESH_OT_make_symmetric(Operator):
 def render_cycles_scene_samples(self, context):
 
     layout = self.layout
-
     scenes = bpy.data.scenes
     scene = context.scene
     cscene = scene.cycles
     render = scene.render
     list_sampling = scene.amaranth_cycles_list_sampling
 
+    # Set Render Samples
     if cscene.progressive == 'BRANCHED_PATH':
         layout.separator()
         split = layout.split()
@@ -1152,7 +1214,7 @@ def render_cycles_scene_samples(self, context):
             AMTH_RENDER_OT_cycles_samples_percentage.bl_idname,
             text="25%").percent=25
 
-    # List Lamps
+    # List Samples
     if (len(scene.render.layers) > 1) or \
         (len(bpy.data.scenes) > 1):
 
@@ -1185,7 +1247,6 @@ def render_cycles_scene_samples(self, context):
             col.separator()
 
             col.label(text="Scenes:", icon='SCENE_DATA')
-            row = col.row(align=True)
 
             if cscene.progressive == 'PATH':
                 for s in bpy.data.scenes:
@@ -2744,6 +2805,7 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_MESH_OT_find_asymmetric,
            AMTH_MESH_OT_make_symmetric,
            AMTH_NODE_OT_AddTemplateVignette,
+           AMTH_NODE_OT_AddTemplateVectorBlur,
            AMTH_NODE_MT_amaranth_templates,
            AMTH_FILE_OT_directory_current_blend,
            AMTH_FILE_OT_directory_go_to,
