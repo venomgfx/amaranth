@@ -2212,10 +2212,22 @@ class AMTH_OBJECT_OT_material_remove_unassigned(Operator):
 
     def execute(self, context):
 
+        scene = context.scene
         act_ob = context.active_object
         count = len(act_ob.material_slots)
         materials_removed = []
         act_ob.active_material_index = 0
+        is_visible = True
+
+        if act_ob not in context.visible_objects:
+            is_visible = False
+            n = -1
+            for lay in act_ob.layers:
+                n += 1
+                if lay:
+                    break
+
+            scene.layers[n] = True
 
         for slot in act_ob.material_slots:
             count -= 1
@@ -2251,6 +2263,9 @@ class AMTH_OBJECT_OT_material_remove_unassigned(Operator):
             print("\n")
             self.report({'INFO'}, "Removed %s Unassigned Materials" %
                 len(materials_removed))
+
+        if not is_visible:
+            scene.layers[n] = False
 
         return{'FINISHED'}
 
