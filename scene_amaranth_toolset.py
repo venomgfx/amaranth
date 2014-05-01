@@ -231,15 +231,6 @@ def init_properties():
         description="Skip drawing/rendering of interior subdivided edges "
                     "on meshes with Subdivision Surface modifier")
 
-    scene.amth_shade_smooth_scene_all = BoolProperty(
-        default=False,
-        name="All Scenes",
-        description="Set shading on objects in all scenes")
-    scene.amth_shade_smooth_is_selected = BoolProperty(
-        default=False,
-        name="Only Selected",
-        description="Only set shading on selected objects")
-
 def clear_properties():
     props = (
         "use_unsimplify_render",
@@ -258,9 +249,7 @@ def clear_properties():
         'amth_wire_toggle_is_selected',
         'amth_wire_toggle_scene_all',
         "amth_wire_toggle_edges_all",
-        "amth_wire_toggle_optimal",
-        'amth_shade_smooth_scene_all',
-        'amth_shade_smooth_is_selected'
+        "amth_wire_toggle_optimal"
     )
     
     wm = bpy.context.window_manager
@@ -2785,84 +2774,12 @@ class AMTH_OBJECT_OT_wire_toggle(Operator):
 
         return{'FINISHED'}
 
-class AMTH_OBJECT_OT_shade_smooth_toggle(Operator):
-    '''Turn on/off wire display on mesh objects'''
-    bl_idname = "object.amth_shade_smooth_toggle"
-    bl_label = "Toggle Smooth/Flat"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    flat = BoolProperty(
-        default=False, name="Set Flat",
-        description="Set Flat Shaded")
-
-    def execute(self, context):
-
-        scene = context.scene
-        is_all_scenes = scene.amth_shade_smooth_scene_all
-        is_selected = scene.amth_shade_smooth_is_selected
-        flat = self.flat
-
-        selected_editable_objects = set()
-
-        if is_all_scenes:
-            which = bpy.data.objects
-        elif is_selected:
-            if not context.selected_objects:
-                self.report({'INFO'}, "No selected objects")
-            which = context.selected_objects
-        else:
-            which = scene.objects
-
-        if which:
-            for ob in which:
-                if ob and ob.type in {
-                    'MESH', 'EMPTY', 'CURVE',
-                    'SURFACE'}:
-
-                    selected_editable_objects.add(ob)
-
-                    if ob.dupli_type == 'GROUP' and ob.dupli_group and ob.dupli_group.objects:
-                        for gob in ob.dupli_group.objects:
-                            selected_editable_objects.add(gob)
-
-        context_py = context.copy()
-
-        context_py["selected_editable_objects"] = list(selected_editable_objects)
-
-        if flat:
-            bpy.ops.object.shade_flat(context_py)
-        else:
-            bpy.ops.object.shade_smooth(context_py)
-
-        flat = False
-
-        return{'FINISHED'}
-
 def ui_object_wire_toggle(self, context):
 
-    layout = self.layout
     scene = context.scene
 
-    layout.separator()
-    col = layout.column(align=True)
-    row = col.row(align=True)
-
-    row.operator(AMTH_OBJECT_OT_shade_smooth_toggle.bl_idname,
-        text="Smooth", icon='MOD_SUBSURF').flat = False
-    row.operator(AMTH_OBJECT_OT_shade_smooth_toggle.bl_idname,
-        text="Flat", icon='MOD_EDGESPLIT').flat = True
-    col.separator()
-    row = col.row(align=True)
-    sub = row.row(align=True)
-    sub.active = not scene.amth_shade_smooth_scene_all
-    sub.prop(scene, "amth_shade_smooth_is_selected")
-    sub = row.row(align=True)
-    sub.active = not scene.amth_shade_smooth_is_selected
-    sub.prop(scene, "amth_shade_smooth_scene_all")
-    
-
-    layout.separator()
-    col = layout.column(align=True)
+    self.layout.separator()
+    col = self.layout.column(align=True)
     row = col.row(align=True)
     row.operator(AMTH_OBJECT_OT_wire_toggle.bl_idname,
         icon='MOD_WIREFRAME').clear = False
@@ -2918,7 +2835,6 @@ classes = (AMTH_SCENE_MT_color_management_presets,
            AMTH_OBJECT_OT_id_dupligroup_clear,
            AMTH_OBJECT_OT_material_remove_unassigned,
            AMTH_OBJECT_OT_wire_toggle,
-           AMTH_OBJECT_OT_shade_smooth_toggle,
            AMTH_POSE_OT_paths_clear_all,
            AMTH_POSE_OT_paths_frame_match,
            AMTH_RENDER_OT_cycles_samples_percentage,
@@ -3099,3 +3015,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+
