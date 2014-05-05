@@ -2907,8 +2907,7 @@ def register():
     kc = wm.keyconfigs.addon
     if kc:
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
-        km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'RELEASE')
-        km.keymap_items.new("node.show_active_node_image", 'SELECTMOUSE', 'RELEASE')
+        km.keymap_items.new("node.show_active_node_image", 'ACTIONMOUSE', 'DOUBLE_CLICK')
 
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
         kmi = km.keymap_items.new('wm.call_menu', 'W', 'PRESS')
