@@ -80,6 +80,12 @@ class AmaranthToolsetPreferences(AddonPreferences):
                 default=10,
                 min=1)
 
+    use_layers_for_render = BoolProperty(
+            name="Current Layers for Render",
+            description="Save the layers that should be enabled for render",
+            default=True,
+            )
+
 
     def draw(self, context):
         layout = self.layout
@@ -102,6 +108,7 @@ class AmaranthToolsetPreferences(AddonPreferences):
         sub.prop(self, "use_file_save_reload")
         sub.prop(self, "use_timeline_extra_info")
         sub.prop(self, "use_scene_stats")
+        sub.prop(self, "use_layers_for_render")
 
         sub.separator()
 
@@ -2455,63 +2462,70 @@ class AMTH_SCENE_OT_layers_render_clear(Operator):
 
 def ui_layers_for_render(self, context):
 
-    lfr_available = context.scene.get('amth_layers_for_render')
-    if lfr_available:
-        lfr = context.scene['amth_layers_for_render']
+    preferences = context.user_preferences.addons[__name__].preferences
 
-    layout = self.layout
-    layout.label("Layers for Rendering:")
-    split = layout.split()
-    col = split.column(align=True)
-    row = col.row(align=True)
-    row.operator(
-        AMTH_SCENE_OT_layers_render_save.bl_idname,
-        text="Replace Layers" if lfr_available else "Save Current Layers for Render",
-        icon="FILE_REFRESH" if lfr_available else 'LAYER_USED')
+    if preferences.use_layers_for_render:
+        lfr_available = context.scene.get('amth_layers_for_render')
+        if lfr_available:
+            lfr = context.scene['amth_layers_for_render']
 
-    if lfr_available:
+        layout = self.layout
+        layout.label("Layers for Rendering:")
+        split = layout.split()
+        col = split.column(align=True)
+        row = col.row(align=True)
         row.operator(
-            AMTH_SCENE_OT_layers_render_clear.bl_idname,
-            icon='X', text="")
-        col = col.column(align=True)
-        col.enabled = True if lfr_available else False
-        col.operator(
-            AMTH_SCENE_OT_layers_render_view.bl_idname,
-            icon="RESTRICT_VIEW_OFF")
+            AMTH_SCENE_OT_layers_render_save.bl_idname,
+            text="Replace Layers" if lfr_available else "Save Current Layers for Render",
+            icon="FILE_REFRESH" if lfr_available else 'LAYER_USED')
 
-        split = split.split()
-        col = split.column(align=True)
-        row = col.row(align=True)
+        if lfr_available:
+            row.operator(
+                AMTH_SCENE_OT_layers_render_clear.bl_idname,
+                icon='X', text="")
+            col = col.column(align=True)
+            col.enabled = True if lfr_available else False
+            col.operator(
+                AMTH_SCENE_OT_layers_render_view.bl_idname,
+                icon="RESTRICT_VIEW_OFF")
 
-        for n in range(0,5):
-            row.operator(
-                AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
-                icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
-        row = col.row(align=True)
-        for n in range(10,15):
-            row.operator(
-                AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
-                icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
+            split = split.split()
+            col = split.column(align=True)
+            row = col.row(align=True)
 
-        split = split.split()
-        col = split.column(align=True)
-        row = col.row(align=True)
+            for n in range(0,5):
+                row.operator(
+                    AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
+                    icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
+            row = col.row(align=True)
+            for n in range(10,15):
+                row.operator(
+                    AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
+                    icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
 
-        for n in range(5,10):
-            row.operator(
-                AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
-                icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
-        row = col.row(align=True)
-        for n in range(15,20):
-            row.operator(
-                AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
-                icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
+            split = split.split()
+            col = split.column(align=True)
+            row = col.row(align=True)
+
+            for n in range(5,10):
+                row.operator(
+                    AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
+                    icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
+            row = col.row(align=True)
+            for n in range(15,20):
+                row.operator(
+                    AMTH_SCENE_OT_layers_render_set_individual.bl_idname, text="",
+                    icon='LAYER_ACTIVE' if n in lfr else 'BLANK1').number = n
 
 def ui_layers_for_render_header(self, context):
-    if context.scene.get('amth_layers_for_render'):
-        self.layout.operator(
-            AMTH_SCENE_OT_layers_render_view.bl_idname,
-            text="", icon="IMGDISPLAY")
+
+    preferences = context.user_preferences.addons[__name__].preferences
+
+    if preferences.use_layers_for_render:
+        if context.scene.get('amth_layers_for_render'):
+            self.layout.operator(
+                AMTH_SCENE_OT_layers_render_view.bl_idname,
+                text="", icon="IMGDISPLAY")
 
 # // FEATURE: Set Layers to Render
 # FEATURE: Lighters Corner
