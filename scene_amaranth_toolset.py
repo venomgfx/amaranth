@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin, Lukas Tönne",
-    "version": (0, 9, 3),
+    "version": (0, 9, 4),
     "blender": (2, 70),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
@@ -38,6 +38,10 @@ from bpy.props import (BoolProperty, EnumProperty,
 from mathutils import Vector
 from bpy.app.handlers import persistent
 from bl_operators.presets import AddPresetBase
+
+# Addon wide, we need to know if cycles is available
+global cycles_exists
+cycles_exists = 'cycles' in dir(bpy.types.Scene)
 
 # Preferences
 class AmaranthToolsetPreferences(AddonPreferences):
@@ -173,28 +177,38 @@ def init_properties():
 
     # Scene Debug
     # Cycles Node Types
-    cycles_shader_node_types = [
-        ("BSDF_DIFFUSE", "Diffuse BSDF", "", 0),
-        ("BSDF_GLOSSY", "Glossy BSDF", "", 1),
-        ("BSDF_TRANSPARENT", "Transparent BSDF", "", 2),
-        ("BSDF_REFRACTION", "Refraction BSDF", "", 3),
-        ("BSDF_GLASS", "Glass BSDF", "", 4),
-        ("BSDF_TRANSLUCENT", "Translucent BSDF", "", 5),
-        ("BSDF_ANISOTROPIC", "Anisotropic BSDF", "", 6),
-        ("BSDF_VELVET", "Velvet BSDF", "", 7),
-        ("BSDF_TOON", "Toon BSDF", "", 8),
-        ("SUBSURFACE_SCATTERING", "Subsurface Scattering", "", 9),
-        ("EMISSION", "Emission", "", 10),
-        ("BSDF_HAIR", "Hair BSDF", "", 11),
-        ("BACKGROUND", "Background", "", 12),
-        ("AMBIENT_OCCLUSION", "Ambient Occlusion", "", 13),
-        ("HOLDOUT", "Holdout", "", 14),
-        ("VOLUME_ABSORPTION", "Volume Absorption", "", 15),
-        ("VOLUME_SCATTER", "Volume Scatter", "", 16)
-        ]
+    if cycles_exists:
+        cycles_shader_node_types = [
+            ("BSDF_DIFFUSE", "Diffuse BSDF", "", 0),
+            ("BSDF_GLOSSY", "Glossy BSDF", "", 1),
+            ("BSDF_TRANSPARENT", "Transparent BSDF", "", 2),
+            ("BSDF_REFRACTION", "Refraction BSDF", "", 3),
+            ("BSDF_GLASS", "Glass BSDF", "", 4),
+            ("BSDF_TRANSLUCENT", "Translucent BSDF", "", 5),
+            ("BSDF_ANISOTROPIC", "Anisotropic BSDF", "", 6),
+            ("BSDF_VELVET", "Velvet BSDF", "", 7),
+            ("BSDF_TOON", "Toon BSDF", "", 8),
+            ("SUBSURFACE_SCATTERING", "Subsurface Scattering", "", 9),
+            ("EMISSION", "Emission", "", 10),
+            ("BSDF_HAIR", "Hair BSDF", "", 11),
+            ("BACKGROUND", "Background", "", 12),
+            ("AMBIENT_OCCLUSION", "Ambient Occlusion", "", 13),
+            ("HOLDOUT", "Holdout", "", 14),
+            ("VOLUME_ABSORPTION", "Volume Absorption", "", 15),
+            ("VOLUME_SCATTER", "Volume Scatter", "", 16)
+            ]
 
-    scene.amaranth_cycles_node_types = EnumProperty(
-        items=cycles_shader_node_types, name = "Shader")
+        scene.amaranth_cycles_node_types = EnumProperty(
+            items=cycles_shader_node_types, name = "Shader")
+
+        scene.amaranth_cycles_list_sampling = BoolProperty(
+            default=False,
+            name="Samples Per:")
+
+        bpy.types.CyclesRenderSettings.use_samples_final = BoolProperty(
+            name="Use Final Render Samples",
+            description="Use current shader samples as final render samples",
+            default=False)
 
     scene.amaranth_lighterscorner_list_meshlights = BoolProperty(
         default=False,
@@ -206,17 +220,8 @@ def init_properties():
         name="List Missing Images",
         description="Display a list of all the missing images")
 
-    scene.amaranth_cycles_list_sampling = BoolProperty(
-        default=False,
-        name="Samples Per:")
-
     bpy.types.ShaderNodeNormal.normal_vector = prop_normal_vector
     bpy.types.CompositorNodeNormal.normal_vector = prop_normal_vector
-    
-    bpy.types.CyclesRenderSettings.use_samples_final = BoolProperty(
-        name="Use Final Render Samples",
-        description="Use current shader samples as final render samples",
-        default=False)
 
     bpy.types.Object.is_keyframe = is_keyframe
 
@@ -1052,8 +1057,7 @@ class AMTH_OBJECT_OT_select_meshlights(Operator):
         return {'FINISHED'}
 
 def button_select_meshlights(self, context):
-    
-    if context.scene.render.engine == 'CYCLES':
+    if cycles_exists and context.scene.render.engine == 'CYCLES':
         self.layout.operator('object.select_meshlights', icon="LAMP_SUN")
 # // FEATURE: Select Meshlights
 
@@ -1189,12 +1193,13 @@ def render_cycles_scene_samples(self, context):
     layout = self.layout
     scenes = bpy.data.scenes
     scene = context.scene
-    cscene = scene.cycles
     render = scene.render
-    list_sampling = scene.amaranth_cycles_list_sampling
+    if cycles_exists:
+        cscene = scene.cycles
+        list_sampling = scene.amaranth_cycles_list_sampling
 
     # Set Render Samples
-    if cscene.progressive == 'BRANCHED_PATH':
+    if cycles_exists and cscene.progressive == 'BRANCHED_PATH':
         layout.separator()
         split = layout.split()
         col = split.column()
@@ -1255,7 +1260,7 @@ def render_cycles_scene_samples(self, context):
 
             col.label(text="Scenes:", icon='SCENE_DATA')
 
-            if cscene.progressive == 'PATH':
+            if cycles_exists and cscene.progressive == 'PATH':
                 for s in bpy.data.scenes:
                     if s != scene:
                         row = col.row(align=True)
@@ -1421,7 +1426,7 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.render.engine == 'CYCLES'
+        return cycles_exists and context.scene.render.engine == 'CYCLES'
 
     def execute(self, context):
         node_type = context.scene.amaranth_cycles_node_types
@@ -1510,7 +1515,11 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes_clear(Operator):
     """Clear the list below"""
     bl_idname = "scene.cycles_list_nodes_clear"
     bl_label = "Clear Materials List"
-    
+
+    @classmethod
+    def poll(cls, context):
+        return cycles_exists
+
     def execute(self, context):
         AMTH_SCENE_OT_cycles_shader_list_nodes.materials[:] = []
         print("* Cleared Cycles Materials List")
@@ -1864,7 +1873,7 @@ class AMTH_SCENE_PT_scene_debug(Panel):
             row.label(text="No images loaded yet", icon="RIGHTARROW_THIN")
 
         # List Cycles Materials by Shader
-        if engine == 'CYCLES':
+        if cycles_exists and engine == 'CYCLES':
             box = layout.box()
             split = box.split()
             col = split.column(align=True)
@@ -2560,7 +2569,8 @@ class AMTH_LightersCorner(bpy.types.Panel):
         list_meshlights = scene.amaranth_lighterscorner_list_meshlights
         engine = scene.render.engine
 
-        layout.prop(scene, "amaranth_lighterscorner_list_meshlights")
+        if cycles_exists:
+            layout.prop(scene, "amaranth_lighterscorner_list_meshlights")
 
         box = layout.box()
         if lamps:
@@ -2579,14 +2589,15 @@ class AMTH_LightersCorner(bpy.types.Panel):
                     col = split.column()
                     col.label(text="Samples")
 
-                if engine == 'CYCLES':
+                if cycles_exists and engine == 'CYCLES':
                     split = split.split(percentage=0.2)
                     col = split.column()
                     col.label(text="Size")
 
                 split = split.split(percentage=1.0)
                 col = split.column()
-                col.label(text="Rays / Render Visibility")
+                col.label(text="%sRender Visibility" % 
+                    'Rays /' if cycles_exists else '')
 
                 for ob in objects:
                     is_lamp = ob.type == 'LAMP'
@@ -2594,8 +2605,9 @@ class AMTH_LightersCorner(bpy.types.Panel):
 
                     if ob and is_lamp or is_emission:
                         lamp = ob.data
-                        clamp = ob.data.cycles
-                        visibility = ob.cycles_visibility
+                        if cycles_exists:
+                            clamp = ob.data.cycles
+                            visibility = ob.cycles_visibility
 
                         row = box.row(align=True)
                         split = row.split(percentage=1.0)
@@ -2622,7 +2634,7 @@ class AMTH_LightersCorner(bpy.types.Panel):
                                          icon="LINK_BLEND",
                                          emboss=False).filepath=ob.library.filepath
 
-                        if engine == 'CYCLES':
+                        if cycles_exists and engine == 'CYCLES':
                             split = split.split(percentage=0.25)
                             col = split.column()
                             if is_lamp:
@@ -2653,7 +2665,7 @@ class AMTH_LightersCorner(bpy.types.Panel):
                             else:
                               col.label(text="N/A")
 
-                        if engine == 'CYCLES':
+                        if cycles_exists and engine == 'CYCLES':
                             split = split.split(percentage=0.2)
                             col = split.column()
                             if is_lamp:
@@ -2671,11 +2683,12 @@ class AMTH_LightersCorner(bpy.types.Panel):
                         split = split.split(percentage=1.0)
                         col = split.column()
                         row = col.row(align=True)
-                        row.prop(visibility, "camera", text="")
-                        row.prop(visibility, "diffuse", text="")
-                        row.prop(visibility, "glossy", text="")
-                        row.prop(visibility, "shadow", text="")
-                        row.separator()
+                        if cycles_exists:
+                            row.prop(visibility, "camera", text="")
+                            row.prop(visibility, "diffuse", text="")
+                            row.prop(visibility, "glossy", text="")
+                            row.prop(visibility, "shadow", text="")
+                            row.separator()
                         row.prop(ob, "hide", text="", emboss=False)
                         row.prop(ob, "hide_render", text="", emboss=False)
         else:
@@ -2959,7 +2972,7 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
         return {'FINISHED'}
 
 def ui_menu_lamps_add(self, context):
-    if context.scene.render.engine == 'CYCLES':
+    if cycles_exists and context.scene.render.engine == 'CYCLES':
         self.layout.separator()
         self.layout.operator(
             AMTH_OBJECT_OT_meshlight_add.bl_idname,
@@ -3040,12 +3053,13 @@ def register():
     bpy.types.NODE_HT_header.append(node_shader_extra)
     bpy.types.NODE_PT_active_node_properties.append(ui_node_normal_values)
 
-    bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
+    if cycles_exists:
+        bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
+        bpy.types.CyclesScene_PT_simplify.append(unsimplify_ui)
 
     bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
 
     bpy.types.SCENE_PT_simplify.append(unsimplify_ui)
-    bpy.types.CyclesScene_PT_simplify.append(unsimplify_ui)
 
     bpy.types.DATA_PT_display.append(pose_motion_paths_ui)
 
@@ -3145,12 +3159,13 @@ def unregister():
     bpy.types.NODE_HT_header.remove(node_shader_extra)
     bpy.types.NODE_PT_active_node_properties.remove(ui_node_normal_values)
 
-    bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
+    if cycles_exists:
+        bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
+        bpy.types.CyclesScene_PT_simplify.remove(unsimplify_ui)
 
     bpy.types.FILEBROWSER_HT_header.remove(button_directory_current_blend)
 
     bpy.types.SCENE_PT_simplify.remove(unsimplify_ui)
-    bpy.types.CyclesScene_PT_simplify.remove(unsimplify_ui)
 
     bpy.types.DATA_PT_display.remove(pose_motion_paths_ui)
 
