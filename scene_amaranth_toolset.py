@@ -19,8 +19,8 @@
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin, Lukas Tönne",
-    "version": (0, 9, 4),
-    "blender": (2, 70),
+    "version": (0, 9, 5),
+    "blender": (2, 71),
     "location": "Everywhere!",
     "description": "A collection of tools and settings to improve productivity",
     "warning": "",
@@ -40,8 +40,17 @@ from bpy.app.handlers import persistent
 from bl_operators.presets import AddPresetBase
 
 # Addon wide, we need to know if cycles is available
-global cycles_exists
-cycles_exists = 'cycles' in dir(bpy.types.Scene)
+cycles_exists = False
+
+
+def check_cycles_exists():
+    global cycles_exists
+    cycles_exists = ('cycles' in dir(bpy.types.Scene))
+    return cycles_exists
+
+
+check_cycles_exists()
+
 
 # Preferences
 class AmaranthToolsetPreferences(AddonPreferences):
@@ -84,6 +93,12 @@ class AmaranthToolsetPreferences(AddonPreferences):
                 default=10,
                 min=1)
 
+    use_framerate = BoolProperty(
+        name="Framerate Jump",
+        description="Jump the amount of frames forward/backward that you have set as your framerate",
+        default=False,
+    )
+
     use_layers_for_render = BoolProperty(
             name="Current Layers for Render",
             description="Save the layers that should be enabled for render",
@@ -113,6 +128,7 @@ class AmaranthToolsetPreferences(AddonPreferences):
         sub.prop(self, "use_timeline_extra_info")
         sub.prop(self, "use_scene_stats")
         sub.prop(self, "use_layers_for_render")
+        sub.prop(self, "use_framerate")
 
         sub.separator()
 
@@ -128,7 +144,7 @@ class AmaranthToolsetPreferences(AddonPreferences):
             text="Refresh the current Scene. Hotkey: F5 or in Specials menu [W]")
 
         sub.separator()
-        sub.label(text="") # General
+        sub.label(text="") # General icon
         sub.label(
             text="Quickly save and reload the current file (no warning!). "
                  "File menu or Ctrl+Shift+W")
@@ -136,7 +152,9 @@ class AmaranthToolsetPreferences(AddonPreferences):
             text="SMPTE Timecode and frames left/ahead on Timeline's header")
         sub.label(
             text="Display extra statistics for Scenes, Cameras, and Meshlights (Cycles)")
-
+        sub.label(text="Save the set of layers that should be activated for a final render")
+        sub.label(text="Jump the amount of frames forward/backward that you've set as your framerate")
+        
         sub.separator()
         sub.label(text="") # Nodes
         sub.label(
@@ -177,7 +195,7 @@ def init_properties():
 
     # Scene Debug
     # Cycles Node Types
-    if cycles_exists:
+    if check_cycles_exists():
         cycles_shader_node_types = [
             ("BSDF_DIFFUSE", "Diffuse BSDF", "", 0),
             ("BSDF_GLOSSY", "Glossy BSDF", "", 1),
@@ -1006,6 +1024,8 @@ class AMTH_VIEW3D_OT_show_only_render(Operator):
 # FEATURE: Display Active Image Node on Image Editor
 # Made by Sergey Sharybin, tweaks from Bassam Kurdali
 image_nodes = {"CompositorNodeImage",
+               "CompositorNodeViewer",
+               "CompositorNodeComposite",
                "ShaderNodeTexImage",
                "ShaderNodeTexEnvironment"}
 
@@ -1020,14 +1040,20 @@ class AMTH_NODE_OT_show_active_node_image(Operator):
         if preferences.use_image_node_display:
             if context.active_node:
                 active_node = context.active_node
-                if active_node.bl_idname in image_nodes and active_node.image:
+
+                if active_node.bl_idname in image_nodes:
                     for area in context.screen.areas:
                         if area.type == "IMAGE_EDITOR":
                             for space in area.spaces:
                                 if space.type == "IMAGE_EDITOR":
-                                    space.image = active_node.image
+                                    if active_node.bl_idname == 'CompositorNodeViewer':
+                                        space.image = bpy.data.images['Viewer Node']
+                                    elif active_node.bl_idname == 'CompositorNodeComposite':
+                                        space.image = bpy.data.images['Render Result']
+                                    elif active_node.image:
+                                        space.image = active_node.image
                             break
-    
+
         return {'FINISHED'}
 # // FEATURE: Display Active Image Node on Image Editor
 
@@ -2360,10 +2386,14 @@ class AMTH_SCREEN_OT_frame_jump(Operator):
         scene = context.scene
         preferences = context.user_preferences.addons[__name__].preferences
 
-        if self.forward:
-            scene.frame_current = scene.frame_current + preferences.frames_jump
+        if preferences.use_framerate:
+            framedelta = scene.render.fps
         else:
-            scene.frame_current = scene.frame_current - preferences.frames_jump
+            framedelta = preferences.frames_jump
+        if self.forward:
+            scene.frame_current = scene.frame_current + framedelta
+        else:
+            scene.frame_current = scene.frame_current - framedelta
 
         return{'FINISHED'}
 
@@ -3053,7 +3083,7 @@ def register():
     bpy.types.NODE_HT_header.append(node_shader_extra)
     bpy.types.NODE_PT_active_node_properties.append(ui_node_normal_values)
 
-    if cycles_exists:
+    if check_cycles_exists():
         bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
         bpy.types.CyclesScene_PT_simplify.append(unsimplify_ui)
 
@@ -3159,7 +3189,7 @@ def unregister():
     bpy.types.NODE_HT_header.remove(node_shader_extra)
     bpy.types.NODE_PT_active_node_properties.remove(ui_node_normal_values)
 
-    if cycles_exists:
+    if check_cycles_exists():
         bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
         bpy.types.CyclesScene_PT_simplify.remove(unsimplify_ui)
 
@@ -3201,3 +3231,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+
