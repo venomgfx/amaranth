@@ -15,19 +15,21 @@
 # Imports
 import bpy
 
-if "prefs" in locals():
-    import imp
-    imp.reload(prefs)
-    imp.reload(refresh)
-    imp.reload(save_reload)
-    imp.reload(timeline_extra_info)
-    imp.reload(frame_current)
-    imp_reload(node_editor)
+if locals().get("prefs") is not None:
+    from imp import reload
+    reload(prefs)
+    reload(refresh)
+    reload(save_reload)
+    reload(timeline_extra_info)
+    reload(frame_current)
+    reload(node_editor)
+    reload(render)
 else:
     from . import prefs
     from .scene import refresh, save_reload, current_blend
     from .animation import timeline_extra_info, frame_current
     from . import node_editor
+    from .render import border_camera
 
 # Addon info
 bl_info = {
@@ -52,10 +54,13 @@ classes = (prefs.AmaranthToolsetPreferences,
            node_editor.templates.AMTH_NODE_OT_AddTemplateVignette,
            current_blend.AMTH_FILE_OT_directory_current_blend,
            node_editor.id_panel.AMTH_NODE_PT_indices,
+           border_camera.AMTH_VIEW3D_OT_render_border_camera,
            )
 
 widgets = {
-    "VIEW3D_MT_object_specials": (refresh.button, frame_current.button),
+    "VIEW3D_MT_object_specials": (refresh.button,
+                                  frame_current.button,
+                                  border_camera.button),
     "VIEW3D_MT_pose_specials": (frame_current.button, ),
     "INFO_MT_file": (save_reload.button, ),
     "TIME_HT_header": (timeline_extra_info.label, ),
