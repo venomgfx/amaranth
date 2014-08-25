@@ -18,8 +18,10 @@ import bpy
 if "prefs" in locals():
     import imp
     imp.reload(prefs)
+    imp.reload(refresh)
 else:
     from . import prefs
+    from .scene import refresh
 
 # Addon info
 bl_info = {
@@ -34,14 +36,40 @@ bl_info = {
     "tracker_url": "",
     "category": "Scene"}
 
+modules = ("prefs",
+           "refresh",
+           )
+
+addon_keymaps = []  # list containing tuples -> (keymap, keymap_item)
+
 
 # Registration
 def register():
-    bpy.utils.register_class(prefs.Prefs)
+    for m in modules:
+        c = getattr(globals()[m], m.capitalize())
+        bpy.utils.register_class(c)
+
+    bpy.types.VIEW3D_MT_object_specials.append(refresh.button_refresh)
+
+    kc = bpy.context.window_manager.keyconfigs.addon
+    if kc:
+        km = kc.keymaps.new(name='Window')
+        kmi = km.keymap_items.new('scene.refresh', 'F5', 'PRESS',
+                                  shift=False, ctrl=False)
+        addon_keymaps.append((km, kmi))
 
 
 def unregister():
-    bpy.utils.unregister_class(prefs.Prefs)
+    for m in modules:
+        c = getattr(globals()[m], m.capitalize())
+        bpy.utils.unregister_class(c)
+
+    bpy.types.VIEW3D_MT_object_specials.remove(refresh.button_refresh)
+
+    print(addon_keymaps)
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
 
 if __name__ == "__main__":
     register()
