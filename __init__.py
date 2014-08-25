@@ -23,13 +23,14 @@ if locals().get("prefs") is not None:
     reload(timeline_extra_info)
     reload(frame_current)
     reload(node_editor)
-    reload(render)
+    reload(border_camera)
+    reload(meshlights)
 else:
     from . import prefs
     from .scene import refresh, save_reload, current_blend
     from .animation import timeline_extra_info, frame_current
     from . import node_editor
-    from .render import border_camera
+    from .render import border_camera, meshlights
 
 # Addon info
 bl_info = {
@@ -55,6 +56,7 @@ classes = (prefs.AmaranthToolsetPreferences,
            current_blend.AMTH_FILE_OT_directory_current_blend,
            node_editor.id_panel.AMTH_NODE_PT_indices,
            border_camera.AMTH_VIEW3D_OT_render_border_camera,
+           meshlights.AMTH_OBJECT_OT_select_meshlights,
            )
 
 widgets = {
@@ -66,6 +68,7 @@ widgets = {
     "TIME_HT_header": (timeline_extra_info.label, ),
     "NODE_HT_header": (node_editor.templates.pulldown, ),
     "FILEBROWSER_HT_header": (current_blend.button, ),
+    "VIEW3D_MT_select_object": (meshlights.button, ),
 }
 
 addon_keymaps = []  # [(keymap, [keymap_item, ...]), ...]
