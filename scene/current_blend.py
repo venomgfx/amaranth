@@ -15,32 +15,20 @@
 import bpy
 
 
-class AMTH_WM_OT_save_reload(bpy.types.Operator):
+class AMTH_FILE_OT_directory_current_blend(bpy.types.Operator):
 
-    """Save and Reload the current blend file"""
-    bl_idname = "wm.save_reload"
-    bl_label = "Save & Reload"
-
-    def save_reload(self, context, path):
-        if not path:
-            bpy.ops.wm.save_as_mainfile("INVOKE_AREA")
-            return
-        bpy.ops.wm.save_mainfile()
-        self.report({'INFO'}, "Saved & Reloaded")
-        bpy.ops.wm.open_mainfile("EXEC_DEFAULT", filepath=path)
+    """Go to the directory of the currently open blend file"""
+    bl_idname = "file.directory_current_blend"
+    bl_label = "Current Blend's Folder"
 
     def execute(self, context):
-        path = bpy.data.filepath
-        self.save_reload(context, path)
+        bpy.ops.file.select_bookmark(dir='//')
         return {'FINISHED'}
 
 
 def button(self, context):
-    preferences = context.user_preferences.addons["amaranth"].preferences
-
-    if preferences.use_file_save_reload:
-        self.layout.separator()
+    if bpy.data.filepath:
         self.layout.operator(
-            AMTH_WM_OT_save_reload.bl_idname,
-            text="Save & Reload",
-            icon='FILE_REFRESH')
+            AMTH_FILE_OT_directory_current_blend.bl_idname,
+            text="Current Blend's Folder",
+            icon='APPEND_BLEND')

@@ -25,7 +25,7 @@ if "prefs" in locals():
     imp_reload(templates)
 else:
     from . import prefs
-    from .scene import refresh, save_reload
+    from .scene import refresh, save_reload, current_blend
     from .animation import timeline_extra_info, frame_current
     from .node_editor import templates
 
@@ -50,6 +50,7 @@ classes = (prefs.AmaranthToolsetPreferences,
            templates.AMTH_NODE_MT_amaranth_templates,
            templates.AMTH_NODE_OT_AddTemplateVectorBlur,
            templates.AMTH_NODE_OT_AddTemplateVignette,
+           current_blend.AMTH_FILE_OT_directory_current_blend,
            )
 
 addon_keymaps = []  # [(keymap, [keymap_item, ...]), ...]
@@ -57,7 +58,7 @@ addon_keymaps = []  # [(keymap, [keymap_item, ...]), ...]
 
 def register():
     for c in classes:
-        bpy.utils.register_class(c)  # register classes
+        bpy.utils.register_class(c)  # register templates
 
     # register widgets
     bpy.types.VIEW3D_MT_object_specials.append(refresh.button)
@@ -66,6 +67,7 @@ def register():
     bpy.types.INFO_MT_file.append(save_reload.button)
     bpy.types.TIME_HT_header.append(timeline_extra_info.label)
     bpy.types.NODE_HT_header.append(templates.pulldown)
+    bpy.types.FILEBROWSER_HT_header.append(current_blend.button)
 
     # register hotkeys
     wm = bpy.context.window_manager
@@ -87,7 +89,7 @@ def register():
 
 def unregister():
     for c in classes:
-        bpy.utils.unregister_class(c)  # unregister classes
+        bpy.utils.unregister_class(c)  # unregister templates
 
     # unregister widgets
     bpy.types.VIEW3D_MT_object_specials.remove(refresh.button)
@@ -96,6 +98,7 @@ def unregister():
     bpy.types.INFO_MT_file.remove(save_reload.button)
     bpy.types.TIME_HT_header.remove(timeline_extra_info.label)
     bpy.types.NODE_HT_header.remove(templates.pulldown)
+    bpy.types.FILEBROWSER_HT_header.remove(current_blend.button)
 
     # unregister hotkeys
     for km, items in addon_keymaps:
