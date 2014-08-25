@@ -22,10 +22,15 @@ if "prefs" in locals():
     imp.reload(save_reload)
     imp.reload(timeline_extra_info)
     imp.reload(frame_current)
+    imp_reload(vectorblur)
+    imp_reload(vignette)
+    imp_reload(templates)
 else:
     from . import prefs
     from .scene import refresh, save_reload
     from .animation import timeline_extra_info, frame_current
+    from .node_editor.templates import vectorblur, vignette
+    from .node_editor import templates
 
 # Addon info
 bl_info = {
@@ -40,15 +45,18 @@ bl_info = {
     "tracker_url": "",
     "category": "Scene"}
 
+# Registration
 modules = ("prefs",
            "refresh",
            "save_reload",
+           "vectorblur",
+           "vignette",
+           "templates",
            )
 
 addon_keymaps = []  # [(keymap, [keymap_item, ...]), ...]
 
 
-# Registration
 def register():
     for m in modules:
         if not hasattr(globals()[m], m.capitalize()):
@@ -62,6 +70,7 @@ def register():
     bpy.types.INFO_MT_file.append(save_reload.button)
 
     bpy.types.TIME_HT_header.append(timeline_extra_info.label)
+    bpy.types.NODE_HT_header.append(templates.pulldown)
 
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
@@ -73,6 +82,11 @@ def register():
         items.append(km.keymap_items.new('wm.save_reload', 'W', 'PRESS',
                                          shift=True, ctrl=True))
         addon_keymaps.append((km, items))
+
+        km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
+        kmi = km.keymap_items.new('wm.call_menu', 'W', 'PRESS')
+        kmi.properties.name = "AMTH_NODE_MT_amaranth_templates"
+        addon_keymaps.append((km, [kmi]))
 
 
 def unregister():
@@ -86,6 +100,7 @@ def unregister():
     bpy.types.INFO_MT_file.remove(save_reload.button)
 
     bpy.types.TIME_HT_header.remove(timeline_extra_info.label)
+    bpy.types.NODE_HT_header.remove(templates.pulldown)
 
     for km, items in addon_keymaps:
         for kmi in items:
