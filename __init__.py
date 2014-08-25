@@ -22,12 +22,12 @@ if "prefs" in locals():
     imp.reload(save_reload)
     imp.reload(timeline_extra_info)
     imp.reload(frame_current)
-    imp_reload(templates)
+    imp_reload(node_editor)
 else:
     from . import prefs
     from .scene import refresh, save_reload, current_blend
     from .animation import timeline_extra_info, frame_current
-    from .node_editor import templates
+    from . import node_editor
 
 # Addon info
 bl_info = {
@@ -47,11 +47,21 @@ bl_info = {
 classes = (prefs.AmaranthToolsetPreferences,
            refresh.AMTH_SCENE_OT_refresh,
            save_reload.AMTH_WM_OT_save_reload,
-           templates.AMTH_NODE_MT_amaranth_templates,
-           templates.AMTH_NODE_OT_AddTemplateVectorBlur,
-           templates.AMTH_NODE_OT_AddTemplateVignette,
+           node_editor.templates.AMTH_NODE_MT_amaranth_templates,
+           node_editor.templates.AMTH_NODE_OT_AddTemplateVectorBlur,
+           node_editor.templates.AMTH_NODE_OT_AddTemplateVignette,
            current_blend.AMTH_FILE_OT_directory_current_blend,
+           node_editor.id_panel.AMTH_NODE_PT_indices,
            )
+
+widgets = {
+    "VIEW3D_MT_object_specials": (refresh.button, frame_current.button),
+    "VIEW3D_MT_pose_specials": (frame_current.button, ),
+    "INFO_MT_file": (save_reload.button, ),
+    "TIME_HT_header": (timeline_extra_info.label, ),
+    "NODE_HT_header": (node_editor.templates.pulldown, ),
+    "FILEBROWSER_HT_header": (current_blend.button, ),
+}
 
 addon_keymaps = []  # [(keymap, [keymap_item, ...]), ...]
 
@@ -61,13 +71,9 @@ def register():
         bpy.utils.register_class(c)  # register templates
 
     # register widgets
-    bpy.types.VIEW3D_MT_object_specials.append(refresh.button)
-    bpy.types.VIEW3D_MT_object_specials.append(frame_current.button)
-    bpy.types.VIEW3D_MT_pose_specials.append(frame_current.button)
-    bpy.types.INFO_MT_file.append(save_reload.button)
-    bpy.types.TIME_HT_header.append(timeline_extra_info.label)
-    bpy.types.NODE_HT_header.append(templates.pulldown)
-    bpy.types.FILEBROWSER_HT_header.append(current_blend.button)
+    for k, ws in widgets.items():
+        for w in ws:
+            getattr(bpy.types, k).append(w)
 
     # register hotkeys
     wm = bpy.context.window_manager
@@ -92,13 +98,9 @@ def unregister():
         bpy.utils.unregister_class(c)  # unregister templates
 
     # unregister widgets
-    bpy.types.VIEW3D_MT_object_specials.remove(refresh.button)
-    bpy.types.VIEW3D_MT_object_specials.remove(frame_current.button)
-    bpy.types.VIEW3D_MT_pose_specials.remove(frame_current.button)
-    bpy.types.INFO_MT_file.remove(save_reload.button)
-    bpy.types.TIME_HT_header.remove(timeline_extra_info.label)
-    bpy.types.NODE_HT_header.remove(templates.pulldown)
-    bpy.types.FILEBROWSER_HT_header.remove(current_blend.button)
+    for k, ws in widgets.items():
+        for w in ws:
+            getattr(bpy.types, k).remove(w)
 
     # unregister hotkeys
     for km, items in addon_keymaps:
