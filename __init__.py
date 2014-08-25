@@ -20,9 +20,12 @@ if "prefs" in locals():
     imp.reload(prefs)
     imp.reload(refresh)
     imp.reload(save_reload)
+    imp.reload(timeline_extra_info)
+    imp.reload(frame_current)
 else:
     from . import prefs
     from .scene import refresh, save_reload
+    from .animation import timeline_extra_info, frame_current
 
 # Addon info
 bl_info = {
@@ -48,11 +51,17 @@ addon_keymaps = []  # [(keymap, [keymap_item, ...]), ...]
 # Registration
 def register():
     for m in modules:
+        if not hasattr(globals()[m], m.capitalize()):
+            continue
         c = getattr(globals()[m], m.capitalize())
         bpy.utils.register_class(c)
 
     bpy.types.VIEW3D_MT_object_specials.append(refresh.button)
+    bpy.types.VIEW3D_MT_object_specials.append(frame_current.button)
+    bpy.types.VIEW3D_MT_pose_specials.append(frame_current.button)
     bpy.types.INFO_MT_file.append(save_reload.button)
+
+    bpy.types.TIME_HT_header.append(timeline_extra_info.label)
 
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
@@ -72,7 +81,11 @@ def unregister():
         bpy.utils.unregister_class(c)
 
     bpy.types.VIEW3D_MT_object_specials.remove(refresh.button)
+    bpy.types.VIEW3D_MT_object_specials.remove(frame_current.button)
+    bpy.types.VIEW3D_MT_pose_specials.remove(frame_current.button)
     bpy.types.INFO_MT_file.remove(save_reload.button)
+
+    bpy.types.TIME_HT_header.remove(timeline_extra_info.label)
 
     for km, items in addon_keymaps:
         for kmi in items:
