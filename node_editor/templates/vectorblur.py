@@ -16,7 +16,7 @@ import bpy
 from mathutils import Vector
 
 
-class Vectorblur(bpy.types.Operator):
+class AMTH_NODE_OT_AddTemplateVectorBlur(bpy.types.Operator):
     bl_idname = "node.template_add_vectorblur"
     bl_label = "Add Vector Blur"
     bl_description = "Add a vector blur filter"

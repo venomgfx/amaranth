@@ -15,7 +15,7 @@
 import bpy
 
 
-class Refresh(bpy.types.Operator):
+class AMTH_SCENE_OT_refresh(bpy.types.Operator):
 
     """Refresh the current scene"""
     bl_idname = "scene.refresh"
@@ -38,6 +38,6 @@ def button(self, context):
 
     if preferences.use_scene_refresh:
         self.layout.separator()
-        self.layout.operator(Refresh.bl_idname,
+        self.layout.operator(AMTH_SCENE_OT_refresh.bl_idname,
                              text="Refresh!",
                              icon='FILE_REFRESH')

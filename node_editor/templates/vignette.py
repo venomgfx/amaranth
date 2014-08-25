@@ -16,7 +16,7 @@ import bpy
 from mathutils import Vector
 
 
-class Vignette(bpy.types.Operator):
+class AMTH_NODE_OT_AddTemplateVignette(bpy.types.Operator):
     bl_idname = "node.template_add_vignette"
     bl_label = "Add Vignette"
     bl_description = "Add a vignette effect"

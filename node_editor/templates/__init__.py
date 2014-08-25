@@ -13,11 +13,12 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 import bpy
-from . import vectorblur, vignette
+from .vectorblur import AMTH_NODE_OT_AddTemplateVectorBlur
+from .vignette import AMTH_NODE_OT_AddTemplateVignette
 
 
 # Node Templates Menu
-class Templates(bpy.types.Menu):
+class AMTH_NODE_MT_amaranth_templates(bpy.types.Menu):
     bl_idname = 'AMTH_NODE_MT_amaranth_templates'
     bl_space_type = 'NODE_EDITOR'
     bl_label = "Templates"
@@ -26,11 +27,11 @@ class Templates(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
         layout.operator(
-            vectorblur.Vectorblur.bl_idname,
+            AMTH_NODE_OT_AddTemplateVectorBlur.bl_idname,
             text="Vector Blur",
             icon='FORCE_HARMONIC')
         layout.operator(
-            vignette.Vignette.bl_idname,
+            AMTH_NODE_OT_AddTemplateVignette.bl_idname,
             text="Vignette",
             icon='COLOR')
 

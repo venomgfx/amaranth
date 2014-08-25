@@ -22,14 +22,11 @@ if "prefs" in locals():
     imp.reload(save_reload)
     imp.reload(timeline_extra_info)
     imp.reload(frame_current)
-    imp_reload(vectorblur)
-    imp_reload(vignette)
     imp_reload(templates)
 else:
     from . import prefs
     from .scene import refresh, save_reload
     from .animation import timeline_extra_info, frame_current
-    from .node_editor.templates import vectorblur, vignette
     from .node_editor import templates
 
 # Addon info
@@ -46,41 +43,40 @@ bl_info = {
     "category": "Scene"}
 
 # Registration
-modules = ("prefs",
-           "refresh",
-           "save_reload",
-           "vectorblur",
-           "vignette",
-           "templates",
+
+classes = (prefs.AmaranthToolsetPreferences,
+           refresh.AMTH_SCENE_OT_refresh,
+           save_reload.AMTH_WM_OT_save_reload,
+           templates.AMTH_NODE_MT_amaranth_templates,
+           templates.AMTH_NODE_OT_AddTemplateVectorBlur,
+           templates.AMTH_NODE_OT_AddTemplateVignette,
            )
 
 addon_keymaps = []  # [(keymap, [keymap_item, ...]), ...]
 
 
 def register():
-    for m in modules:
-        if not hasattr(globals()[m], m.capitalize()):
-            continue
-        c = getattr(globals()[m], m.capitalize())
-        bpy.utils.register_class(c)
+    for c in classes:
+        bpy.utils.register_class(c)  # register classes
 
+    # register widgets
     bpy.types.VIEW3D_MT_object_specials.append(refresh.button)
     bpy.types.VIEW3D_MT_object_specials.append(frame_current.button)
     bpy.types.VIEW3D_MT_pose_specials.append(frame_current.button)
     bpy.types.INFO_MT_file.append(save_reload.button)
-
     bpy.types.TIME_HT_header.append(timeline_extra_info.label)
     bpy.types.NODE_HT_header.append(templates.pulldown)
 
+    # register hotkeys
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
         km = kc.keymaps.new(name='Window')
         items = list()
-        items.append(km.keymap_items.new('scene.refresh', 'F5', 'PRESS',
-                                         shift=False, ctrl=False))
-        items.append(km.keymap_items.new('wm.save_reload', 'W', 'PRESS',
-                                         shift=True, ctrl=True))
+        items.append(km.keymap_items.new(
+            'scene.refresh', 'F5', 'PRESS', shift=False, ctrl=False))
+        items.append(km.keymap_items.new(
+            'wm.save_reload', 'W', 'PRESS', shift=True, ctrl=True))
         addon_keymaps.append((km, items))
 
         km = kc.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
@@ -90,18 +86,18 @@ def register():
 
 
 def unregister():
-    for m in modules:
-        c = getattr(globals()[m], m.capitalize())
-        bpy.utils.unregister_class(c)
+    for c in classes:
+        bpy.utils.unregister_class(c)  # unregister classes
 
+    # unregister widgets
     bpy.types.VIEW3D_MT_object_specials.remove(refresh.button)
     bpy.types.VIEW3D_MT_object_specials.remove(frame_current.button)
     bpy.types.VIEW3D_MT_pose_specials.remove(frame_current.button)
     bpy.types.INFO_MT_file.remove(save_reload.button)
-
     bpy.types.TIME_HT_header.remove(timeline_extra_info.label)
     bpy.types.NODE_HT_header.remove(templates.pulldown)
 
+    # unregister hotkeys
     for km, items in addon_keymaps:
         for kmi in items:
             km.keymap_items.remove(kmi)

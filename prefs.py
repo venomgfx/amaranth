@@ -15,7 +15,7 @@
 import bpy
 
 
-class Prefs(bpy.types.AddonPreferences):
+class AmaranthToolsetPreferences(bpy.types.AddonPreferences):
     bl_idname = "amaranth"
     use_frame_current = bpy.props.BoolProperty(
         name="Current Frame Slider",
