@@ -33,7 +33,7 @@ class Refresh(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def button_refresh(self, context):
+def button(self, context):
     preferences = context.user_preferences.addons["amaranth"].preferences
 
     if preferences.use_scene_refresh:

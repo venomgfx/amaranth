@@ -19,9 +19,10 @@ if "prefs" in locals():
     import imp
     imp.reload(prefs)
     imp.reload(refresh)
+    imp.reload(save_reload)
 else:
     from . import prefs
-    from .scene import refresh
+    from .scene import refresh, save_reload
 
 # Addon info
 bl_info = {
@@ -38,9 +39,10 @@ bl_info = {
 
 modules = ("prefs",
            "refresh",
+           "save_reload",
            )
 
-addon_keymaps = []  # list containing tuples -> (keymap, keymap_item)
+addon_keymaps = []  # [(keymap, [keymap_item, ...]), ...]
 
 
 # Registration
@@ -49,14 +51,19 @@ def register():
         c = getattr(globals()[m], m.capitalize())
         bpy.utils.register_class(c)
 
-    bpy.types.VIEW3D_MT_object_specials.append(refresh.button_refresh)
+    bpy.types.VIEW3D_MT_object_specials.append(refresh.button)
+    bpy.types.INFO_MT_file.append(save_reload.button)
 
-    kc = bpy.context.window_manager.keyconfigs.addon
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
     if kc:
         km = kc.keymaps.new(name='Window')
-        kmi = km.keymap_items.new('scene.refresh', 'F5', 'PRESS',
-                                  shift=False, ctrl=False)
-        addon_keymaps.append((km, kmi))
+        items = list()
+        items.append(km.keymap_items.new('scene.refresh', 'F5', 'PRESS',
+                                         shift=False, ctrl=False))
+        items.append(km.keymap_items.new('wm.save_reload', 'W', 'PRESS',
+                                         shift=True, ctrl=True))
+        addon_keymaps.append((km, items))
 
 
 def unregister():
@@ -64,11 +71,12 @@ def unregister():
         c = getattr(globals()[m], m.capitalize())
         bpy.utils.unregister_class(c)
 
-    bpy.types.VIEW3D_MT_object_specials.remove(refresh.button_refresh)
+    bpy.types.VIEW3D_MT_object_specials.remove(refresh.button)
+    bpy.types.INFO_MT_file.remove(save_reload.button)
 
-    print(addon_keymaps)
-    for km, kmi in addon_keymaps:
-        km.keymap_items.remove(kmi)
+    for km, items in addon_keymaps:
+        for kmi in items:
+            km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
 if __name__ == "__main__":
