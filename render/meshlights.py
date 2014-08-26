@@ -13,7 +13,7 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 import bpy
-from . import utils
+from .. import utils
 
 
 class AMTH_OBJECT_OT_select_meshlights(bpy.types.Operator):
