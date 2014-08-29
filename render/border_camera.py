@@ -11,6 +11,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+Set Camera Bounds as Render Border
+
+When in camera view, we can now set the border-render to be the same size
+of the camera, so we don't render outside the view. Makes faster render
+preview. Under Specials menu W, when in Camera view.
+"""
 
 import bpy
 
@@ -23,7 +30,7 @@ class AMTH_VIEW3D_OT_render_border_camera(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.space_data.region_3d.view_perspective == 'CAMERA'
+        return context.space_data.region_3d.view_perspective == "CAMERA"
 
     def execute(self, context):
         render = context.scene.render
@@ -33,14 +40,24 @@ class AMTH_VIEW3D_OT_render_border_camera(bpy.types.Operator):
         render.border_max_x = 1
         render.border_max_y = 1
 
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
 def button(self, context):
     view3d = context.space_data.region_3d
 
-    if view3d.view_perspective == 'CAMERA':
+    if view3d.view_perspective == "CAMERA":
         layout = self.layout
         layout.separator()
         layout.operator(AMTH_VIEW3D_OT_render_border_camera.bl_idname,
                         text="Camera as Render Border", icon="FULLSCREEN_ENTER")
+
+
+def register():
+    bpy.utils.register_class(AMTH_VIEW3D_OT_render_border_camera)
+    bpy.types.VIEW3D_MT_object_specials.append(button)
+
+
+def unregister():
+    bpy.utils.unregister_class(AMTH_VIEW3D_OT_render_border_camera)
+    bpy.types.VIEW3D_MT_object_specials.remove(button)

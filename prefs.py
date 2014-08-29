@@ -123,3 +123,11 @@ class AmaranthToolsetPreferences(bpy.types.AddonPreferences):
         sub.label(
             text="When selecting an Image node, display it on the Image editor "
                  "(if any)")
+
+
+def register():
+    bpy.utils.register_class(AmaranthToolsetPreferences)
+
+
+def unregister():
+    bpy.utils.unregister_class(AmaranthToolsetPreferences)

@@ -11,8 +11,18 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+Refresh Scene
+
+Refresh the current scene, useful when working with libraries or drivers.
+Could also add an option to refresh the VSE maybe? Usage: Hit F5 or find
+it on the Specials menu W.
+"""
 
 import bpy
+
+
+KEYMAPS = list()
 
 
 class AMTH_SCENE_OT_refresh(bpy.types.Operator):
@@ -30,7 +40,7 @@ class AMTH_SCENE_OT_refresh(bpy.types.Operator):
             scene.frame_current = scene.frame_current
             self.report({"INFO"}, "Scene Refreshed!")
 
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
 def button(self, context):
@@ -40,4 +50,22 @@ def button(self, context):
         self.layout.separator()
         self.layout.operator(AMTH_SCENE_OT_refresh.bl_idname,
                              text="Refresh!",
-                             icon='FILE_REFRESH')
+                             icon="FILE_REFRESH")
+
+
+def register():
+    bpy.utils.register_class(AMTH_SCENE_OT_refresh)
+    bpy.types.VIEW3D_MT_object_specials.append(button)
+    kc = bpy.context.window_manager.keyconfigs.addon
+    km = kc.keymaps.new(name="Window")
+    kmi = km.keymap_items.new("scene.refresh", "F5", "PRESS",
+                              shift=False, ctrl=False)
+    KEYMAPS.append((km, kmi))
+
+
+def unregister():
+    bpy.utils.unregister_class(AMTH_SCENE_OT_refresh)
+    bpy.types.VIEW3D_MT_object_specials.remove(button)
+    for km, kmi in KEYMAPS:
+        km.keymap_items.remove(kmi)
+    KEYMAPS.clear()

@@ -11,11 +11,18 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+Unsimplify Render
+
+Handy option when you want to simplify the 3D View but unsimplify during
+render. Find it on the Simplify panel under Scene properties.
+"""
 
 import bpy
+from .. import utils
 
 
-def register():
+def init():
     scene = bpy.types.Scene
     scene.use_unsimplify_render = bpy.props.BoolProperty(
         default=False,
@@ -24,7 +31,7 @@ def register():
     scene.simplify_status = bpy.props.BoolProperty(default=False)
 
 
-def unregister():
+def clear():
     wm = bpy.context.window_manager
     for p in ("use_unsimplify_render", "simplify_status"):
         if wm.get(p):
@@ -32,7 +39,7 @@ def unregister():
 
 
 @bpy.app.handlers.persistent
-def unsimplify_render_pre(scene):
+def render_pre(scene):
     render = scene.render
     scene.simplify_status = render.use_simplify
 
@@ -41,7 +48,7 @@ def unsimplify_render_pre(scene):
 
 
 @bpy.app.handlers.persistent
-def unsimplify_render_post(scene):
+def render_post(scene):
     render = scene.render
     render.use_simplify = scene.simplify_status
 
@@ -49,3 +56,21 @@ def unsimplify_render_post(scene):
 def checkbox(self, context):
     scene = bpy.context.scene
     self.layout.prop(scene, 'use_unsimplify_render')
+
+
+def register():
+    init()
+    bpy.app.handlers.render_pre.append(render_pre)
+    bpy.app.handlers.render_post.append(render_post)
+    bpy.types.SCENE_PT_simplify.append(checkbox)
+    if utils.cycles_exists():
+        bpy.types.CyclesScene_PT_simplify.append(checkbox)
+
+
+def unregister():
+    clear()
+    bpy.app.handlers.render_pre.remove(render_pre)
+    bpy.app.handlers.render_post.remove(render_post)
+    bpy.types.SCENE_PT_simplify.remove(checkbox)
+    if utils.cycles_exists():
+        bpy.types.CyclesScene_PT_simplify.remove(checkbox)

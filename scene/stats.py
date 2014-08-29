@@ -11,6 +11,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+Scene, Cameras, and Meshlights Count
+
+Increase the stats by displaying the number of scenes, cameras, and light
+emitting meshes.
+On the Info header.
+"""
 
 import bpy
 from .. import utils
@@ -44,3 +51,11 @@ def label(self, context):
         row.label(text="Scenes:{} | Cameras:{}/{} {}".format(
                   scenes_count, cameras_selected, cameras_count,
                   meshlights_string if utils.cycles_active(context) else ''))
+
+
+def register():
+    bpy.types.INFO_HT_header.append(label)
+
+
+def unregister():
+    bpy.types.INFO_HT_header.remove(label)

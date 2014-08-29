@@ -12,19 +12,29 @@
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
+"""
+Object / Material Indices Panel
+
+When working with ID Masks in the Nodes Editor, is hard to follow track
+of which objects/materials have which ID.
+This adds a panel on the sidebar when an ID Mask node is selected.
+The active object is highlighted between [square brackets] On the Nodes
+Editor's sidebar, when an ID Mask node is selected.
+"""
+
 import bpy
 
 
 class AMTH_NODE_PT_indices(bpy.types.Panel):
-    bl_space_type = 'NODE_EDITOR'
-    bl_region_type = 'UI'
-    bl_label = 'Object / Material Indices'
-    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = "NODE_EDITOR"
+    bl_region_type = "UI"
+    bl_label = "Object / Material Indices"
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
         node = context.active_node
-        return node and node.type == 'ID_MASK'
+        return node and node.type == "ID_MASK"
 
     def draw(self, context):
         layout = self.layout
@@ -49,8 +59,8 @@ class AMTH_NODE_PT_indices(bpy.types.Panel):
             if ma and ma.pass_index > 0:
                 show_ma_id = True
         row = layout.row(align=True)
-        row.prop(node, 'index', text="Mask Index")
-        row.prop(node, 'use_matching_indices', text="Only Matching IDs")
+        row.prop(node, "index", text="Mask Index")
+        row.prop(node, "use_matching_indices", text="Only Matching IDs")
 
         layout.separator()
 
@@ -134,3 +144,11 @@ class AMTH_NODE_PT_indices(bpy.types.Panel):
             if node.use_matching_indices and not matching_ids:
                 row.label(text="No materials with ID %s" %
                           node.index, icon="INFO")
+
+
+def register():
+    bpy.utils.register_class(AMTH_NODE_PT_indices)
+
+
+def unregister():
+    bpy.utils.unregister_class(AMTH_NODE_PT_indices)

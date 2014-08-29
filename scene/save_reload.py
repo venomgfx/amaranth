@@ -11,8 +11,19 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+Save & Reload File
+
+When working with linked libraries, very often you need to save and load
+again to see the changes.
+This does it in one go, without asking, so be careful :)
+Usage: Hit Ctrl + Shift + W or find it at the bottom of the File menu.
+"""
 
 import bpy
+
+
+KEYMAPS = list()
 
 
 class AMTH_WM_OT_save_reload(bpy.types.Operator):
@@ -26,13 +37,13 @@ class AMTH_WM_OT_save_reload(bpy.types.Operator):
             bpy.ops.wm.save_as_mainfile("INVOKE_AREA")
             return
         bpy.ops.wm.save_mainfile()
-        self.report({'INFO'}, "Saved & Reloaded")
+        self.report({"INFO"}, "Saved & Reloaded")
         bpy.ops.wm.open_mainfile("EXEC_DEFAULT", filepath=path)
 
     def execute(self, context):
         path = bpy.data.filepath
         self.save_reload(context, path)
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
 def button(self, context):
@@ -43,4 +54,23 @@ def button(self, context):
         self.layout.operator(
             AMTH_WM_OT_save_reload.bl_idname,
             text="Save & Reload",
-            icon='FILE_REFRESH')
+            icon="FILE_REFRESH")
+
+
+def register():
+    bpy.utils.register_class(AMTH_WM_OT_save_reload)
+    bpy.types.INFO_MT_file.append(button)
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    km = kc.keymaps.new(name="Window")
+    kmi = km.keymap_items.new("wm.save_reload", "W", "PRESS",
+                              shift=False, ctrl=False)
+    KEYMAPS.append((km, kmi))
+
+
+def unregister():
+    bpy.utils.unregister_class(AMTH_WM_OT_save_reload)
+    bpy.types.INFO_MT_file.remove(button)
+    for km, kmi in KEYMAPS:
+        km.keymap_items.remove(kmi)
+    KEYMAPS.clear()

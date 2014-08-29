@@ -11,6 +11,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+File Browser > Go to Current Blend's Folder
+
+For when you're lost browsing files and want to go back to the currently
+open blend's directory. Look for it on the File Browser's header, only
+shows up if the file is saved.
+"""
 
 import bpy
 
@@ -22,8 +29,8 @@ class AMTH_FILE_OT_directory_current_blend(bpy.types.Operator):
     bl_label = "Current Blend's Folder"
 
     def execute(self, context):
-        bpy.ops.file.select_bookmark(dir='//')
-        return {'FINISHED'}
+        bpy.ops.file.select_bookmark(dir="//")
+        return {"FINISHED"}
 
 
 def button(self, context):
@@ -31,4 +38,14 @@ def button(self, context):
         self.layout.operator(
             AMTH_FILE_OT_directory_current_blend.bl_idname,
             text="Current Blend's Folder",
-            icon='APPEND_BLEND')
+            icon="APPEND_BLEND")
+
+
+def register():
+    bpy.utils.register_class(AMTH_FILE_OT_directory_current_blend)
+    bpy.types.FILEBROWSER_HT_header.append(button)
+
+
+def unregister():
+    bpy.utils.unregister_class(AMTH_FILE_OT_directory_current_blend)
+    bpy.types.FILEBROWSER_HT_header.remove(button)

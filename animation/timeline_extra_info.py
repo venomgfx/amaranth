@@ -11,6 +11,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+"""
+Timeline Extra Info
+
+Display amount of frames left until Frame End, very handy especially when
+rendering an animation or OpenGL preview.
+Display current/end time on SMPTE. Find it on the Timeline header.
+"""
 
 import bpy
 
@@ -49,3 +56,11 @@ def label(self, context):
         else:
             row.label(text="%s Frames Left" %
                       (frame_end - scene.frame_current))
+
+
+def register():
+    bpy.types.TIME_HT_header.append(label)
+
+
+def unregister():
+    bpy.types.TIME_HT_header.remove(label)
