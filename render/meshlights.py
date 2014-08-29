@@ -54,14 +54,10 @@ def button(self, context):
 
 
 def register():
-    if not utils.cycles_exists():
-        return
     bpy.utils.register_class(AMTH_OBJECT_OT_select_meshlights)
     bpy.types.VIEW3D_MT_select_object.append(button)
 
 
 def unregister():
-    if utils.cycles_exists():
-        return
     bpy.utils.unregister_class(AMTH_OBJECT_OT_select_meshlights)
     bpy.types.VIEW3D_MT_select_object.remove(button)
