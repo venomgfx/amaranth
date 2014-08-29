@@ -24,6 +24,8 @@ What is it about? Anything, whatever I think it can speedup workflow,
 I'll try to add it. Enjoy <3
 """
 
+import sys
+
 from . import prefs
 from .scene import refresh, save_reload, current_blend, stats
 from .animation import timeline_extra_info, frame_current
@@ -32,7 +34,7 @@ from .render import border_camera, meshlights, passepartout, only_render, unsimp
 
 bl_info = {
     "name": "Amaranth Toolset",
-    "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin, Lukas Tönne",
+    "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin, Lukas Tönne, Cesar Saez",
     "version": (0, 9, 6),
     "blender": (2, 71),
     "location": "Everywhere!",
@@ -50,9 +52,16 @@ def _call_globals(attr_name):
             getattr(m, attr_name)()
 
 
+def _flush_modules(pkg_name):
+    for k in tuple(sys.modules.keys()):
+        if pkg_name in k:
+            del sys.modules[k]
+
+
 def register():
     _call_globals("register")
 
 
 def unregister():
     _call_globals("unregister")
+    _flush_modules("amaranth")  # reload amaranth
