@@ -27,11 +27,11 @@ import bpy
 
 KEYMAPS = list()
 
-image_nodes = {"CompositorNodeImage",
+image_nodes = ("CompositorNodeImage",
                "CompositorNodeViewer",
                "CompositorNodeComposite",
                "ShaderNodeTexImage",
-               "ShaderNodeTexEnvironment"}
+               "ShaderNodeTexEnvironment")
 
 
 class AMTH_NODE_OT_show_active_node_image(bpy.types.Operator):
@@ -39,7 +39,7 @@ class AMTH_NODE_OT_show_active_node_image(bpy.types.Operator):
     """Show active image node image in the image editor"""
     bl_idname = "node.show_active_node_image"
     bl_label = "Show Active Node Node"
-    bl_options = {"UNDO"}
+    bl_options = set(("UNDO", ))
 
     def execute(self, context):
         preferences = context.user_preferences.addons["amaranth"].preferences
@@ -62,7 +62,7 @@ class AMTH_NODE_OT_show_active_node_image(bpy.types.Operator):
                                         space.image = active_node.image
                             break
 
-        return {"FINISHED"}
+        return set(("FINISHED", ))
 
 
 def register():

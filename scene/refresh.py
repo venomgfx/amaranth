@@ -38,9 +38,9 @@ class AMTH_SCENE_OT_refresh(bpy.types.Operator):
         if preferences.use_scene_refresh:
             # Changing the frame is usually the best way to go
             scene.frame_current = scene.frame_current
-            self.report({"INFO"}, "Scene Refreshed!")
+            self.report(set(("INFO",)), "Scene Refreshed!")
 
-        return {"FINISHED"}
+        return set(("FINISHED",))
 
 
 def button(self, context):

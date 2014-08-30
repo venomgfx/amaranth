@@ -22,7 +22,7 @@ def cycles_exists():
 
 # FUNCTION: Checks if cycles is the active renderer
 def cycles_active(context):
-    return context.scene.render.engine == 'CYCLES'
+    return context.scene.render.engine == "CYCLES"
 
 
 # FUNCTION: Check if material has Emission (for select and stats)
@@ -37,19 +37,19 @@ def cycles_is_emission(context, ob):
             continue
         if ma.material.node_tree and ma.material.node_tree.nodes:
             for no in ma.material.node_tree.nodes:
-                if not no.type in {'EMISSION', 'GROUP'}:
+                if not no.type in ("EMISSION", "GROUP"):
                     continue
                 for ou in no.outputs:
                     if not ou.links:
                         continue
-                    if no.type == 'GROUP' and no.node_tree and no.node_tree.nodes:
+                    if no.type == "GROUP" and no.node_tree and no.node_tree.nodes:
                         for gno in no.node_tree.nodes:
-                            if gno.type != 'EMISSION':
+                            if gno.type != "EMISSION":
                                 continue
                             for gou in gno.outputs:
                                 if ou.links and gou.links:
                                     is_emission = True
-                    elif no.type == 'EMISSION':
+                    elif no.type == "EMISSION":
                         if ou.links:
                             is_emission = True
     return is_emission

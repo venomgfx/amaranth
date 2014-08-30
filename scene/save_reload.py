@@ -37,13 +37,13 @@ class AMTH_WM_OT_save_reload(bpy.types.Operator):
             bpy.ops.wm.save_as_mainfile("INVOKE_AREA")
             return
         bpy.ops.wm.save_mainfile()
-        self.report({"INFO"}, "Saved & Reloaded")
+        self.report(set(("INFO",)), "Saved & Reloaded")
         bpy.ops.wm.open_mainfile("EXEC_DEFAULT", filepath=path)
 
     def execute(self, context):
         path = bpy.data.filepath
         self.save_reload(context, path)
-        return {"FINISHED"}
+        return set(("FINISHED",))
 
 
 def button(self, context):

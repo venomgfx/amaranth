@@ -20,14 +20,14 @@ class AMTH_NODE_OT_AddTemplateVignette(bpy.types.Operator):
     bl_idname = "node.template_add_vignette"
     bl_label = "Add Vignette"
     bl_description = "Add a vignette effect"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = set(("REGISTER", "UNDO"))
 
     @classmethod
     def poll(cls, context):
         space = context.space_data
-        return space.type == 'NODE_EDITOR' \
+        return space.type == "NODE_EDITOR" \
             and space.node_tree is not None \
-            and space.tree_type == 'CompositorNodeTree'
+            and space.tree_type == "CompositorNodeTree"
 
     # used as reference the setup scene script from master nazgul
     def _setupNodes(self, context):
@@ -36,21 +36,21 @@ class AMTH_NODE_OT_AddTemplateVignette(bpy.types.Operator):
         tree = scene.node_tree
         has_act = True if tree.nodes.active else False
 
-        bpy.ops.node.select_all(action='DESELECT')
+        bpy.ops.node.select_all(action="DESELECT")
 
-        ellipse = tree.nodes.new(type='CompositorNodeEllipseMask')
+        ellipse = tree.nodes.new(type="CompositorNodeEllipseMask")
         ellipse.width = 0.8
         ellipse.height = 0.4
-        blur = tree.nodes.new(type='CompositorNodeBlur')
+        blur = tree.nodes.new(type="CompositorNodeBlur")
         blur.use_relative = True
         blur.factor_x = 30
         blur.factor_y = 50
-        ramp = tree.nodes.new(type='CompositorNodeValToRGB')
-        ramp.color_ramp.interpolation = 'B_SPLINE'
+        ramp = tree.nodes.new(type="CompositorNodeValToRGB")
+        ramp.color_ramp.interpolation = "B_SPLINE"
         ramp.color_ramp.elements[1].color = (0.6, 0.6, 0.6, 1)
 
-        overlay = tree.nodes.new(type='CompositorNodeMixRGB')
-        overlay.blend_type = 'OVERLAY'
+        overlay = tree.nodes.new(type="CompositorNodeMixRGB")
+        overlay.blend_type = "OVERLAY"
         overlay.inputs[0].default_value = 0.8
         overlay.inputs[1].default_value = (0.5, 0.5, 0.5, 1)
 
@@ -74,27 +74,27 @@ class AMTH_NODE_OT_AddTemplateVignette(bpy.types.Operator):
 
         blur.location = ellipse.location
         blur.location += Vector((300.0, 0.0))
-        blur.inputs['Size'].hide = True
+        blur.inputs["Size"].hide = True
 
         ramp.location = blur.location
         ramp.location += Vector((175.0, 0))
-        ramp.outputs['Alpha'].hide = True
+        ramp.outputs["Alpha"].hide = True
 
-        for node in {ellipse, blur, ramp, overlay}:
+        for node in (ellipse, blur, ramp, overlay):
             node.select = True
             node.show_preview = False
 
         bpy.ops.node.join()
 
         frame = ellipse.parent
-        frame.label = 'Vignette'
+        frame.label = "Vignette"
         frame.use_custom_color = True
         frame.color = (0.1, 0.1, 0.1)
 
         overlay.parent = None
-        overlay.label = 'Vignette Overlay'
+        overlay.label = "Vignette Overlay"
 
     def execute(self, context):
         self._setupNodes(context)
 
-        return {'FINISHED'}
+        return set(("FINISHED", ))

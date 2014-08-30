@@ -30,7 +30,7 @@ class AMTH_FILE_OT_directory_current_blend(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.file.select_bookmark(dir="//")
-        return {"FINISHED"}
+        return set(("FINISHED",))
 
 
 def button(self, context):

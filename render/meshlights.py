@@ -27,7 +27,7 @@ class AMTH_OBJECT_OT_select_meshlights(bpy.types.Operator):
     """Select light emitting meshes"""
     bl_idname = "object.select_meshlights"
     bl_label = "Select Meshlights"
-    bl_options = {"UNDO"}
+    bl_options = set(("UNDO",))
 
     @classmethod
     def poll(cls, context):
@@ -43,9 +43,9 @@ class AMTH_OBJECT_OT_select_meshlights(bpy.types.Operator):
                 context.scene.objects.active = ob
 
         if not context.selected_objects and not context.scene.objects.active:
-            self.report({"INFO"}, "No meshlights to select")
+            self.report(set(("INFO",)), "No meshlights to select")
 
-        return {"FINISHED"}
+        return set(("FINISHED",))
 
 
 def button(self, context):

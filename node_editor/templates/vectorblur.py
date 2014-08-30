@@ -20,25 +20,25 @@ class AMTH_NODE_OT_AddTemplateVectorBlur(bpy.types.Operator):
     bl_idname = "node.template_add_vectorblur"
     bl_label = "Add Vector Blur"
     bl_description = "Add a vector blur filter"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = set(("REGISTER", "UNDO"))
 
     @classmethod
     def poll(cls, context):
         space = context.space_data
         tree = context.scene.node_tree
-        return space.type == 'NODE_EDITOR' \
+        return space.type == "NODE_EDITOR" \
             and space.node_tree is not None \
-            and space.tree_type == 'CompositorNodeTree' \
+            and space.tree_type == "CompositorNodeTree" \
             and tree \
             and tree.nodes.active \
-            and tree.nodes.active.type == 'R_LAYERS'
+            and tree.nodes.active.type == "R_LAYERS"
 
     def _setupNodes(self, context):
         scene = context.scene
         space = context.space_data
         tree = scene.node_tree
 
-        bpy.ops.node.select_all(action='DESELECT')
+        bpy.ops.node.select_all(action="DESELECT")
 
         act_node = tree.nodes.active
         rlayer = act_node.scene.render.layers[act_node.layer]
@@ -46,7 +46,7 @@ class AMTH_NODE_OT_AddTemplateVectorBlur(bpy.types.Operator):
         if not rlayer.use_pass_vector:
             rlayer.use_pass_vector = True
 
-        vblur = tree.nodes.new(type='CompositorNodeVecBlur')
+        vblur = tree.nodes.new(type="CompositorNodeVecBlur")
         vblur.use_curved = True
         vblur.factor = 0.5
 
@@ -66,4 +66,4 @@ class AMTH_NODE_OT_AddTemplateVectorBlur(bpy.types.Operator):
     def execute(self, context):
         self._setupNodes(context)
 
-        return {'FINISHED'}
+        return set(("FINISHED", ))

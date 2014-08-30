@@ -36,7 +36,7 @@ class AMTH_VIEW3D_OT_show_only_render(bpy.types.Operator):
             space.show_only_render = False
         else:
             space.show_only_render = True
-        return {"FINISHED"}
+        return set(("FINISHED",))
 
 
 def register():
