@@ -32,6 +32,7 @@ from .animation import timeline_extra_info, frame_current
 from .node_editor import id_panel, display_image, templates, simplify_nodes, node_stats
 from .render import border_camera, meshlights, passepartout, only_render, unsimplify
 from .modeling import symmetry_tools
+from .misc import dopesheet_grapheditor, color_management
 
 bl_info = {
     "name": "Amaranth Toolset",
