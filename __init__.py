@@ -28,7 +28,7 @@ import sys
 
 from . import prefs
 from .scene import refresh, save_reload, current_blend, stats, goto_library
-from .animation import timeline_extra_info, frame_current
+from .animation import timeline_extra_info, frame_current, motion_paths
 from .node_editor import id_panel, display_image, templates, simplify_nodes, node_stats
 from .render import border_camera, meshlights, passepartout, only_render, unsimplify
 from .modeling import symmetry_tools
