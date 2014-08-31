@@ -53,3 +53,12 @@ def cycles_is_emission(context, ob):
                         if ou.links:
                             is_emission = True
     return is_emission
+
+
+# FUNCTION: Check if object has keyframes for a specific frame
+def is_keyframe(ob, frame):
+    if ob is not None and ob.animation_data is not None and ob.animation_data.action is not None:
+        for fcu in ob.animation_data.action.fcurves:
+            if frame in (p.co.x for p in fcu.keyframe_points):
+                return True
+    return False
