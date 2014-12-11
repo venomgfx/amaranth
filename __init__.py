@@ -30,7 +30,7 @@ from . import prefs
 from .scene import (refresh, save_reload, current_blend, stats, goto_library,
                     debug)
 from .node_editor import (id_panel, display_image, templates, simplify_nodes,
-                          node_stats)
+                          node_stats, normal_node)
 from .render import (border_camera, meshlights, passepartout, only_render,
                      unsimplify, final_resolution, samples_scene,
                      remember_layers)
