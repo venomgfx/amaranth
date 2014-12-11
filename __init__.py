@@ -32,7 +32,8 @@ from .scene import (refresh, save_reload, current_blend, stats, goto_library,
 from .node_editor import (id_panel, display_image, templates, simplify_nodes,
                           node_stats)
 from .render import (border_camera, meshlights, passepartout, only_render,
-                     unsimplify, final_resolution, samples_scene)
+                     unsimplify, final_resolution, samples_scene,
+                     remember_layers)
 from .animation import (timeline_extra_info, frame_current, motion_paths,
                         jump_frames)
 from .misc import dopesheet_grapheditor, color_management
