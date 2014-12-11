@@ -31,12 +31,6 @@ def label(self, context):
     if preferences.use_timeline_extra_info:
         row = layout.row(align=True)
 
-        # TODO: check this when porting keyframe_jump_inbetween
-        # row.operator(AMTH_SCREEN_OT_keyframe_jump_inbetween.bl_idname,
-        #              icon="PREV_KEYFRAME", text="").backwards = True
-        # row.operator(AMTH_SCREEN_OT_keyframe_jump_inbetween.bl_idname,
-        #              icon="NEXT_KEYFRAME", text="").backwards = False
-
         # Check for preview range
         frame_start = scene.frame_preview_start if scene.use_preview_range else scene.frame_start
         frame_end = scene.frame_preview_end if scene.use_preview_range else scene.frame_end
