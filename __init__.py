@@ -36,7 +36,7 @@ from .render import (border_camera, meshlights, passepartout, only_render,
                      remember_layers)
 from .animation import (timeline_extra_info, frame_current, motion_paths,
                         jump_frames)
-from .misc import dopesheet_grapheditor, color_management
+from .misc import dopesheet_grapheditor, color_management, dupli_group
 from .modeling import symmetry_tools
 
 bl_info = {
