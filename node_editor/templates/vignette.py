@@ -20,7 +20,7 @@ class AMTH_NODE_OT_AddTemplateVignette(bpy.types.Operator):
     bl_idname = "node.template_add_vignette"
     bl_label = "Add Vignette"
     bl_description = "Add a vignette effect"
-    bl_options = set(("REGISTER", "UNDO"))
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -97,4 +97,4 @@ class AMTH_NODE_OT_AddTemplateVignette(bpy.types.Operator):
     def execute(self, context):
         self._setupNodes(context)
 
-        return set(("FINISHED", ))
+        return {"FINISHED"}

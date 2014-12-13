@@ -85,7 +85,7 @@ class AMTH_SCREEN_OT_keyframe_jump_inbetween(bpy.types.Operator):
                     v = (scene.frame_current == keyframes_list_half[::-1][-1],
                          scene.frame_current < keyframes_list_half[::-1][-1])
                     if any(v):
-                        self.report(set(("INFO",)), "No keyframes behind")
+                        self.report({"INFO"}, "No keyframes behind")
                     else:
                         for i in keyframes_list_half[::-1]:
                             if scene.frame_current > i:
@@ -95,18 +95,18 @@ class AMTH_SCREEN_OT_keyframe_jump_inbetween(bpy.types.Operator):
                     v = (scene.frame_current == keyframes_list_half[-1],
                          scene.frame_current > keyframes_list_half[-1])
                     if any(v):
-                        self.report(set(("INFO",)), "No keyframes ahead")
+                        self.report({"INFO"}, "No keyframes ahead")
                     else:
                         for i in keyframes_list_half:
                             if scene.frame_current < i:
                                 scene.frame_current = i
                                 break
             else:
-                self.report(set(("INFO",)), "Object has only 1 keyframe")
+                self.report({"INFO"}, "Object has only 1 keyframe")
         else:
-            self.report(set(("INFO",)), "Object has no keyframes")
+            self.report({"INFO"}, "Object has no keyframes")
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 # FEATURE: Jump forward/backward every N frames
@@ -131,7 +131,7 @@ class AMTH_SCREEN_OT_frame_jump(bpy.types.Operator):
         else:
             scene.frame_current = scene.frame_current - framedelta
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 def ui_userpreferences_edit(self, context):

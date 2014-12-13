@@ -39,7 +39,7 @@ class AMTH_NODE_OT_show_active_node_image(bpy.types.Operator):
     """Show active image node image in the image editor"""
     bl_idname = "node.show_active_node_image"
     bl_label = "Show Active Node Node"
-    bl_options = set(("UNDO", ))
+    bl_options = {"UNDO"}
 
     def execute(self, context):
         preferences = context.user_preferences.addons["amaranth"].preferences
@@ -62,7 +62,7 @@ class AMTH_NODE_OT_show_active_node_image(bpy.types.Operator):
                                         space.image = active_node.image
                             break
 
-        return set(("FINISHED", ))
+        return {"FINISHED"}
 
 
 def register():

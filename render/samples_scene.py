@@ -32,7 +32,7 @@ from .. import utils
 
 class AMTH_RENDER_OT_cycles_samples_percentage_set(bpy.types.Operator):
 
-    '''Save the current number of samples per shader as final (gets saved in .blend)'''
+    """Save the current number of samples per shader as final (gets saved in .blend)"""
     bl_idname = "scene.amaranth_cycles_samples_percentage_set"
     bl_label = "Set as Render Samples"
 
@@ -49,9 +49,9 @@ class AMTH_RENDER_OT_cycles_samples_percentage_set(bpy.types.Operator):
             cycles.subsurface_samples,
             cycles.volume_samples]
 
-        self.report(set(("INFO",)), "Render Samples Saved")
+        self.report({"INFO"}, "Render Samples Saved")
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_RENDER_OT_cycles_samples_percentage(bpy.types.Operator):
@@ -86,7 +86,7 @@ class AMTH_RENDER_OT_cycles_samples_percentage(bpy.types.Operator):
             (cycles_samples_final[5] / 100) * percent)
         cycles.volume_samples = int((cycles_samples_final[6] / 100) * percent)
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 def render_cycles_scene_samples(self, context):
@@ -106,8 +106,10 @@ def render_cycles_scene_samples(self, context):
 
         col.operator(
             AMTH_RENDER_OT_cycles_samples_percentage_set.bl_idname,
-            text="%s" % "Set as Render Samples" if cscene.use_samples_final else "Set New Render Samples",
-            icon="%s" % "PINNED" if cscene.use_samples_final else "UNPINNED")
+            text="%s" %
+            "Set as Render Samples" if cscene.use_samples_final else "Set New Render Samples",
+            icon="%s" %
+            "PINNED" if cscene.use_samples_final else "UNPINNED")
 
         col = split.column()
         row = col.row(align=True)
@@ -127,8 +129,7 @@ def render_cycles_scene_samples(self, context):
             text="25%").percent = 25
 
     # List Samples
-    if (len(scene.render.layers) > 1) or \
-        (len(bpy.data.scenes) > 1):
+    if (len(scene.render.layers) > 1) or (len(bpy.data.scenes) > 1):
 
         box = layout.box()
         row = box.row(align=True)
@@ -141,8 +142,7 @@ def render_cycles_scene_samples(self, context):
                  emboss=False)
 
     if list_sampling:
-        if len(scene.render.layers) == 1 and \
-            render.layers[0].samples == 0:
+        if len(scene.render.layers) == 1 and render.layers[0].samples == 0:
             pass
         else:
             col.separator()
@@ -151,9 +151,10 @@ def render_cycles_scene_samples(self, context):
             for rl in scene.render.layers:
                 row = col.row(align=True)
                 row.label(rl.name, icon="BLANK1")
-                row.prop(rl, "samples", text="%s" %
-                         "Samples" if rl.samples > 0 else "Automatic (%s)" % (
-                             cscene.aa_samples if cscene.progressive == "BRANCHED_PATH" else cscene.samples))
+                row.prop(
+                    rl, "samples", text="%s" %
+                    "Samples" if rl.samples > 0 else "Automatic (%s)" %
+                    (cscene.aa_samples if cscene.progressive == "BRANCHED_PATH" else cscene.samples))
 
         if (len(bpy.data.scenes) > 1):
             col.separator()
@@ -171,7 +172,8 @@ def render_cycles_scene_samples(self, context):
                             row.prop(cscene, "samples", icon="BLANK1")
                         else:
                             row.label(
-                                text="Scene: '%s' is not using Cycles" % s.name)
+                                text="Scene: '%s' is not using Cycles" %
+                                s.name)
             else:
                 for s in bpy.data.scenes:
                     if s != scene:
@@ -184,7 +186,8 @@ def render_cycles_scene_samples(self, context):
                                      text="AA Samples")
                         else:
                             row.label(
-                                text="Scene: '%s' is not using Cycles" % s.name)
+                                text="Scene: '%s' is not using Cycles" %
+                                s.name)
 
 
 def init():

@@ -46,7 +46,7 @@ class AMTH_MESH_OT_find_asymmetric(bpy.types.Operator):
 
     bl_idname = "mesh.find_asymmetric"
     bl_label = "Find Asymmetric"
-    bl_options = set(("UNDO", "REGISTER"))
+    bl_options = {"UNDO", "REGISTER"}
 
     @classmethod
     def poll(cls, context):
@@ -88,7 +88,7 @@ class AMTH_MESH_OT_find_asymmetric(bpy.types.Operator):
 
         bmesh.update_edit_mesh(object.data)
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_MESH_OT_make_symmetric(bpy.types.Operator):
@@ -99,7 +99,7 @@ class AMTH_MESH_OT_make_symmetric(bpy.types.Operator):
 
     bl_idname = "mesh.make_symmetric"
     bl_label = "Make Symmetric"
-    bl_options = set(("UNDO", "REGISTER"))
+    bl_options = {"UNDO", "REGISTER"}
 
     @classmethod
     def poll(cls, context):
@@ -163,7 +163,7 @@ class AMTH_MESH_OT_make_symmetric(bpy.types.Operator):
         bm.select_flush_mode()
         bmesh.update_edit_mesh(object.data)
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 def register():

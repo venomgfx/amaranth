@@ -76,7 +76,7 @@ class AMTH_FILE_OT_directory_go_to(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.file.select_bookmark(dir=self.filepath)
-        return set(("FINISHED", ))
+        return {"FINISHED"}
 
 
 def register():

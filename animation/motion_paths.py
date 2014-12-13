@@ -39,7 +39,7 @@ class AMTH_POSE_OT_paths_clear_all(bpy.types.Operator):
     """Clear motion paths from all bones"""
     bl_idname = "pose.paths_clear_all"
     bl_label = "Clear All Motion Paths"
-    bl_options = set(("UNDO",))
+    bl_options = {"UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -51,7 +51,7 @@ class AMTH_POSE_OT_paths_clear_all(bpy.types.Operator):
             b.select = True
             bpy.ops.pose.paths_clear()
             b.select = False
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_POSE_OT_paths_frame_match(bpy.types.Operator):
@@ -59,7 +59,7 @@ class AMTH_POSE_OT_paths_frame_match(bpy.types.Operator):
     """Match Start/End frame of scene to motion path range"""
     bl_idname = "pose.paths_frame_match"
     bl_label = "Match Frame Range"
-    bl_options = set(("UNDO",))
+    bl_options = {"UNDO"}
 
     def execute(self, context):
         avs = context.object.pose.animation_visualization
@@ -81,7 +81,7 @@ class AMTH_POSE_OT_paths_frame_match(bpy.types.Operator):
                 avs.motion_path.frame_before = scene.frame_start
                 avs.motion_path.frame_after = scene.frame_end
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 def pose_motion_paths_ui(self, context):
@@ -106,16 +106,17 @@ def pose_motion_paths_ui(self, context):
             sub.operator("pose.paths_clear", text="", icon="X")
         else:
             col.operator(
-                "pose.paths_calculate", text="Calculate Path", icon="BONE_DATA")
+                "pose.paths_calculate",
+                text="Calculate Path",
+                icon="BONE_DATA")
     else:
         col.label(text="Select Bones First", icon="ERROR")
 
     col = split.column(align=True)
-    col.operator(AMTH_POSE_OT_paths_frame_match.bl_idname,
-                 text="{}".format("Set Preview Frame Range"
-                                  if scene.use_preview_range else "Set Frame Range"),
-                 icon="{}".format("PREVIEW_RANGE"
-                                  if scene.use_preview_range else "TIME"))
+    col.operator(
+        AMTH_POSE_OT_paths_frame_match.bl_idname,
+        text="Set Preview Frame Range" if scene.use_preview_range else "Set Frame Range",
+        icon="PREVIEW_RANGE" if scene.use_preview_range else "TIME")
 
     col = layout.column()
     row = col.row(align=True)

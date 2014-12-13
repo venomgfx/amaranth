@@ -186,7 +186,7 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes(bpy.types.Operator):
                         list(set(self.__class__.materials)))
 
         if len(self.__class__.materials) == 0:
-            self.report(set(("INFO",)),
+            self.report({"INFO"},
                         "No materials with nodes type %s found" % node_type)
         else:
             print("* A total of %d %s using %s was found \n" % (
@@ -205,7 +205,7 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes(bpy.types.Operator):
 
         self.__class__.materials = sorted(list(set(self.__class__.materials)))
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_cycles_shader_list_nodes_clear(bpy.types.Operator):
@@ -221,7 +221,7 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes_clear(bpy.types.Operator):
     def execute(self, context):
         AMTH_SCENE_OT_cycles_shader_list_nodes.materials[:] = []
         print("* Cleared Cycles Materials List")
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_amaranth_object_select(bpy.types.Operator):
@@ -239,7 +239,7 @@ class AMTH_SCENE_OT_amaranth_object_select(bpy.types.Operator):
             object.select = True
             context.scene.objects.active = object
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_list_missing_node_links(bpy.types.Operator):
@@ -407,17 +407,20 @@ class AMTH_SCENE_OT_list_missing_node_links(bpy.types.Operator):
                 for li in libraries:
                     print(li)
         else:
-            self.report(set(("INFO",)), "Yay! No missing node links")
+            self.report({"INFO"}, "Yay! No missing node links")
 
         print("\n")
 
         if missing_groups and missing_images:
             self.report(
-                set(("WARNING",)), "%d missing image %s and %d missing node %s found" %
-                (self.__class__.count_images, "node" if self.__class__.count_images == 1 else "nodes",
-                 self.__class__.count_groups, "group" if self.__class__.count_groups == 1 else "groups"))
+                {"WARNING"},
+                "%d missing image %s and %d missing node %s found" %
+                (self.__class__.count_images,
+                 "node" if self.__class__.count_images == 1 else "nodes",
+                 self.__class__.count_groups,
+                 "group" if self.__class__.count_groups == 1 else "groups"))
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_list_missing_material_slots(bpy.types.Operator):
@@ -446,7 +449,7 @@ class AMTH_SCENE_OT_list_missing_material_slots(bpy.types.Operator):
         self.__class__.libraries = sorted(list(set(self.__class__.libraries)))
 
         if len(self.__class__.objects) == 0:
-            self.report(set(("INFO",)),
+            self.report({"INFO"},
                         "No objects with empty material slots found")
         else:
             print(
@@ -474,7 +477,7 @@ class AMTH_SCENE_OT_list_missing_material_slots(bpy.types.Operator):
                     count_lib += 1
             print("\n")
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_list_missing_material_slots_clear(bpy.types.Operator):
@@ -486,7 +489,7 @@ class AMTH_SCENE_OT_list_missing_material_slots_clear(bpy.types.Operator):
     def execute(self, context):
         AMTH_SCENE_OT_list_missing_material_slots.objects[:] = []
         print("* Cleared Empty Material Slots List")
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_blender_instance_open(bpy.types.Operator):
@@ -508,7 +511,7 @@ class AMTH_SCENE_OT_blender_instance_open(bpy.types.Operator):
                 import traceback
                 traceback.print_exc()
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):

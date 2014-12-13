@@ -54,7 +54,7 @@ class AMTH_NODE_PT_simplify(bpy.types.Panel):
     bl_space_type = "NODE_EDITOR"
     bl_region_type = "UI"
     bl_label = "Simplify"
-    bl_options = set(("DEFAULT_CLOSED",))
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -89,7 +89,7 @@ class AMTH_NODE_OT_toggle_mute(bpy.types.Operator):
         node_type = node_tree.types
         rlayers = scene.render
 
-        if not "amaranth_pass_vector" in scene.keys():
+        if "amaranth_pass_vector" not in scene.keys():
             scene["amaranth_pass_vector"] = []
 
         # can"t extend() the list, so make a dummy one
@@ -132,7 +132,7 @@ class AMTH_NODE_OT_toggle_mute(bpy.types.Operator):
         pass_vector = sorted(set(pass_vector))
         scene["amaranth_pass_vector"] = pass_vector
 
-        return set(("FINISHED", ))
+        return {"FINISHED"}
 
 
 def register():

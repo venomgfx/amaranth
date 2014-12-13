@@ -51,7 +51,7 @@ class AMTH_SCENE_OT_layers_render_save(bpy.types.Operator):
         context.scene["amth_layers_for_render"] = which
         self.report({"INFO"}, "Layers for Render Saved")
 
-        return{"FINISHED"}
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_layers_render_view(bpy.types.Operator):
@@ -96,7 +96,7 @@ class AMTH_SCENE_OT_layers_render_view(bpy.types.Operator):
 
                     break
 
-        return{"FINISHED"}
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_layers_render_set_individual(bpy.types.Operator):
@@ -109,7 +109,6 @@ class AMTH_SCENE_OT_layers_render_set_individual(bpy.types.Operator):
     number = bpy.props.IntProperty()
 
     def execute(self, context):
-        toggle = self.toggle
         number = self.number
 
         new_layers = []
@@ -128,7 +127,7 @@ class AMTH_SCENE_OT_layers_render_set_individual(bpy.types.Operator):
 
         bpy.ops.scene.amaranth_layers_render_view()
 
-        return{"FINISHED"}
+        return {"FINISHED"}
 
 
 class AMTH_SCENE_OT_layers_render_clear(bpy.types.Operator):
@@ -142,7 +141,7 @@ class AMTH_SCENE_OT_layers_render_clear(bpy.types.Operator):
         if context.scene.get("amth_layers_for_render"):
             context.scene["amth_layers_for_render"] = []
 
-        return{"FINISHED"}
+        return {"FINISHED"}
 
 
 def ui_layers_for_render(self, context):

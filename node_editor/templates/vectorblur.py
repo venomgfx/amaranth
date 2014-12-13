@@ -20,7 +20,7 @@ class AMTH_NODE_OT_AddTemplateVectorBlur(bpy.types.Operator):
     bl_idname = "node.template_add_vectorblur"
     bl_label = "Add Vector Blur"
     bl_description = "Add a vector blur filter"
-    bl_options = set(("REGISTER", "UNDO"))
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -66,4 +66,4 @@ class AMTH_NODE_OT_AddTemplateVectorBlur(bpy.types.Operator):
     def execute(self, context):
         self._setupNodes(context)
 
-        return set(("FINISHED", ))
+        return {"FINISHED"}

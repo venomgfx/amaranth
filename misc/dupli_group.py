@@ -132,7 +132,7 @@ class AMTH_OBJECT_OT_id_dupligroup(bpy.types.Operator):
                         "Applied" if not script_exists else "Updated",
                         ob.pass_index))
 
-        return{"FINISHED"}
+        return {"FINISHED"}
 
 
 class AMTH_OBJECT_OT_id_dupligroup_clear(bpy.types.Operator):
@@ -160,7 +160,7 @@ class AMTH_OBJECT_OT_id_dupligroup_clear(bpy.types.Operator):
                             continue
 
         self.report({"INFO"}, "Object IDs back to normal")
-        return{"FINISHED"}
+        return {"FINISHED"}
 
 
 def ui_object_id_duplis(self, context):

@@ -40,7 +40,7 @@ class AMTH_VIEW3D_OT_render_border_camera(bpy.types.Operator):
         render.border_max_x = 1
         render.border_max_y = 1
 
-        return set(("FINISHED",))
+        return {"FINISHED"}
 
 
 def button(self, context):
@@ -50,7 +50,8 @@ def button(self, context):
         layout = self.layout
         layout.separator()
         layout.operator(AMTH_VIEW3D_OT_render_border_camera.bl_idname,
-                        text="Camera as Render Border", icon="FULLSCREEN_ENTER")
+                        text="Camera as Render Border",
+                        icon="FULLSCREEN_ENTER")
 
 
 def register():
