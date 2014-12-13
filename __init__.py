@@ -26,19 +26,55 @@ I'll try to add it. Enjoy <3
 
 import sys
 
+# import amaranth's modules
 from . import prefs
-from .scene import (refresh, save_reload, current_blend, stats, goto_library,
-                    debug)
-from .node_editor import (id_panel, display_image, templates, simplify_nodes,
-                          node_stats, normal_node)
-from .render import (border_camera, meshlights, passepartout, only_render,
-                     unsimplify, final_resolution, samples_scene,
-                     remember_layers)
-from .animation import (timeline_extra_info, frame_current, motion_paths,
-                        jump_frames)
-from .misc import dopesheet_grapheditor, color_management, dupli_group
+
 from .modeling import symmetry_tools
 
+from .scene import (
+    refresh,
+    save_reload,
+    current_blend,
+    stats,
+    goto_library,
+    debug,
+    )
+
+from .node_editor import (
+    id_panel,
+    display_image,
+    templates,
+    simplify_nodes,
+    node_stats,
+    normal_node,
+    )
+
+from .render import (
+    border_camera,
+    meshlights,
+    passepartout,
+    only_render,
+    unsimplify,
+    final_resolution,
+    samples_scene,
+    remember_layers,
+    )
+
+from .animation import (
+    timeline_extra_info,
+    frame_current,
+    motion_paths,
+    jump_frames,
+    )
+
+from .misc import (
+    dopesheet_grapheditor,
+    color_management,
+    dupli_group,
+    )
+
+
+# register the addon + modules found in globals()
 bl_info = {
     "name": "Amaranth Toolset",
     "author": "Pablo Vazquez, Bassam Kurdali, Sergey Sharybin, Lukas Tönne, Cesar Saez",
