@@ -19,7 +19,7 @@ render. Find it on the Simplify panel under Scene properties.
 """
 
 import bpy
-from .. import utils
+from amaranth import utils
 
 
 def init():

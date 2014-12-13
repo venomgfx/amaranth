@@ -27,7 +27,7 @@ Developed during Caminandes Open Movie Project
 """
 
 import bpy
-from .. import utils
+from amaranth import utils
 
 
 class AMTH_RENDER_OT_cycles_samples_percentage_set(bpy.types.Operator):

@@ -20,7 +20,7 @@ On the Info header.
 """
 
 import bpy
-from .. import utils
+from amaranth import utils
 
 
 def label(self, context):

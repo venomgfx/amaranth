@@ -27,11 +27,16 @@ I'll try to add it. Enjoy <3
 import sys
 
 # import amaranth's modules
-from . import prefs
 
-from .modeling import symmetry_tools
+# NOTE: avoid local imports whenever possible!
+# Thanks to Christopher Crouzet for let me know about this.
+# http://stackoverflow.com/questions/13392038/python-making-a-class-variable-static-even-when-a-module-is-imported-in-differe
 
-from .scene import (
+from amaranth import prefs
+
+from amaranth.modeling import symmetry_tools
+
+from amaranth.scene import (
     refresh,
     save_reload,
     current_blend,
@@ -40,7 +45,7 @@ from .scene import (
     debug,
     )
 
-from .node_editor import (
+from amaranth.node_editor import (
     id_panel,
     display_image,
     templates,
@@ -49,7 +54,7 @@ from .node_editor import (
     normal_node,
     )
 
-from .render import (
+from amaranth.render import (
     border_camera,
     meshlights,
     passepartout,
@@ -60,14 +65,14 @@ from .render import (
     remember_layers,
     )
 
-from .animation import (
+from amaranth.animation import (
     timeline_extra_info,
     frame_current,
     motion_paths,
     jump_frames,
     )
 
-from .misc import (
+from amaranth.misc import (
     dopesheet_grapheditor,
     color_management,
     dupli_group,

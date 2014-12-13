@@ -24,8 +24,8 @@ Mask's X/Y and width, height values.
 """
 
 import bpy
-from .vectorblur import AMTH_NODE_OT_AddTemplateVectorBlur
-from .vignette import AMTH_NODE_OT_AddTemplateVignette
+from amaranth.node_editor.templates.vectorblur import AMTH_NODE_OT_AddTemplateVectorBlur
+from amaranth.node_editor.templates.vignette import AMTH_NODE_OT_AddTemplateVignette
 
 
 KEYMAPS = list()

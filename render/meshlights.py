@@ -19,7 +19,7 @@ of the select menu.
 """
 
 import bpy
-from .. import utils
+from amaranth import utils
 
 
 class AMTH_OBJECT_OT_select_meshlights(bpy.types.Operator):

@@ -48,7 +48,7 @@ Under the "Scene Debug" panel in Scene properties.
 
 import os
 import bpy
-from .. import utils
+from amaranth import utils
 
 
 def init():
