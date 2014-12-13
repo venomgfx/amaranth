@@ -38,7 +38,7 @@ The active lamp is indicated by a triangle on the right.
 Under the "Scene Debug" panel in Scene properties.
 """
 
-# TODO: module cleanup!
+# TODO: module cleanup! maybe break it up in a package
 #     dicts instead of if, elif,else all over the place.
 #     helper functions instead of everything on the execute method.
 #     str.format() + dicts instead of inline % op all over the place.
@@ -142,12 +142,15 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes(bpy.types.Operator):
                                 print(print_unconnected)
 
                             if ma.name not in self.__class__.materials:
-                                self.__class__.materials.append("%s%s [%s] %s%s%s" % (
-                                    "[L] " if ma.library else "",
-                                    ma.name, ma.users,
-                                    "[F]" if ma.use_fake_user else "",
-                                    " - [%s]" % roughness if roughness else "",
-                                    " * Output not connected" if not connected else ""))
+                                self.__class__.materials.append(
+                                    "%s%s [%s] %s%s%s" %
+                                    ("[L] " if ma.library else "",
+                                     ma.name,
+                                     ma.users,
+                                     "[F]" if ma.use_fake_user else "",
+                                     " - [%s]" %
+                                     roughness if roughness else "",
+                                     " * Output not connected" if not connected else ""))
 
                     elif no.type == "GROUP":
                         if no.node_tree:
@@ -166,15 +169,18 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes(bpy.types.Operator):
                                             print(print_unconnected)
 
                                         if ma.name not in self.__class__.materials:
-                                            self.__class__.materials.append('%s%s%s [%s] %s%s%s' % (
-                                                "[L] " if ma.library else "",
-                                                "Node Group:  %s%s  ->  " % (
-                                                    "[L] " if no.node_tree.library else "",
-                                                    no.node_tree.name),
-                                                ma.name, ma.users,
-                                                "[F]" if ma.use_fake_user else "",
-                                                " - [%s]" % roughness if roughness else "",
-                                                " * Output not connected" if not connected else ""))
+                                            self.__class__.materials.append(
+                                                '%s%s%s [%s] %s%s%s' %
+                                                ("[L] " if ma.library else "",
+                                                 "Node Group:  %s%s  ->  " %
+                                                 ("[L] " if no.node_tree.library else "",
+                                                  no.node_tree.name),
+                                                    ma.name,
+                                                    ma.users,
+                                                    "[F]" if ma.use_fake_user else "",
+                                                    " - [%s]" %
+                                                    roughness if roughness else "",
+                                                    " * Output not connected" if not connected else ""))
 
                     self.__class__.materials = sorted(
                         list(set(self.__class__.materials)))
@@ -186,7 +192,7 @@ class AMTH_SCENE_OT_cycles_shader_list_nodes(bpy.types.Operator):
             print("* A total of %d %s using %s was found \n" % (
                 len(self.__class__.materials),
                 "material" if len(
-                self.__class__.materials) == 1 else "materials",
+                    self.__class__.materials) == 1 else "materials",
                 node_type))
 
             count = 0
@@ -271,14 +277,17 @@ class AMTH_SCENE_OT_list_missing_node_links(bpy.types.Operator):
                                         "[F] " if ob.use_fake_user else "",
                                         ob.name))
 
-                            missing_groups.append("MA: %s%s%s [%s]%s%s%s\n" % (
-                                "[L] " if ma.library else "",
-                                "[F] " if ma.use_fake_user else "",
-                                ma.name, ma.users,
-                                " *** No users *** " if ma.users == 0 else "",
-                                "\nLI: %s" %
-                                ma.library.filepath if ma.library else "",
-                                "\nOB: %s" % ",  ".join(users_ngroup) if users_ngroup else ""))
+                            missing_groups.append(
+                                "MA: %s%s%s [%s]%s%s%s\n" %
+                                ("[L] " if ma.library else "",
+                                 "[F] " if ma.use_fake_user else "",
+                                 ma.name,
+                                 ma.users,
+                                 " *** No users *** " if ma.users == 0 else "",
+                                 "\nLI: %s" %
+                                 ma.library.filepath if ma.library else "",
+                                 "\nOB: %s" %
+                                 ",  ".join(users_ngroup) if users_ngroup else ""))
 
                             if ma.library:
                                 libraries.append(ma.library.filepath)
@@ -290,7 +299,8 @@ class AMTH_SCENE_OT_list_missing_node_links(bpy.types.Operator):
                         if no.image:
                             image_path_exists = os.path.exists(
                                 bpy.path.abspath(
-                                    no.image.filepath, library=no.image.library))
+                                    no.image.filepath,
+                                    library=no.image.library))
 
                         if outputs_empty or not \
                            no.image or not \
@@ -308,32 +318,43 @@ class AMTH_SCENE_OT_list_missing_node_links(bpy.types.Operator):
                             if outputs_empty:
                                 self.__class__.count_image_node_unlinked += 1
 
-                                image_nodes_unlinked.append("%s%s%s%s%s [%s]%s%s%s%s%s\n" % (
-                                    "NO: %s" % no.name,
-                                    "\nMA: ",
-                                    "[L] " if ma.library else "",
-                                    "[F] " if ma.use_fake_user else "",
-                                    ma.name, ma.users,
-                                    " *** No users *** " if ma.users == 0 else "",
-                                    "\nLI: %s" %
-                                    ma.library.filepath if ma.library else "",
-                                    "\nIM: %s" % no.image.name if no.image else "",
-                                    "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
-                                    "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
+                                image_nodes_unlinked.append(
+                                    "%s%s%s%s%s [%s]%s%s%s%s%s\n" %
+                                    ("NO: %s" %
+                                     no.name,
+                                     "\nMA: ",
+                                     "[L] " if ma.library else "",
+                                     "[F] " if ma.use_fake_user else "",
+                                     ma.name,
+                                     ma.users,
+                                     " *** No users *** " if ma.users == 0 else "",
+                                     "\nLI: %s" %
+                                     ma.library.filepath if ma.library else "",
+                                     "\nIM: %s" %
+                                     no.image.name if no.image else "",
+                                     "\nLI: %s" %
+                                     no.image.filepath if no.image and no.image.filepath else "",
+                                     "\nOB: %s" %
+                                     ',  '.join(users_images) if users_images else ""))
 
                             if not no.image or not image_path_exists:
                                 self.__class__.count_images += 1
 
-                                missing_images.append("MA: %s%s%s [%s]%s%s%s%s%s\n" % (
-                                    "[L] " if ma.library else "",
-                                    "[F] " if ma.use_fake_user else "",
-                                    ma.name, ma.users,
-                                    " *** No users *** " if ma.users == 0 else "",
-                                    "\nLI: %s" %
-                                    ma.library.filepath if ma.library else "",
-                                    "\nIM: %s" % no.image.name if no.image else "",
-                                    "\nLI: %s" % no.image.filepath if no.image and no.image.filepath else "",
-                                    "\nOB: %s" % ',  '.join(users_images) if users_images else ""))
+                                missing_images.append(
+                                    "MA: %s%s%s [%s]%s%s%s%s%s\n" %
+                                    ("[L] " if ma.library else "",
+                                     "[F] " if ma.use_fake_user else "",
+                                     ma.name,
+                                     ma.users,
+                                     " *** No users *** " if ma.users == 0 else "",
+                                     "\nLI: %s" %
+                                     ma.library.filepath if ma.library else "",
+                                     "\nIM: %s" %
+                                     no.image.name if no.image else "",
+                                     "\nLI: %s" %
+                                     no.image.filepath if no.image and no.image.filepath else "",
+                                     "\nOB: %s" %
+                                     ',  '.join(users_images) if users_images else ""))
 
                                 if ma.library:
                                     libraries.append(ma.library.filepath)
@@ -346,14 +367,15 @@ class AMTH_SCENE_OT_list_missing_node_links(bpy.types.Operator):
 
         print(
             "\n\n== %s missing image %s, %s missing node %s and %s image %s unlinked ==" %
-            ("No" if self.__class__.count_images == 0 else str(self.__class__.count_images),
-            "node" if self.__class__.count_images == 1 else "nodes",
-            "no" if self.__class__.count_groups == 0 else str(
-                self.__class__.count_groups),
-            "group" if self.__class__.count_groups == 1 else "groups",
-            "no" if self.__class__.count_image_node_unlinked == 0 else str(
-                self.__class__.count_image_node_unlinked),
-            "node" if self.__class__.count_groups == 1 else "nodes"))
+            ("No" if self.__class__.count_images == 0 else str(
+                self.__class__.count_images),
+                "node" if self.__class__.count_images == 1 else "nodes",
+                "no" if self.__class__.count_groups == 0 else str(
+                    self.__class__.count_groups),
+                "group" if self.__class__.count_groups == 1 else "groups",
+                "no" if self.__class__.count_image_node_unlinked == 0 else str(
+                    self.__class__.count_image_node_unlinked),
+                "node" if self.__class__.count_groups == 1 else "nodes"))
 
         # List Missing Node Groups
         if missing_groups:
@@ -379,8 +401,9 @@ class AMTH_SCENE_OT_list_missing_node_links(bpy.types.Operator):
            missing_images or \
            image_nodes_unlinked:
             if libraries:
-                print("\nThat's bad, run check on %s:" % (
-                    "this library" if len(libraries) == 1 else "these libraries"))
+                print(
+                    "\nThat's bad, run check on %s:" %
+                    ("this library" if len(libraries) == 1 else "these libraries"))
                 for li in libraries:
                     print(li)
         else:
@@ -426,9 +449,11 @@ class AMTH_SCENE_OT_list_missing_material_slots(bpy.types.Operator):
             self.report(set(("INFO",)),
                         "No objects with empty material slots found")
         else:
-            print("\n* A total of %d %s with empty material slots was found \n" % (
-                len(self.__class__.objects),
-                "object" if len(self.__class__.objects) == 1 else "objects"))
+            print(
+                "\n* A total of %d %s with empty material slots was found \n" %
+                (len(
+                    self.__class__.objects), "object" if len(
+                    self.__class__.objects) == 1 else "objects"))
 
             count = 0
             count_lib = 0
@@ -534,9 +559,12 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
             if images_missing:
                 row = col.row(align=True)
                 row.alignment = "LEFT"
-                row.prop(scene, "amaranth_debug_scene_list_missing_images",
-                         icon="%s" % "TRIA_DOWN" if list_missing_images else "TRIA_RIGHT",
-                         emboss=False)
+                row.prop(
+                    scene,
+                    "amaranth_debug_scene_list_missing_images",
+                    icon="%s" %
+                    "TRIA_DOWN" if list_missing_images else "TRIA_RIGHT",
+                    emboss=False)
 
                 split = split.split()
                 col = split.column()
@@ -605,12 +633,19 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                 if materials_count != 0:
                     col = box.column(align=True)
                     count = 0
-                    col.label(text="%s %s found" % (materials_count,
-                                                    "material" if materials_count == 1 else "materials"), icon="INFO")
+                    col.label(
+                        text="%s %s found" %
+                        (materials_count,
+                         "material" if materials_count == 1 else "materials"),
+                        icon="INFO")
                     for mat in materials:
                         count += 1
                         col.label(
-                            text="%s" % (materials[count - 1]), icon="MATERIAL")
+                            text="%s" %
+                            (materials[
+                                count -
+                                1]),
+                            icon="MATERIAL")
 
         # List Missing Node Trees
         box = layout.box()
@@ -624,26 +659,35 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                        icon="NODETREE")
 
         if AMTH_SCENE_OT_list_missing_node_links.count_groups != 0 or \
-            AMTH_SCENE_OT_list_missing_node_links.count_images != 0 or \
-            AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked != 0:
+                AMTH_SCENE_OT_list_missing_node_links.count_images != 0 or \
+                AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked != 0:
             col.label(text="Warning! Check Console", icon="ERROR")
 
         if AMTH_SCENE_OT_list_missing_node_links.count_groups != 0:
-            col.label(text="%s" % ("%s node %s missing link" % (
-                                   str(AMTH_SCENE_OT_list_missing_node_links.count_groups),
-                                   "group" if AMTH_SCENE_OT_list_missing_node_links.count_groups == 1 else "groups")),
-                      icon="NODETREE")
+            col.label(
+                text="%s" %
+                ("%s node %s missing link" %
+                 (str(
+                     AMTH_SCENE_OT_list_missing_node_links.count_groups),
+                     "group" if AMTH_SCENE_OT_list_missing_node_links.count_groups == 1 else "groups")),
+                icon="NODETREE")
         if AMTH_SCENE_OT_list_missing_node_links.count_images != 0:
-            col.label(text="%s" % ("%s image %s missing link" % (
-                                   str(AMTH_SCENE_OT_list_missing_node_links.count_images),
-                                   "node" if AMTH_SCENE_OT_list_missing_node_links.count_images == 1 else "nodes")),
-                      icon="IMAGE_DATA")
+            col.label(
+                text="%s" %
+                ("%s image %s missing link" %
+                 (str(
+                     AMTH_SCENE_OT_list_missing_node_links.count_images),
+                     "node" if AMTH_SCENE_OT_list_missing_node_links.count_images == 1 else "nodes")),
+                icon="IMAGE_DATA")
 
         if AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked != 0:
-            col.label(text="%s" % ("%s image %s with no output conected" % (
-                                   str(AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked),
-                                   "node" if AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked == 1 else "nodes")),
-                      icon="NODE")
+            col.label(
+                text="%s" %
+                ("%s image %s with no output conected" %
+                 (str(
+                     AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked),
+                     "node" if AMTH_SCENE_OT_list_missing_node_links.count_image_node_unlinked == 1 else "nodes")),
+                icon="NODE")
 
         # List Empty Materials Slots
         box = layout.box()
@@ -670,9 +714,10 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                 col = box.column(align=True)
                 count = 0
                 count_lib = 0
-                col.label(text="%s %s with empty material slots found" % (
-                    missing_material_slots_count,
-                    "object" if missing_material_slots_count == 1 else "objects"),
+                col.label(
+                    text="%s %s with empty material slots found" %
+                    (missing_material_slots_count,
+                     "object" if missing_material_slots_count == 1 else "objects"),
                     icon="INFO")
 
                 for obs in missing_material_slots_obs:
@@ -700,7 +745,8 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                             text=missing_material_slots_lib[
                                 count_lib - 1],
                             icon="LINK_BLEND",
-                            emboss=False).filepath = missing_material_slots_lib[count_lib - 1]
+                            emboss=False).filepath = missing_material_slots_lib[
+                            count_lib - 1]
 
 
 class AMTH_LightersCorner(bpy.types.Panel):
@@ -782,7 +828,9 @@ class AMTH_LightersCorner(bpy.types.Panel):
                         row = col.row(align=True)
                         col.active = ob == ob_act
                         row.label(
-                            icon="%s" % ("LAMP_%s" % ob.data.type if is_lamp else "MESH_GRID"))
+                            icon="%s" %
+                            ("LAMP_%s" %
+                             ob.data.type if is_lamp else "MESH_GRID"))
                         split = row.split(percentage=.45)
                         col = split.column()
                         row = col.row(align=True)
@@ -790,10 +838,10 @@ class AMTH_LightersCorner(bpy.types.Panel):
                         row.active = True
                         row.operator(
                             AMTH_SCENE_OT_amaranth_object_select.bl_idname,
-                            text="%s %s%s" % (
-                                " [L] " if ob.library else "",
-                                ob.name,
-                                "" if ob.name in context.scene.objects else " [Not in Scene]"),
+                            text="%s %s%s" %
+                            (" [L] " if ob.library else "",
+                             ob.name,
+                             "" if ob.name in context.scene.objects else " [Not in Scene]"),
                             emboss=False).object = ob.name
                         if ob.library:
                             row = col.row(align=True)
@@ -827,13 +875,19 @@ class AMTH_LightersCorner(bpy.types.Panel):
                                         lamp, "shadow_ray_samples_x", text="X")
                                     if lamp.shape == "RECTANGLE":
                                         row.prop(
-                                            lamp, "shadow_ray_samples_y", text="Y")
+                                            lamp,
+                                            "shadow_ray_samples_y",
+                                            text="Y")
                                 elif lamp.shadow_method == "RAY_SHADOW":
                                     col.prop(
-                                        lamp, "shadow_ray_samples", text="Ray Samples")
+                                        lamp,
+                                        "shadow_ray_samples",
+                                        text="Ray Samples")
                                 elif lamp.shadow_method == "BUFFER_SHADOW":
                                     col.prop(
-                                        lamp, "shadow_buffer_samples", text="Buffer Samples")
+                                        lamp,
+                                        "shadow_buffer_samples",
+                                        text="Buffer Samples")
                                 else:
                                     col.label(text="No Shadow")
                             else:
@@ -850,7 +904,8 @@ class AMTH_LightersCorner(bpy.types.Panel):
                                     col.label(text="N/A")
                                 elif lamp.type == "AREA" and lamp.shape == "RECTANGLE":
                                     col.label(
-                                        text="%.2fx%.2f" % (lamp.size, lamp.size_y))
+                                        text="%.2fx%.2f" %
+                                        (lamp.size, lamp.size_y))
                                 else:
                                     col.label(text="%.2f" % lamp.size)
                             else:
