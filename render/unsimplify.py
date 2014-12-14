@@ -39,7 +39,7 @@ def clear():
 
 
 @bpy.app.handlers.persistent
-def render_pre(scene):
+def unsimplify_render_pre(scene):
     render = scene.render
     scene.simplify_status = render.use_simplify
 
@@ -48,7 +48,7 @@ def render_pre(scene):
 
 
 @bpy.app.handlers.persistent
-def render_post(scene):
+def unsimplify_render_post(scene):
     render = scene.render
     render.use_simplify = scene.simplify_status
 
@@ -60,8 +60,8 @@ def unsimplify_ui(self, context):
 
 def register():
     init()
-    bpy.app.handlers.render_pre.append(render_pre)
-    bpy.app.handlers.render_post.append(render_post)
+    bpy.app.handlers.render_pre.append(unsimplify_render_pre)
+    bpy.app.handlers.render_post.append(unsimplify_render_post)
     bpy.types.SCENE_PT_simplify.append(unsimplify_ui)
     if utils.cycles_exists():
         bpy.types.CyclesScene_PT_simplify.append(unsimplify_ui)
@@ -69,8 +69,8 @@ def register():
 
 def unregister():
     clear()
-    bpy.app.handlers.render_pre.remove(render_pre)
-    bpy.app.handlers.render_post.remove(render_post)
+    bpy.app.handlers.render_pre.remove(unsimplify_render_pre)
+    bpy.app.handlers.render_post.remove(unsimplify_render_post)
     bpy.types.SCENE_PT_simplify.remove(unsimplify_ui)
     if utils.cycles_exists():
         bpy.types.CyclesScene_PT_simplify.remove(unsimplify_ui)
