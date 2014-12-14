@@ -84,10 +84,45 @@ def ui_object_wire_toggle(self, context):
     sub.active = not scene.amth_wire_toggle_is_selected
     sub.prop(scene, "amth_wire_toggle_scene_all")
 
+
+def init_properties():
+    scene = bpy.types.Scene
+    scene.amth_wire_toggle_scene_all = bpy.props.BoolProperty(
+        default=False,
+        name="All Scenes",
+        description="Toggle wire on objects in all scenes")
+    scene.amth_wire_toggle_is_selected = bpy.props.BoolProperty(
+        default=False,
+        name="Only Selected",
+        description="Only toggle wire on selected objects")
+    scene.amth_wire_toggle_edges_all = bpy.props.BoolProperty(
+        default=True,
+        name="All Edges",
+        description="Draw all edges")
+    scene.amth_wire_toggle_optimal = bpy.props.BoolProperty(
+        default=False,
+        name="Optimal Display",
+        description="Skip drawing/rendering of interior subdivided edges "
+                    "on meshes with Subdivision Surface modifier")
+
+
+def clear_properties():
+    props = (
+        'amth_wire_toggle_is_selected',
+        'amth_wire_toggle_scene_all',
+        "amth_wire_toggle_edges_all",
+        "amth_wire_toggle_optimal"
+    )
+    wm = bpy.context.window_manager
+    for p in props:
+        if p in wm:
+            del wm[p]
+
 # //FEATURE: Toggle Wire Display
 
 
 def register():
+    init_properties()
     bpy.utils.register_class(AMTH_OBJECT_OT_wire_toggle)
     bpy.types.VIEW3D_PT_view3d_display.append(ui_object_wire_toggle)
 
@@ -95,3 +130,4 @@ def register():
 def unregister():
     bpy.utils.unregister_class(AMTH_OBJECT_OT_wire_toggle)
     bpy.types.VIEW3D_PT_view3d_display.remove(ui_object_wire_toggle)
+    clear_properties()
