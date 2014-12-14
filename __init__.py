@@ -77,6 +77,7 @@ from amaranth.misc import (
     dopesheet_grapheditor,
     color_management,
     dupli_group,
+    toggle_wire,
     )
 
 
