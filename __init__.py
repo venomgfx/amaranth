@@ -64,6 +64,7 @@ from amaranth.render import (
     final_resolution,
     samples_scene,
     remember_layers,
+    add_meshlight,
     )
 
 from amaranth.animation import (
