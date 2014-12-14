@@ -66,6 +66,7 @@ from amaranth.render import (
     samples_scene,
     remember_layers,
     add_meshlight,
+    render_output_z,
     )
 
 from amaranth.animation import (

@@ -33,7 +33,7 @@ class AMTH_FILE_OT_directory_current_blend(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def button(self, context):
+def button_directory_current_blend(self, context):
     if bpy.data.filepath:
         self.layout.operator(
             AMTH_FILE_OT_directory_current_blend.bl_idname,
@@ -43,9 +43,9 @@ def button(self, context):
 
 def register():
     bpy.utils.register_class(AMTH_FILE_OT_directory_current_blend)
-    bpy.types.FILEBROWSER_HT_header.append(button)
+    bpy.types.FILEBROWSER_HT_header.append(button_directory_current_blend)
 
 
 def unregister():
     bpy.utils.unregister_class(AMTH_FILE_OT_directory_current_blend)
-    bpy.types.FILEBROWSER_HT_header.remove(button)
+    bpy.types.FILEBROWSER_HT_header.remove(button_directory_current_blend)

@@ -53,7 +53,7 @@ def render_post(scene):
     render.use_simplify = scene.simplify_status
 
 
-def checkbox(self, context):
+def unsimplify_ui(self, context):
     scene = bpy.context.scene
     self.layout.prop(scene, 'use_unsimplify_render')
 
@@ -62,15 +62,15 @@ def register():
     init()
     bpy.app.handlers.render_pre.append(render_pre)
     bpy.app.handlers.render_post.append(render_post)
-    bpy.types.SCENE_PT_simplify.append(checkbox)
+    bpy.types.SCENE_PT_simplify.append(unsimplify_ui)
     if utils.cycles_exists():
-        bpy.types.CyclesScene_PT_simplify.append(checkbox)
+        bpy.types.CyclesScene_PT_simplify.append(unsimplify_ui)
 
 
 def unregister():
     clear()
     bpy.app.handlers.render_pre.remove(render_pre)
     bpy.app.handlers.render_post.remove(render_post)
-    bpy.types.SCENE_PT_simplify.remove(checkbox)
+    bpy.types.SCENE_PT_simplify.remove(unsimplify_ui)
     if utils.cycles_exists():
-        bpy.types.CyclesScene_PT_simplify.remove(checkbox)
+        bpy.types.CyclesScene_PT_simplify.remove(unsimplify_ui)

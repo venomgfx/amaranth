@@ -24,7 +24,7 @@ On the 'Dimensions' panel, Render properties.
 import bpy
 
 
-def ui(self, context):
+def render_final_resolution_ui(self, context):
 
     rd = context.scene.render
     layout = self.layout
@@ -46,8 +46,8 @@ def ui(self, context):
 
 
 def register():
-    bpy.types.RENDER_PT_dimensions.append(ui)
+    bpy.types.RENDER_PT_dimensions.append(render_final_resolution_ui)
 
 
 def unregister():
-    bpy.types.RENDER_PT_dimensions.remove(ui)
+    bpy.types.RENDER_PT_dimensions.remove(render_final_resolution_ui)
