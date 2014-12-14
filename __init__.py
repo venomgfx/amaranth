@@ -81,6 +81,7 @@ from amaranth.misc import (
     color_management,
     dupli_group,
     toggle_wire,
+    sequencer_extra_info,
     )
 
 
