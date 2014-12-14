@@ -43,6 +43,7 @@ from amaranth.scene import (
     stats,
     goto_library,
     debug,
+    material_remove_unassigned,
     )
 
 from amaranth.node_editor import (
