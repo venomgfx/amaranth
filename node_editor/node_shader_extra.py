@@ -11,33 +11,30 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-"""
-Passepartout on Specials menu
-
-The passepartout value of local cameras is now available on the Specials
-menu for easy access.
-Under Specials menu W, when in Camera view.
-"""
-
 import bpy
 
 
-def button_camera_passepartout(self, context):
-
-    view3d = context.space_data.region_3d
-    cam = context.scene.camera.data
-
-    if view3d.view_perspective == "CAMERA":
+# FEATURE: Shader Nodes Extra Info
+def node_shader_extra(self, context):
+    if context.space_data.tree_type == 'ShaderNodeTree':
+        ob = context.active_object
+        snode = context.space_data
         layout = self.layout
-        if cam.show_passepartout:
-            layout.prop(cam, "passepartout_alpha", text="Passepartout")
-        else:
-            layout.prop(cam, "show_passepartout")
+
+        if ob and snode.shader_type != 'WORLD':
+            if ob.type == 'LAMP':
+                layout.label(text="%s" % ob.name,
+                             icon="LAMP_%s" % ob.data.type)
+            else:
+                layout.label(text="%s" % ob.name,
+                             icon="OUTLINER_DATA_%s" % ob.type)
+
+# // FEATURE: Shader Nodes Extra Info
 
 
 def register():
-    bpy.types.VIEW3D_MT_object_specials.append(button_camera_passepartout)
+    bpy.types.NODE_HT_header.append(node_shader_extra)
 
 
 def unregister():
-    bpy.types.VIEW3D_MT_object_specials.remove(button_camera_passepartout)
+    bpy.types.NODE_HT_header.remove(node_shader_extra)

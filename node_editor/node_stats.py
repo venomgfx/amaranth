@@ -21,7 +21,7 @@ Compositing Nodes Editor.
 import bpy
 
 
-def label(self, context):
+def node_stats(self, context):
     if context.scene.node_tree:
         tree_type = context.space_data.tree_type
         nodes = context.scene.node_tree.nodes
@@ -38,8 +38,8 @@ def label(self, context):
 
 
 def register():
-    bpy.types.NODE_HT_header.append(label)
+    bpy.types.NODE_HT_header.append(node_stats)
 
 
 def unregister():
-    bpy.types.NODE_HT_header.remove(label)
+    bpy.types.NODE_HT_header.remove(node_stats)

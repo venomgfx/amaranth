@@ -23,7 +23,7 @@ import bpy
 from amaranth import utils
 
 
-def label(self, context):
+def stats_scene(self, context):
 
     preferences = context.user_preferences.addons["amaranth"].preferences
 
@@ -54,8 +54,8 @@ def label(self, context):
 
 
 def register():
-    bpy.types.INFO_HT_header.append(label)
+    bpy.types.INFO_HT_header.append(stats_scene)
 
 
 def unregister():
-    bpy.types.INFO_HT_header.remove(label)
+    bpy.types.INFO_HT_header.remove(stats_scene)

@@ -22,7 +22,7 @@ Display current/end time on SMPTE. Find it on the Timeline header.
 import bpy
 
 
-def label(self, context):
+def label_timeline_extra_info(self, context):
 
     preferences = context.user_preferences.addons["amaranth"].preferences
     layout = self.layout
@@ -36,8 +36,13 @@ def label(self, context):
         frame_end = scene.frame_preview_end if scene.use_preview_range else scene.frame_end
 
         row.label(
-            text="%s / %s" % (bpy.utils.smpte_from_frame(scene.frame_current - frame_start),
-                 bpy.utils.smpte_from_frame(frame_end - frame_start)))
+            text="%s / %s" %
+            (bpy.utils.smpte_from_frame(
+                scene.frame_current -
+                frame_start),
+                bpy.utils.smpte_from_frame(
+                    frame_end -
+                    frame_start)))
 
         if (scene.frame_current > frame_end):
             row.label(text="%s Frames Ahead" %
@@ -53,8 +58,8 @@ def label(self, context):
 
 
 def register():
-    bpy.types.TIME_HT_header.append(label)
+    bpy.types.TIME_HT_header.append(label_timeline_extra_info)
 
 
 def unregister():
-    bpy.types.TIME_HT_header.remove(label)
+    bpy.types.TIME_HT_header.remove(label_timeline_extra_info)

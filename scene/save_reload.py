@@ -46,7 +46,7 @@ class AMTH_WM_OT_save_reload(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def button(self, context):
+def button_save_reload(self, context):
     preferences = context.user_preferences.addons["amaranth"].preferences
 
     if preferences.use_file_save_reload:
@@ -59,7 +59,7 @@ def button(self, context):
 
 def register():
     bpy.utils.register_class(AMTH_WM_OT_save_reload)
-    bpy.types.INFO_MT_file.append(button)
+    bpy.types.INFO_MT_file.append(button_save_reload)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     km = kc.keymaps.new(name="Window")
@@ -70,7 +70,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(AMTH_WM_OT_save_reload)
-    bpy.types.INFO_MT_file.remove(button)
+    bpy.types.INFO_MT_file.remove(button_save_reload)
     for km, kmi in KEYMAPS:
         km.keymap_items.remove(kmi)
     KEYMAPS.clear()

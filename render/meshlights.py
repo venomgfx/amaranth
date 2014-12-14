@@ -48,16 +48,16 @@ class AMTH_OBJECT_OT_select_meshlights(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def button(self, context):
+def button_select_meshlights(self, context):
     if utils.cycles_exists() and utils.cycles_active(context):
         self.layout.operator('object.select_meshlights', icon="LAMP_SUN")
 
 
 def register():
     bpy.utils.register_class(AMTH_OBJECT_OT_select_meshlights)
-    bpy.types.VIEW3D_MT_select_object.append(button)
+    bpy.types.VIEW3D_MT_select_object.append(button_select_meshlights)
 
 
 def unregister():
     bpy.utils.unregister_class(AMTH_OBJECT_OT_select_meshlights)
-    bpy.types.VIEW3D_MT_select_object.remove(button)
+    bpy.types.VIEW3D_MT_select_object.remove(button_select_meshlights)

@@ -43,7 +43,7 @@ class AMTH_SCENE_OT_refresh(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def button(self, context):
+def button_refresh(self, context):
     preferences = context.user_preferences.addons["amaranth"].preferences
 
     if preferences.use_scene_refresh:
@@ -55,7 +55,7 @@ def button(self, context):
 
 def register():
     bpy.utils.register_class(AMTH_SCENE_OT_refresh)
-    bpy.types.VIEW3D_MT_object_specials.append(button)
+    bpy.types.VIEW3D_MT_object_specials.append(button_refresh)
     kc = bpy.context.window_manager.keyconfigs.addon
     km = kc.keymaps.new(name="Window")
     kmi = km.keymap_items.new("scene.refresh", "F5", "PRESS",
@@ -65,7 +65,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(AMTH_SCENE_OT_refresh)
-    bpy.types.VIEW3D_MT_object_specials.remove(button)
+    bpy.types.VIEW3D_MT_object_specials.remove(button_refresh)
     for km, kmi in KEYMAPS:
         km.keymap_items.remove(kmi)
     KEYMAPS.clear()

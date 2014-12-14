@@ -53,6 +53,7 @@ from amaranth.node_editor import (
     simplify_nodes,
     node_stats,
     normal_node,
+    node_shader_extra,
     )
 
 from amaranth.render import (

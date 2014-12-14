@@ -24,7 +24,7 @@ of the button to set the frame manually.
 import bpy
 
 
-def button(self, context):
+def button_frame_current(self, context):
     preferences = context.user_preferences.addons["amaranth"].preferences
     scene = context.scene
     if preferences.use_frame_current:
@@ -33,10 +33,10 @@ def button(self, context):
 
 
 def register():
-    bpy.types.VIEW3D_MT_object_specials.append(button)
-    bpy.types.VIEW3D_MT_pose_specials.append(button)
+    bpy.types.VIEW3D_MT_object_specials.append(button_frame_current)
+    bpy.types.VIEW3D_MT_pose_specials.append(button_frame_current)
 
 
 def unregister():
-    bpy.types.VIEW3D_MT_object_specials.remove(button)
-    bpy.types.VIEW3D_MT_pose_specials.remove(button)
+    bpy.types.VIEW3D_MT_object_specials.remove(button_frame_current)
+    bpy.types.VIEW3D_MT_pose_specials.remove(button_frame_current)

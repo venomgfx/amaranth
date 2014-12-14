@@ -50,7 +50,7 @@ class AMTH_NODE_MT_amaranth_templates(bpy.types.Menu):
             icon='COLOR')
 
 
-def pulldown(self, context):
+def node_templates_pulldown(self, context):
     if context.space_data.tree_type == 'CompositorNodeTree':
         layout = self.layout
         row = layout.row(align=True)
@@ -63,7 +63,7 @@ def register():
     bpy.utils.register_class(AMTH_NODE_MT_amaranth_templates)
     bpy.utils.register_class(AMTH_NODE_OT_AddTemplateVignette)
     bpy.utils.register_class(AMTH_NODE_OT_AddTemplateVectorBlur)
-    bpy.types.NODE_HT_header.append(pulldown)
+    bpy.types.NODE_HT_header.append(node_templates_pulldown)
     kc = bpy.context.window_manager.keyconfigs.addon
     km = kc.keymaps.new(name="Node Editor", space_type="NODE_EDITOR")
     kmi = km.keymap_items.new("wm.call_menu", "W", "PRESS")
@@ -75,7 +75,7 @@ def unregister():
     bpy.utils.unregister_class(AMTH_NODE_MT_amaranth_templates)
     bpy.utils.unregister_class(AMTH_NODE_OT_AddTemplateVignette)
     bpy.utils.unregister_class(AMTH_NODE_OT_AddTemplateVectorBlur)
-    bpy.types.NODE_HT_header.remove(pulldown)
+    bpy.types.NODE_HT_header.remove(node_templates_pulldown)
     for km, kmi in KEYMAPS:
         km.keymap_items.remove(kmi)
     KEYMAPS.clear()
