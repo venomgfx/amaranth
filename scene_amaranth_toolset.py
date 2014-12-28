@@ -245,19 +245,19 @@ def init_properties():
 
     scene.amth_wire_toggle_scene_all = BoolProperty(
         default=False,
-        name="All Scenes",
+        name="All Scenes / All Objects",
         description="Toggle wire on objects in all scenes")
     scene.amth_wire_toggle_is_selected = BoolProperty(
         default=False,
-        name="Only Selected",
+        name="Only Selected Objects",
         description="Only toggle wire on selected objects")
     scene.amth_wire_toggle_edges_all = BoolProperty(
         default=True,
-        name="All Edges",
-        description="Draw all edges")
+        name="Draw All Edges",
+        description="Draw All Edges")
     scene.amth_wire_toggle_optimal = BoolProperty(
         default=False,
-        name="Optimal Display",
+        name="Subsurf Optimal Display",
         description="Skip drawing/rendering of interior subdivided edges "
                     "on meshes with Subdivision Surface modifier")
 
@@ -2832,27 +2832,29 @@ class AMTH_OBJECT_OT_wire_toggle(Operator):
         return{'FINISHED'}
 
 def ui_object_wire_toggle(self, context):
-
     scene = context.scene
 
     self.layout.separator()
-    col = self.layout.column(align=True)
+    box = self.layout.box()
+    col = box.column(align=True)
+    
     row = col.row(align=True)
     row.operator(AMTH_OBJECT_OT_wire_toggle.bl_idname,
-        icon='MOD_WIREFRAME').clear = False
+        icon='MOD_WIREFRAME', text="Add/Update Wireframes").clear = False
+    row = col.row(align=True)
     row.operator(AMTH_OBJECT_OT_wire_toggle.bl_idname,
-        icon='X', text="").clear = True
+        icon='X', text="Remove Wireframes").clear = True
+    
     col.separator()
     row = col.row(align=True)
     row.prop(scene, "amth_wire_toggle_edges_all")
+    row = col.row(align=True)
     row.prop(scene, "amth_wire_toggle_optimal")
     row = col.row(align=True)
-    sub = row.row(align=True)
-    sub.active = not scene.amth_wire_toggle_scene_all
-    sub.prop(scene, "amth_wire_toggle_is_selected")
-    sub = row.row(align=True)
-    sub.active = not scene.amth_wire_toggle_is_selected
-    sub.prop(scene, "amth_wire_toggle_scene_all")
+    row.prop(scene, "amth_wire_toggle_is_selected")
+    row = col.row(align=True)
+    row.prop(scene, "amth_wire_toggle_scene_all")
+    
 
 # //FEATURE: Toggle Wire Display
 # FEATURE: Add Meshlight
