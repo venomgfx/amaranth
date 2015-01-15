@@ -54,6 +54,7 @@ from amaranth.node_editor import (
     node_stats,
     normal_node,
     node_shader_extra,
+    material_selector,
     )
 
 from amaranth.render import (
