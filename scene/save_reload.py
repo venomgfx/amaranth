@@ -64,7 +64,7 @@ def register():
     kc = wm.keyconfigs.addon
     km = kc.keymaps.new(name="Window")
     kmi = km.keymap_items.new("wm.save_reload", "W", "PRESS",
-                              shift=False, ctrl=False)
+                              shift=True, ctrl=True)
     KEYMAPS.append((km, kmi))
 
 
