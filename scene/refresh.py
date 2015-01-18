@@ -59,7 +59,7 @@ def register():
     kc = bpy.context.window_manager.keyconfigs.addon
     km = kc.keymaps.new(name="Window")
     kmi = km.keymap_items.new("scene.refresh", "F5", "PRESS",
-                              shift=False, ctrl=False)
+                              alt=True)
     KEYMAPS.append((km, kmi))
 
 

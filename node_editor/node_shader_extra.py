@@ -21,7 +21,7 @@ def node_shader_extra(self, context):
         snode = context.space_data
         layout = self.layout
 
-        if ob and snode.shader_type != 'WORLD':
+        if ob and snode.shader_type == 'OBJECT':
             if ob.type == 'LAMP':
                 layout.label(text="%s" % ob.name,
                              icon="LAMP_%s" % ob.data.type)

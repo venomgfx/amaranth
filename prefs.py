@@ -45,8 +45,8 @@ class AmaranthToolsetPreferences(bpy.types.AddonPreferences):
     )
     use_scene_stats = bpy.props.BoolProperty(
         name="Extra Scene Statistics",
-        description="Display extra scene statistics in Info editor's header",
-        default=True,
+        description="Display extra scene statistics in Info header (may be slow in heavy scenes)",
+        default=False,
     )
 
     frames_jump = bpy.props.IntProperty(
@@ -112,7 +112,7 @@ class AmaranthToolsetPreferences(bpy.types.AddonPreferences):
         sub.label(
             text="SMPTE Timecode and frames left/ahead on Timeline's header")
         sub.label(
-            text="Display extra statistics for Scenes, Cameras, and Meshlights (Cycles)")
+            text="Display extra stats for Scenes, Cameras, Meshlights (Cycles). Can be slow in heavy scenes")
         sub.label(
             text="Save the set of layers that should be activated for a final render")
         sub.label(
@@ -121,7 +121,7 @@ class AmaranthToolsetPreferences(bpy.types.AddonPreferences):
         sub.separator()
         sub.label(text="")  # Nodes
         sub.label(
-            text="When selecting an Image node, display it on the Image editor "
+            text="When double-clicking an Image node, display it on the Image editor "
                  "(if any)")
 
 
