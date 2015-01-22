@@ -80,7 +80,7 @@ from amaranth.animation import (
 from amaranth.misc import (
     dopesheet_grapheditor,
     color_management,
-    dupli_group,
+    dupli_group_id,
     toggle_wire,
     sequencer_extra_info,
     )

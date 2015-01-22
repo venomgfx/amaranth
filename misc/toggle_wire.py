@@ -67,11 +67,12 @@ def ui_object_wire_toggle(self, context):
 
     self.layout.separator()
     col = self.layout.column(align=True)
+    col.label(text="Wireframes:")
     row = col.row(align=True)
     row.operator(AMTH_OBJECT_OT_wire_toggle.bl_idname,
-                 icon="MOD_WIREFRAME").clear = False
+                 icon="MOD_WIREFRAME", text="Display").clear = False
     row.operator(AMTH_OBJECT_OT_wire_toggle.bl_idname,
-                 icon="X", text="").clear = True
+                 icon="X", text="Clear").clear = True
     col.separator()
     row = col.row(align=True)
     row.prop(scene, "amth_wire_toggle_edges_all")
@@ -93,15 +94,15 @@ def init_properties():
         description="Toggle wire on objects in all scenes")
     scene.amth_wire_toggle_is_selected = bpy.props.BoolProperty(
         default=False,
-        name="Only Selected",
+        name="Only Selected Objects",
         description="Only toggle wire on selected objects")
     scene.amth_wire_toggle_edges_all = bpy.props.BoolProperty(
         default=True,
-        name="All Edges",
-        description="Draw all edges")
+        name="Draw All Edges",
+        description="Draw all the edges even on coplanar faces")
     scene.amth_wire_toggle_optimal = bpy.props.BoolProperty(
         default=False,
-        name="Optimal Display",
+        name="Subsurf Optimal Display",
         description="Skip drawing/rendering of interior subdivided edges "
                     "on meshes with Subdivision Surface modifier")
 
