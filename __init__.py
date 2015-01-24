@@ -59,14 +59,14 @@ from amaranth.node_editor import (
 
 from amaranth.render import (
     border_camera,
-    meshlights,
+    meshlight_add,
+    meshlight_select,
     passepartout,
     only_render,
     unsimplify,
     final_resolution,
     samples_scene,
     remember_layers,
-    add_meshlight,
     render_output_z,
     )
 
