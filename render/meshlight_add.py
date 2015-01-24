@@ -19,7 +19,7 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
 
     is_constant = bpy.props.BoolProperty(
         name="Constant Falloff",
-        default=True,
+        default=False,
         description="Energy is constant (i.e. the Sun), "
                     "independent of how close to the source you are",
         )
