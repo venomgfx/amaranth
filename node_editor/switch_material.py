@@ -14,7 +14,7 @@
 """
 Material Selector
 
-Add a menu on the header to quickly switch materials
+Quickly switch materials in the active mesh without going to the Properties editor
 
 Based on 'Afeitadora's work on Elysiun
 http://www.elysiun.com/forum/showthread.php?290097-Dynamic-Object-Dropdown-List&p=2361851#post2361851
