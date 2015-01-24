@@ -17,15 +17,22 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
         description="Only emit light on one side",
         )
 
+    is_constant = bpy.props.BoolProperty(
+        name="Constant Falloff",
+        default=True,
+        description="Energy is constant (i.e. the Sun), "
+                    "independent of how close to the source you are",
+        )
+
     visible = bpy.props.BoolProperty(
         name="Visible on Camera",
         default=False,
-        description="Show the meshlight on Cycles preview",
+        description="Whether to show the meshlight source on Camera",
         )
 
     size = bpy.props.FloatProperty(
         name="Size",
-        description="Meshlight size",
+        description="Meshlight size. Lower is sharper shadows, higher is softer",
         min=0.01, max=100.0,
         default=1.0,
         )
@@ -42,6 +49,7 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
         min=800, max=12000.0,
         default=5500.0,
         step=800.0,
+        description="Temperature in Kelvin. Lower is warmer, higher is colder",
         )
 
     rotation = bpy.props.FloatVectorProperty(
@@ -98,13 +106,12 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
             emission.inputs['Strength'].default_value = self.strength
             emission.location = transparency.location
             emission.location += Vector((0.0, -80.0))
-            # so it shows slider on properties editor
-            emission.inputs[0].show_expanded = True
 
             blackbody = nodes.new(type="ShaderNodeBlackbody")
             blackbody.inputs['Temperature'].default_value = self.temperature
             blackbody.location = emission.location
             blackbody.location += Vector((-180.0, 0.0))
+            blackbody.label = 'Temperature'
 
             mix = nodes.new(type="ShaderNodeMixShader")
             mix.location = geometry.location
@@ -118,7 +125,7 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
             output.location += Vector((180.0, 0.0))
 
             # Make links
-            links.new(geometry.outputs['Backfacing'], mix.inputs['Fac'])
+            links.new(geometry.outputs['Backfacing'], mix.inputs[0])
             links.new(transparency.outputs['BSDF'], mix.inputs[1])
             links.new(emission.outputs['Emission'], mix.inputs[2])
             links.new(blackbody.outputs['Color'], emission.inputs['Color'])
@@ -129,12 +136,12 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
         else:
             emission = nodes.new(type="ShaderNodeEmission")
             emission.inputs['Strength'].default_value = self.strength
-            emission.inputs[0].show_expanded = True
 
             blackbody = nodes.new(type="ShaderNodeBlackbody")
             blackbody.inputs['Temperature'].default_value = self.temperature
             blackbody.location = emission.location
             blackbody.location += Vector((-180.0, 0.0))
+            blackbody.label = 'Temperature'
 
             output = nodes.new(type="ShaderNodeOutputMaterial")
             output.inputs[1].hide = True
@@ -144,6 +151,21 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
 
             links.new(blackbody.outputs['Color'], emission.inputs['Color'])
             links.new(emission.outputs['Emission'], output.inputs['Surface'])
+
+        if self.is_constant:
+            falloff = nodes.new(type="ShaderNodeLightFalloff")
+            falloff.inputs['Strength'].default_value = self.strength
+            falloff.location = emission.location
+            falloff.location += Vector((-180.0, -80.0))
+
+            links.new(falloff.outputs['Constant'], emission.inputs['Strength'])
+
+            for sockets in falloff.outputs:
+                sockets.hide = True
+
+        # so it shows slider on properties editor
+        for sockets in emission.inputs:
+            sockets.show_expanded = True
 
         material.cycles.sample_as_light = True
         meshlight.cycles_visibility.shadow = False

@@ -25,16 +25,16 @@ import bpy
 
 def ui_node_editor_material_select(self, context):
 
-    if context.active_object.type in {'MESH', 'CURVE', 'SURFACE', 'META'} and \
+    act_ob = context.active_object
+
+    if act_ob and context.active_object.type in {'MESH', 'CURVE', 'SURFACE', 'META'} and \
         context.space_data.tree_type == 'ShaderNodeTree' and \
         context.space_data.shader_type == 'OBJECT':
 
-        act_ob = context.active_object
-        if act_ob:
-            if act_ob.active_material:
-                mat_name = act_ob.active_material.name
-            else:
-                mat_name = "No Material"
+        if act_ob.active_material:
+            mat_name = act_ob.active_material.name
+        else:
+            mat_name = "No Material"
 
         self.layout.operator_menu_enum("material.menu_select",
                                        "material_select",
