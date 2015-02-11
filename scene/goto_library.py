@@ -27,7 +27,8 @@ import bpy
 
 class AMTH_FILE_PT_libraries(bpy.types.Panel):
     bl_space_type = "FILE_BROWSER"
-    bl_region_type = "CHANNELS"
+    bl_region_type = "TOOLS"
+    bl_category = "Bookmarks"
     bl_label = "Libraries"
 
     def draw(self, context):
