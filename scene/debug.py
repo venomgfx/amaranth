@@ -64,6 +64,15 @@ def init():
         name="List Meshlights",
         description="Include light emitting meshes on the list")
 
+    amth_datablock_types = (
+        ("IMAGE", "Image", "Image Datablocks", 0),
+        #("MATERIAL", "Material", "", 1),
+    )
+    scene.amth_datablock_types = bpy.props.EnumProperty(
+        items=amth_datablock_types,
+        name="Type",
+        description="Datablock Type")
+
     if utils.cycles_exists():
         cycles_shader_node_types = (
             ("BSDF_DIFFUSE", "Diffuse BSDF", "", 0),
@@ -492,6 +501,125 @@ class AMTH_SCENE_OT_list_missing_material_slots_clear(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AMTH_SCENE_OT_list_users_for_x_type(bpy.types.Operator):
+    bl_idname = "scene.amth_list_users_for_x_type"
+    bl_label = "Select"
+    bl_description = "Select Datablock Name"
+
+    def avail(self,context):
+        datablock_type = bpy.context.scene.amth_datablock_types
+
+        if datablock_type == 'IMAGE':
+            where = bpy.data.images
+
+        items = [(str(i),x.name,x.name, datablock_type, i) for i,x in enumerate(where)]
+        return items
+
+    list_type_select = bpy.props.EnumProperty(items = avail, name = "Available")
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.scene.amth_datablock_types
+    
+    def execute(self,context):
+        datablock_type = bpy.context.scene.amth_datablock_types
+
+        if datablock_type == 'IMAGE':
+            where = bpy.data.images
+
+        bpy.context.scene.amth_list_users_for_x_name = where[int(self.list_type_select)].name
+        return {'FINISHED'}
+
+
+class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
+
+    """List users for a particular datablock"""
+    bl_idname = "scene.amth_list_users_for_x"
+    bl_label = "List Users for Datablock"
+
+    users = {}
+
+    def execute(self, context):
+
+        datablock_type = context.scene.amth_datablock_types
+        d = bpy.data
+        x = context.scene.amth_list_users_for_x_name
+        dtype = context.scene.amth_datablock_types
+
+        self.__class__.users = {
+            'materials' : [],
+            'worlds' : [],
+        }
+
+        print('\n')
+
+        # First for images
+        if dtype == 'IMAGE':
+
+            # Check Materials
+            for ma in d.materials:
+                # Cycles
+                if utils.cycles_exists():
+                    #print("cycles exists!")
+                    if ma and ma.node_tree and ma.node_tree.nodes:
+                        for no in ma.node_tree.nodes:
+                            #print(no)
+                            if no and no.type in {'TEX_IMAGE','TEX_ENVIRONMENT'}:
+                                #print(no.name)
+                                if no.image and no.image.name == x:
+                                    if ma.name not in self.__class__.users['materials']:
+                                        self.__class__.users['materials'].append(ma.name)
+
+            # Check World
+            for wo in d.worlds:
+                # Cycles
+                if utils.cycles_exists():
+                    #print("cycles exists!")
+                    if wo and wo.node_tree and wo.node_tree.nodes:
+                        for no in wo.node_tree.nodes:
+                            #print(no)
+                            if no and no.type in {'TEX_IMAGE','TEX_ENVIRONMENT'}:
+                                #print(no.name)
+                                if no.image and no.image.name == x:
+                                    if wo.name not in self.__class__.users['worlds']:
+                                        self.__class__.users['worlds'].append(wo.name)
+
+
+        if self.__class__.users['materials']:
+            print('== Materials ==')
+            print('The following {0} materials use {1} "{2}":'.format(
+                    len(self.__class__.users['materials']),
+                    dtype,
+                    x))
+            for mat in self.__class__.users['materials']:
+                print(' {0}'.format(mat, x))
+
+        if self.__class__.users['worlds']:
+            print('== Worlds ==')
+            print('The following {0} worlds use {1} "{2}":'.format(
+                    len(self.__class__.users['worlds']),
+                    dtype,
+                    x))
+            for world in self.__class__.users['worlds']:
+                print(' {0}'.format(world, x))
+
+        #print('Type: {0}'.format(context.scene.amth_datablock_types))
+        #print('X: {0}'.format(x))
+
+        return {"FINISHED"}
+
+
+class AMTH_SCENE_OT_list_users_for_x_clear(bpy.types.Operator):
+
+    """Clear the list below"""
+    bl_idname = "scene.amth_list_users_for_x_clear"
+    bl_label = "Clear Users Lists for X"
+
+    def execute(self, context):
+        AMTH_SCENE_OT_list_users_for_x.users = {}
+        return {"FINISHED"}
+
+
 class AMTH_SCENE_OT_blender_instance_open(bpy.types.Operator):
 
     """Open in a new Blender instance"""
@@ -751,6 +879,74 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                             emboss=False).filepath = missing_material_slots_lib[
                             count_lib - 1]
 
+        list_users = AMTH_SCENE_OT_list_users_for_x.users
+        list_users_count = len(list_users)
+
+        box = layout.box()
+#        split = box.split()
+#        col = split.column(align=True)
+        row = box.row(align=True)
+        row.label(text="List Users for Datablock")
+
+#        row.prop(scene, "amth_list_users_for_x_name",
+#                    text="")
+
+        col = box.column(align=True)
+        split = col.split()
+        row = split.row(align=True)
+        row.prop(scene, "amth_datablock_types",
+                    icon="SCENE",
+                    text="")
+
+        row.operator_menu_enum("scene.amth_list_users_for_x_type",
+                                       "list_type_select",
+                                       text=scene.amth_list_users_for_x_name)
+
+        row = split.row(align=True)
+        row.operator(AMTH_SCENE_OT_list_users_for_x.bl_idname)
+        if list_users_count != 0:
+            row.operator(
+                AMTH_SCENE_OT_list_users_for_x_clear.bl_idname,
+                icon="X", text="")
+
+        try:
+            list_users
+        except NameError:
+            pass
+        else:
+            if list_users_count != 0:
+                col = box.column(align=False)
+                count = 0
+
+                col.label(
+                    text="%s %s found!" %
+                    (list_users_count,
+                     "user" if list_users_count == 1 else "users")
+                    )
+
+
+                if list_users['materials']:
+                    for ma in list_users['materials']:
+                        row = col.row(align=True)
+                        row.alignment = "LEFT"
+                        row.label(text=ma,
+                                  icon='MATERIAL')
+
+                if list_users['worlds']:
+                    for wo in list_users['worlds']:
+                        row = col.row(align=True)
+                        row.alignment = "LEFT"
+                        row.label(text=wo,
+                                  icon='WORLD')
+                # for user in list_users:
+                #     count += 1
+
+                #     row = col.row()
+                #     row.alignment = "LEFT"
+                    # row.label(
+                    #     text="%s" % list_users[count - 1],
+                    #     icon="OBJECT_DATA")
+
 
 class AMTH_LightersCorner(bpy.types.Panel):
 
@@ -929,27 +1125,40 @@ class AMTH_LightersCorner(bpy.types.Panel):
             box.label(text="No Lamps", icon="LAMP_DATA")
 
 
+classes = {
+    AMTH_SCENE_PT_scene_debug,
+    AMTH_SCENE_OT_blender_instance_open,
+    AMTH_SCENE_OT_amaranth_object_select,
+    AMTH_SCENE_OT_list_missing_node_links,
+    AMTH_SCENE_OT_list_missing_material_slots,
+    AMTH_SCENE_OT_list_missing_material_slots_clear,
+    AMTH_SCENE_OT_cycles_shader_list_nodes,
+    AMTH_SCENE_OT_cycles_shader_list_nodes_clear,
+    AMTH_SCENE_OT_list_users_for_x,
+    AMTH_SCENE_OT_list_users_for_x_type,
+    AMTH_SCENE_OT_list_users_for_x_clear,
+    AMTH_LightersCorner
+}
+
 def register():
     init()
-    bpy.utils.register_class(AMTH_SCENE_PT_scene_debug)
-    bpy.utils.register_class(AMTH_SCENE_OT_blender_instance_open)
-    bpy.utils.register_class(AMTH_SCENE_OT_amaranth_object_select)
-    bpy.utils.register_class(AMTH_SCENE_OT_list_missing_node_links)
-    bpy.utils.register_class(AMTH_SCENE_OT_list_missing_material_slots)
-    bpy.utils.register_class(AMTH_SCENE_OT_list_missing_material_slots_clear)
-    bpy.utils.register_class(AMTH_SCENE_OT_cycles_shader_list_nodes)
-    bpy.utils.register_class(AMTH_SCENE_OT_cycles_shader_list_nodes_clear)
-    bpy.utils.register_class(AMTH_LightersCorner)
 
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+    from bpy.types import Scene
+
+    bpy.types.Scene.amth_list_users_for_x_name = bpy.props.StringProperty(
+                                                    default="",
+                                                    name="Name",
+                                                    description="Which datablock type to look for")
 
 def unregister():
     clear()
-    bpy.utils.unregister_class(AMTH_SCENE_PT_scene_debug)
-    bpy.utils.unregister_class(AMTH_SCENE_OT_blender_instance_open)
-    bpy.utils.unregister_class(AMTH_SCENE_OT_amaranth_object_select)
-    bpy.utils.unregister_class(AMTH_SCENE_OT_list_missing_node_links)
-    bpy.utils.unregister_class(AMTH_SCENE_OT_list_missing_material_slots)
-    bpy.utils.unregister_class(AMTH_SCENE_OT_list_missing_material_slots_clear)
-    bpy.utils.unregister_class(AMTH_SCENE_OT_cycles_shader_list_nodes)
-    bpy.utils.unregister_class(AMTH_SCENE_OT_cycles_shader_list_nodes_clear)
-    bpy.utils.unregister_class(AMTH_LightersCorner)
+
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
+
+    from bpy.types import Scene
+
+    del Scene.amth_list_users_for_x_name
