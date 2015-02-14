@@ -547,11 +547,12 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
         dtype = context.scene.amth_datablock_types
 
         self.__class__.users = {
-            'materials' : [],
-            'worlds' : [],
+            'MATERIAL' : [],
+            'LAMP' : [],
+            'WORLD' : [],
+            'TEXTURE' : [],
+            'MODIFIER' : [],
         }
-
-        print('\n')
 
         # First for images
         if dtype == 'IMAGE':
@@ -563,45 +564,76 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                     #print("cycles exists!")
                     if ma and ma.node_tree and ma.node_tree.nodes:
                         for no in ma.node_tree.nodes:
-                            #print(no)
                             if no and no.type in {'TEX_IMAGE','TEX_ENVIRONMENT'}:
-                                #print(no.name)
                                 if no.image and no.image.name == x:
-                                    if ma.name not in self.__class__.users['materials']:
-                                        self.__class__.users['materials'].append(ma.name)
+                                    objects = []
+
+                                    for ob in d.objects:
+                                        if ma.name in ob.material_slots:
+                                            objects.append(ob.name)
+
+                                    if objects:
+                                        name = '{0} in object: {1}'.format(ma.name, objects)
+                                    else:
+                                        name = '{0} (not assigned)'.format(ma.name)
+
+                                    if ma.name not in self.__class__.users['MATERIAL']:
+                                        self.__class__.users['MATERIAL'].append(name)
+
+            # Check Lamps
+            for la in d.lamps:
+                # Cycles
+                if utils.cycles_exists():
+                    if la and la.node_tree and la.node_tree.nodes:
+                        for no in la.node_tree.nodes:
+                            if no and \
+                               no.type in {'TEX_IMAGE','TEX_ENVIRONMENT'} and \
+                               no.image and no.image.name == x:
+                                    if la.name not in self.__class__.users['LAMP']:
+                                        self.__class__.users['LAMP'].append(la.name)
 
             # Check World
             for wo in d.worlds:
                 # Cycles
                 if utils.cycles_exists():
-                    #print("cycles exists!")
                     if wo and wo.node_tree and wo.node_tree.nodes:
                         for no in wo.node_tree.nodes:
-                            #print(no)
-                            if no and no.type in {'TEX_IMAGE','TEX_ENVIRONMENT'}:
-                                #print(no.name)
-                                if no.image and no.image.name == x:
-                                    if wo.name not in self.__class__.users['worlds']:
-                                        self.__class__.users['worlds'].append(wo.name)
+                            if no and \
+                               no.type in {'TEX_IMAGE','TEX_ENVIRONMENT'} and \
+                               no.image and no.image.name == x:
+                                if wo.name not in self.__class__.users['WORLD']:
+                                    self.__class__.users['WORLD'].append(wo.name)
 
+            # Check Textures
+            for te in d.textures:
+                print(te, te.type)
+                if te and te.type =='IMAGE' and te.image:
+                    name = te.image.name
 
-        if self.__class__.users['materials']:
-            print('== Materials ==')
-            print('The following {0} materials use {1} "{2}":'.format(
-                    len(self.__class__.users['materials']),
-                    dtype,
-                    x))
-            for mat in self.__class__.users['materials']:
-                print(' {0}'.format(mat, x))
+                    if name == x and \
+                       name not in self.__class__.users['TEXTURE'] :
+                        self.__class__.users['TEXTURE'].append(te.name)
 
-        if self.__class__.users['worlds']:
-            print('== Worlds ==')
-            print('The following {0} worlds use {1} "{2}":'.format(
-                    len(self.__class__.users['worlds']),
-                    dtype,
-                    x))
-            for world in self.__class__.users['worlds']:
-                print(' {0}'.format(world, x))
+            # Check Modifiers in Objects
+            for ob in d.objects:
+                for mo in ob.modifiers:
+                    if mo.type in {'UV_PROJECT'}:
+                        image = mo.image
+
+                        if mo and image and image.name == x:
+                            name = '"{0}" modifier in {1}'.format(mo.name, ob.name)
+                            if name not in self.__class__.users['MODIFIER']:
+                                self.__class__.users['MODIFIER'].append(name)
+
+        for t in self.__class__.users:
+            if self.__class__.users[t]:
+                print('\n== {0} {1} use {2} "{3}" ==\n'.format(
+                        len(self.__class__.users[t]),
+                        t,
+                        dtype,
+                        x))
+                for p in self.__class__.users[t]:
+                    print(' {0}'.format(p))
 
         #print('Type: {0}'.format(context.scene.amth_datablock_types))
         #print('X: {0}'.format(x))
@@ -617,6 +649,7 @@ class AMTH_SCENE_OT_list_users_for_x_clear(bpy.types.Operator):
 
     def execute(self, context):
         AMTH_SCENE_OT_list_users_for_x.users = {}
+        print("* Cleared Users List for Datablock")
         return {"FINISHED"}
 
 
@@ -879,17 +912,13 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                             emboss=False).filepath = missing_material_slots_lib[
                             count_lib - 1]
 
+
+        # List Users for Datablock
         list_users = AMTH_SCENE_OT_list_users_for_x.users
-        list_users_count = len(list_users)
 
         box = layout.box()
-#        split = box.split()
-#        col = split.column(align=True)
         row = box.row(align=True)
         row.label(text="List Users for Datablock")
-
-#        row.prop(scene, "amth_list_users_for_x_name",
-#                    text="")
 
         col = box.column(align=True)
         split = col.split()
@@ -903,8 +932,9 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                                        text=scene.amth_list_users_for_x_name)
 
         row = split.row(align=True)
+        row.active = True if scene.amth_list_users_for_x_name else False
         row.operator(AMTH_SCENE_OT_list_users_for_x.bl_idname)
-        if list_users_count != 0:
+        if list_users:
             row.operator(
                 AMTH_SCENE_OT_list_users_for_x_clear.bl_idname,
                 icon="X", text="")
@@ -914,39 +944,15 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
         except NameError:
             pass
         else:
-            if list_users_count != 0:
-                col = box.column(align=False)
-                count = 0
-
-                col.label(
-                    text="%s %s found!" %
-                    (list_users_count,
-                     "user" if list_users_count == 1 else "users")
-                    )
-
-
-                if list_users['materials']:
-                    for ma in list_users['materials']:
-                        row = col.row(align=True)
-                        row.alignment = "LEFT"
-                        row.label(text=ma,
-                                  icon='MATERIAL')
-
-                if list_users['worlds']:
-                    for wo in list_users['worlds']:
-                        row = col.row(align=True)
-                        row.alignment = "LEFT"
-                        row.label(text=wo,
-                                  icon='WORLD')
-                # for user in list_users:
-                #     count += 1
-
-                #     row = col.row()
-                #     row.alignment = "LEFT"
-                    # row.label(
-                    #     text="%s" % list_users[count - 1],
-                    #     icon="OBJECT_DATA")
-
+            if list_users:
+                col = box.column(align=True)
+                for t in list_users:
+                    if list_users[t]:
+                        for ma in list_users[t]:
+                            row = col.row(align=True)
+                            row.alignment = "LEFT"
+                            row.label(text=ma,
+                                      icon=t)
 
 class AMTH_LightersCorner(bpy.types.Panel):
 
