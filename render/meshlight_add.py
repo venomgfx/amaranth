@@ -1,4 +1,7 @@
+# Changed script so grid normals are facing downward. Reversed mix.inputs accordingly.
+
 import bpy
+from math import pi
 from mathutils import Vector
 from amaranth.utils import cycles_exists
 
@@ -34,7 +37,7 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
         name="Size",
         description="Meshlight size. Lower is sharper shadows, higher is softer",
         min=0.01, max=100.0,
-        default=1.0,
+        default=2.0,
         )
 
     strength = bpy.props.FloatProperty(
@@ -71,6 +74,9 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
         bpy.ops.mesh.primitive_grid_add(
             x_subdivisions=4, y_subdivisions=4,
             rotation=self.rotation, radius=self.size)
+            
+        bpy.ops.transform.rotate(value=-pi, axis=(True, False, False))
+        bpy.ops.transform.translate(value=(0.0, 0.0, 5.0), constraint_axis=(False, False, True))
 
         bpy.context.object.name = meshlight_name
         meshlight = scene.objects[meshlight_name]
@@ -126,8 +132,8 @@ class AMTH_OBJECT_OT_meshlight_add(bpy.types.Operator):
 
             # Make links
             links.new(geometry.outputs['Backfacing'], mix.inputs[0])
-            links.new(transparency.outputs['BSDF'], mix.inputs[1])
-            links.new(emission.outputs['Emission'], mix.inputs[2])
+            links.new(transparency.outputs['BSDF'], mix.inputs[2])
+            links.new(emission.outputs['Emission'], mix.inputs[1])
             links.new(blackbody.outputs['Color'], emission.inputs['Color'])
             links.new(mix.outputs['Shader'], output.inputs['Surface'])
 
