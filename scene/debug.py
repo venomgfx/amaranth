@@ -577,7 +577,7 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                                     else:
                                         name = '{0} (not assigned)'.format(ma.name)
 
-                                    if ma.name not in self.__class__.users['MATERIAL']:
+                                    if name not in self.__class__.users['MATERIAL']:
                                         self.__class__.users['MATERIAL'].append(name)
 
             # Check Lamps
