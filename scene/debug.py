@@ -92,6 +92,8 @@ def init():
             ("HOLDOUT", "Holdout", "", 14),
             ("VOLUME_ABSORPTION", "Volume Absorption", "", 15),
             ("VOLUME_SCATTER", "Volume Scatter", "", 16),
+            ("MIX_SHADER", "Mix Shader", "", 17),
+            ("ADD_SHADER", "Add Shader", "", 18),
         )
         scene.amaranth_cycles_node_types = bpy.props.EnumProperty(
             items=cycles_shader_node_types, name="Shader")
@@ -537,13 +539,19 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
     bl_idname = "scene.amth_list_users_for_x"
     bl_label = "List Users for Datablock"
 
+    name = bpy.props.StringProperty()
     users = {}
 
     def execute(self, context):
 
         datablock_type = context.scene.amth_datablock_types
         d = bpy.data
-        x = context.scene.amth_list_users_for_x_name
+
+        if self.name:
+            x = self.name
+        else:
+            x = context.scene.amth_list_users_for_x_name
+
         dtype = context.scene.amth_datablock_types
 
         self.__class__.users = {
@@ -561,7 +569,6 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
             for ma in d.materials:
                 # Cycles
                 if utils.cycles_exists():
-                    #print("cycles exists!")
                     if ma and ma.node_tree and ma.node_tree.nodes:
                         for no in ma.node_tree.nodes:
                             if no and no.type in {'TEX_IMAGE','TEX_ENVIRONMENT'}:
@@ -625,6 +632,7 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                             if name not in self.__class__.users['MODIFIER']:
                                 self.__class__.users['MODIFIER'].append(name)
 
+        # Print on console
         for t in self.__class__.users:
             if self.__class__.users[t]:
                 print('\n== {0} {1} use {2} "{3}" ==\n'.format(
@@ -740,10 +748,19 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
 
                 if list_missing_images:
                     col = box.column(align=True)
+                    row = col.row(align=True)
+                    row.alignment = "LEFT"
                     for mis in images_missing:
-                        col.label(text=mis[0],
-                                  icon="IMAGE_DATA")
-                        col.label(text=mis[1], icon="LIBRARY_DATA_DIRECT")
+                        # col.label(text=mis[0],
+                        #           icon="IMAGE_DATA")
+                        row.operator(
+                            AMTH_SCENE_OT_list_users_for_x.bl_idname,
+                            text=mis[0],
+                            icon="IMAGE_DATA",
+                            emboss=False).name = mis[0][:-4]
+
+                        row = col.row(align=True)
+                        row.label(text=mis[1], icon="LIBRARY_DATA_DIRECT")
                         if mis[2]:
                             row = col.row(align=True)
                             row.alignment = "LEFT"
@@ -932,8 +949,8 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                                        text=scene.amth_list_users_for_x_name)
 
         row = split.row(align=True)
-        row.active = True if scene.amth_list_users_for_x_name else False
-        row.operator(AMTH_SCENE_OT_list_users_for_x.bl_idname)
+        row.enabled = True if scene.amth_list_users_for_x_name else False
+        row.operator(AMTH_SCENE_OT_list_users_for_x.bl_idname).name = scene.amth_list_users_for_x_name
         if list_users:
             row.operator(
                 AMTH_SCENE_OT_list_users_for_x_clear.bl_idname,
