@@ -65,7 +65,8 @@ def init():
         description="Include light emitting meshes on the list")
 
     amth_datablock_types = (
-        ("IMAGE", "Image", "Image Datablocks", 0),
+        ("IMAGE_DATA", "Image", "Image Datablocks", 0),
+        ("GROUP_VCOL", "Vertex Colors", "Vertex Color Layers", 1),
         #("MATERIAL", "Material", "", 1),
     )
     scene.amth_datablock_types = bpy.props.EnumProperty(
@@ -511,10 +512,19 @@ class AMTH_SCENE_OT_list_users_for_x_type(bpy.types.Operator):
     def avail(self,context):
         datablock_type = bpy.context.scene.amth_datablock_types
 
-        if datablock_type == 'IMAGE':
+        if datablock_type == 'IMAGE_DATA':
             where = bpy.data.images
+        elif datablock_type == 'GROUP_VCOL':
+            where = []
+            for ob in bpy.data.objects:
+                if ob.type == 'MESH':
+                    for v in ob.data.vertex_colors:
+                        if v and v not in where:
+                            where.append(v)
+            where = list(set(where))
 
         items = [(str(i),x.name,x.name, datablock_type, i) for i,x in enumerate(where)]
+        items = sorted(list(set(items)))
         return items
 
     list_type_select = bpy.props.EnumProperty(items = avail, name = "Available")
@@ -526,8 +536,16 @@ class AMTH_SCENE_OT_list_users_for_x_type(bpy.types.Operator):
     def execute(self,context):
         datablock_type = bpy.context.scene.amth_datablock_types
 
-        if datablock_type == 'IMAGE':
+        if datablock_type == 'IMAGE_DATA':
             where = bpy.data.images
+        elif datablock_type == 'GROUP_VCOL':
+            where = []
+            for ob in bpy.data.objects:
+                if ob.type == 'MESH':
+                    for v in ob.data.vertex_colors:
+                        if v and v not in where:
+                            where.append(v)
+            where = list(set(where))
 
         bpy.context.scene.amth_list_users_for_x_name = where[int(self.list_type_select)].name
         return {'FINISHED'}
@@ -560,10 +578,11 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
             'WORLD' : [],
             'TEXTURE' : [],
             'MODIFIER' : [],
+            'MESH_DATA' : [],
         }
 
         # First for images
-        if dtype == 'IMAGE':
+        if dtype == 'IMAGE_DATA':
 
             # Check Materials
             for ma in d.materials:
@@ -631,6 +650,39 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                             name = '"{0}" modifier in {1}'.format(mo.name, ob.name)
                             if name not in self.__class__.users['MODIFIER']:
                                 self.__class__.users['MODIFIER'].append(name)
+
+        elif dtype == 'GROUP_VCOL':
+            # Check VCOL in Meshes
+            for ob in bpy.data.objects:
+                if ob.type == 'MESH':
+                    for v in ob.data.vertex_colors:
+                        if v.name == x:
+                            name = '{0}'.format(ob.name)
+
+                            if name not in self.__class__.users['MESH_DATA']:
+                                self.__class__.users['MESH_DATA'].append(name)
+
+            # Check VCOL in Materials
+            for ma in d.materials:
+                # Cycles
+                if utils.cycles_exists():
+                    if ma and ma.node_tree and ma.node_tree.nodes:
+                        for no in ma.node_tree.nodes:
+                            if no and no.type in {'ATTRIBUTE'}:
+                                if no.attribute_name == x:
+                                    objects = []
+
+                                    for ob in d.objects:
+                                        if ma.name in ob.material_slots:
+                                            objects.append(ob.name)
+
+                                    if objects:
+                                        name = '{0} in object: {1}'.format(ma.name, objects)
+                                    else:
+                                        name = '{0} (not assigned)'.format(ma.name)
+
+                                    if name not in self.__class__.users['MATERIAL']:
+                                        self.__class__.users['MATERIAL'].append(name)
 
         # Print on console
         for t in self.__class__.users:
@@ -941,7 +993,7 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
         split = col.split()
         row = split.row(align=True)
         row.prop(scene, "amth_datablock_types",
-                    icon="SCENE",
+                    icon=scene.amth_datablock_types,
                     text="")
 
         row.operator_menu_enum("scene.amth_list_users_for_x_type",
