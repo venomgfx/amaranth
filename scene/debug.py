@@ -1033,7 +1033,8 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                 if empty:
                     row = col.row(align=True)
                     row.alignment = "LEFT"
-                    row.label(text="No users for Datablock",
+                    row.label(text="No users for '{0}'".format(
+                              scene.amth_list_users_for_x_name),
                               icon='INFO')
 
 class AMTH_LightersCorner(bpy.types.Panel):
