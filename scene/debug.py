@@ -579,9 +579,10 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
             'TEXTURE' : [],
             'MODIFIER' : [],
             'MESH_DATA' : [],
+            'VIEW3D' : [],
         }
 
-        # First for images
+        # IMAGE TYPE
         if dtype == 'IMAGE_DATA':
 
             # Check Materials
@@ -650,6 +651,20 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                             if name not in self.__class__.users['MODIFIER']:
                                 self.__class__.users['MODIFIER'].append(name)
 
+            # Check Background Images in Viewports
+            for scr in d.screens:
+                for ar in scr.areas:
+                    if ar.type == 'VIEW_3D':
+                        for bg in ar.spaces.active.background_images:
+                            image = bg.image
+
+                            if bg and image and image.name == x:
+                                name = 'Background for 3D Viewport in Screen "{0}"'\
+                                        .format(scr.name)
+                                if name not in self.__class__.users['VIEW3D']:
+                                    self.__class__.users['VIEW3D'].append(name)
+
+        # VERTEX COLOR TYPE
         elif dtype == 'GROUP_VCOL':
             # Check VCOL in Meshes
             for ob in bpy.data.objects:
