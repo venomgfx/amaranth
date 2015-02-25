@@ -632,7 +632,6 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
 
             # Check Textures
             for te in d.textures:
-                print(te, te.type)
                 if te and te.type =='IMAGE' and te.image:
                     name = te.image.name
 
@@ -685,8 +684,11 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                                         self.__class__.users['MATERIAL'].append(name)
 
         # Print on console
+        empty = True
+
         for t in self.__class__.users:
             if self.__class__.users[t]:
+                empty = False
                 print('\n== {0} {1} use {2} "{3}" ==\n'.format(
                         len(self.__class__.users[t]),
                         t,
@@ -694,6 +696,8 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                         x))
                 for p in self.__class__.users[t]:
                     print(' {0}'.format(p))
+        if empty:
+            print('\n== No users for {0} ==\n'.format(x))
 
         #print('Type: {0}'.format(context.scene.amth_datablock_types))
         #print('X: {0}'.format(x))
@@ -800,16 +804,18 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
 
                 if list_missing_images:
                     col = box.column(align=True)
-                    row = col.row(align=True)
-                    row.alignment = "LEFT"
                     for mis in images_missing:
-                        # col.label(text=mis[0],
-                        #           icon="IMAGE_DATA")
-                        row.operator(
-                            AMTH_SCENE_OT_list_users_for_x.bl_idname,
+                        row = col.row(align=True)
+                        row.alignment = "LEFT"
+                        row.label(
                             text=mis[0],
-                            icon="IMAGE_DATA",
-                            emboss=False).name = mis[0][:-4]
+                            icon="IMAGE_DATA")
+                        # XXX TODO // make clicking on image work (needs new op to set x)
+                        # row.operator(
+                        #     AMTH_SCENE_OT_list_users_for_x.bl_idname,
+                        #     text=mis[0],
+                        #     icon="IMAGE_DATA",
+                        #     emboss=False).name = mis[0][:-4]
 
                         row = col.row(align=True)
                         row.label(text=mis[1], icon="LIBRARY_DATA_DIRECT")
@@ -1014,14 +1020,21 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
             pass
         else:
             if list_users:
+                empty = True
                 col = box.column(align=True)
                 for t in list_users:
                     if list_users[t]:
+                        empty = False
                         for ma in list_users[t]:
                             row = col.row(align=True)
                             row.alignment = "LEFT"
                             row.label(text=ma,
                                       icon=t)
+                if empty:
+                    row = col.row(align=True)
+                    row.alignment = "LEFT"
+                    row.label(text="No users for Datablock",
+                              icon='INFO')
 
 class AMTH_LightersCorner(bpy.types.Panel):
 
