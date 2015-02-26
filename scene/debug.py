@@ -513,9 +513,14 @@ class AMTH_SCENE_OT_list_users_for_x_type(bpy.types.Operator):
         datablock_type = bpy.context.scene.amth_datablock_types
 
         if datablock_type == 'IMAGE_DATA':
-            where = bpy.data.images
+            where = []
+            for im in bpy.data.images:
+                if im.name not in {'Render Result', 'Viewer Node'}:
+                    where.append(im)
+
         elif datablock_type == 'MATERIAL':
             where = bpy.data.materials
+
         elif datablock_type == 'GROUP_VCOL':
             where = []
             for ob in bpy.data.objects:
@@ -539,9 +544,14 @@ class AMTH_SCENE_OT_list_users_for_x_type(bpy.types.Operator):
         datablock_type = bpy.context.scene.amth_datablock_types
 
         if datablock_type == 'IMAGE_DATA':
-            where = bpy.data.images
+            where = []
+            for im in bpy.data.images:
+                if im.name not in {'Render Result', 'Viewer Node'}:
+                    where.append(im)
+
         elif datablock_type == 'MATERIAL':
             where = bpy.data.materials
+
         elif datablock_type == 'GROUP_VCOL':
             where = []
             for ob in bpy.data.objects:
@@ -577,14 +587,15 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
         dtype = context.scene.amth_datablock_types
 
         self.__class__.users = {
-            'OBJECT_DATA' : [],
-            'MATERIAL' : [],
-            'LAMP' : [],
-            'WORLD' : [],
-            'TEXTURE' : [],
-            'MODIFIER' : [],
-            'MESH_DATA' : [],
-            'VIEW3D' : [],
+            'OBJECT_DATA' : [], # Store Objects with Material
+            'MATERIAL' : [], # Materials (Node tree)
+            'LAMP' : [], # Lamps
+            'WORLD' : [], # World
+            'TEXTURE' : [], # Textures (Psys, Brushes)
+            'MODIFIER' : [], # Modifiers
+            'MESH_DATA' : [], # Vertex Colors
+            'VIEW3D' : [], # Background Images
+            'NODETREE' : [], # Compositor
         }
 
         # IMAGE TYPE
@@ -594,8 +605,18 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                 # Cycles
                 if utils.cycles_exists():
                     if ma and ma.node_tree and ma.node_tree.nodes:
-                        for no in ma.node_tree.nodes:
-                            if no and no.type in {'TEX_IMAGE','TEX_ENVIRONMENT'}:
+                        materials = []
+
+                        for nd in ma.node_tree.nodes:
+                            if nd and nd.type in {'TEX_IMAGE','TEX_ENVIRONMENT'}:
+                                materials.append(nd)
+                            if nd and nd.type == 'GROUP':
+                                if nd.node_tree and nd.node_tree.nodes:
+                                    for ng in nd.node_tree.nodes:
+                                        if ng.type in {'TEX_IMAGE','TEX_ENVIRONMENT'}:
+                                            materials.append(ng)
+
+                            for no in materials:
                                 if no.image and no.image.name == x:
                                     objects = []
 
@@ -603,10 +624,17 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                                         if ma.name in ob.material_slots:
                                             objects.append(ob.name)
 
-                                    if objects:
-                                        name = '{0} in object: {1}'.format(ma.name, objects)
-                                    else:
-                                        name = '{0} (not assigned)'.format(ma.name)
+                                    links = False
+
+                                    for o in no.outputs:
+                                        if o.links:
+                                            links = True
+
+                                    name = '"{0}" {1}{2}{3}'.format(
+                                            ma.name,
+                                            'inside nodegroup "{0}"'.format(nd.name) if nd.type == 'GROUP' else '',
+                                            ' in object: {0}'.format(objects) if objects else ' (unassigned)',
+                                            '' if links else ' (unconnected)')
 
                                     if name not in self.__class__.users['MATERIAL']:
                                         self.__class__.users['MATERIAL'].append(name)
@@ -668,6 +696,40 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                                 if name not in self.__class__.users['VIEW3D']:
                                     self.__class__.users['VIEW3D'].append(name)
 
+            # Check the compositor
+            for sce in d.scenes:
+                if sce.node_tree and sce.node_tree.nodes:
+                    nodes = []
+
+                    for nd in sce.node_tree.nodes:
+                        if nd.type == 'IMAGE':
+                            nodes.append(nd)
+
+                        if nd.type == 'GROUP':
+                            if nd.node_tree and nd.node_tree.nodes:
+                                for ng in nd.node_tree.nodes:
+                                    if ng.type == 'IMAGE':
+                                        nodes.append(ng)
+
+                        for no in nodes:
+                            if no.image and no.image.name == x:
+                                if no.image.name not in self.__class__.users['VIEW3D']:
+
+                                    links = False
+
+                                    for o in no.outputs:
+                                        if o.links:
+                                            links = True
+
+                                    name = '{0} "{1}" in Compositor (Scene "{2}"){3}'.format(
+                                            ('Inside group "{0}", Node'.format(nd.name)) if nd.type == 'GROUP' else 'Node',
+                                            no.name,
+                                            sce.name,
+                                            '' if links else ' (unconnected)')
+
+                                    if name not in self.__class__.users['NODETREE']:
+                                        self.__class__.users['NODETREE'].append(name)
+
         # MATERIAL TYPE
         if dtype == 'MATERIAL':
             # Check Materials
@@ -706,7 +768,7 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                                     if objects:
                                         name = '{0} in object: {1}'.format(ma.name, objects)
                                     else:
-                                        name = '{0} (not assigned)'.format(ma.name)
+                                        name = '{0} (unassigned)'.format(ma.name)
 
                                     if name not in self.__class__.users['MATERIAL']:
                                         self.__class__.users['MATERIAL'].append(name)
