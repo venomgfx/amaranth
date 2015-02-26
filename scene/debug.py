@@ -1056,8 +1056,15 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                         for ma in list_users[t]:
                             row = col.row(align=True)
                             row.alignment = "LEFT"
-                            row.label(text=ma,
-                                      icon=t)
+                            if t == 'OBJECT_DATA':
+                                row.operator(
+                                    AMTH_SCENE_OT_amaranth_object_select.bl_idname,
+                                    text=ma,
+                                    icon=t,
+                                    emboss=False).object = ma
+                            else:
+                                row.label(text=ma,
+                                          icon=t)
                 if empty:
                     row = col.row(align=True)
                     row.alignment = "LEFT"
