@@ -674,8 +674,8 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
             for ob in d.objects:
                 for ma in ob.material_slots:
                     if ma.name == x:
-                        if ma.name not in self.__class__.users['OBJECT_DATA']:
-                            self.__class__.users['OBJECT_DATA'].append(ob.name)
+                        if ma not in self.__class__.users['OBJECT_DATA']:
+                            self.__class__.users['OBJECT_DATA'].append(ob)
 
         # VERTEX COLOR TYPE
         elif dtype == 'GROUP_VCOL':
@@ -1059,9 +1059,12 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                             if t == 'OBJECT_DATA':
                                 row.operator(
                                     AMTH_SCENE_OT_amaranth_object_select.bl_idname,
-                                    text=ma,
+                                    text="%s %s%s" %
+                                    (" [L] " if ma.library else "",
+                                     ma.name,
+                                     "" if ma.name in context.scene.objects else " [Not in Scene]"),
                                     icon=t,
-                                    emboss=False).object = ma
+                                    emboss=False).object = ma.name
                             else:
                                 row.label(text=ma,
                                           icon=t)
