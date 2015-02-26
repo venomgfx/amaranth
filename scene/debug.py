@@ -630,10 +630,9 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                                         if o.links:
                                             links = True
 
-                                    name = '"{0}" {1}{2}{3}'.format(
+                                    name = '"{0}" {1}{2}'.format(
                                             ma.name,
-                                            'inside nodegroup "{0}"'.format(nd.name) if nd.type == 'GROUP' else '',
-                                            ' in object: {0}'.format(objects) if objects else ' (unassigned)',
+                                            'in object: {0}'.format(objects) if objects else ' (unassigned)',
                                             '' if links else ' (unconnected)')
 
                                     if name not in self.__class__.users['MATERIAL']:
@@ -696,7 +695,7 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                                 if name not in self.__class__.users['VIEW3D']:
                                     self.__class__.users['VIEW3D'].append(name)
 
-            # Check the compositor
+            # Check the Compositor
             for sce in d.scenes:
                 if sce.node_tree and sce.node_tree.nodes:
                     nodes = []
@@ -704,8 +703,7 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                     for nd in sce.node_tree.nodes:
                         if nd.type == 'IMAGE':
                             nodes.append(nd)
-
-                        if nd.type == 'GROUP':
+                        elif nd.type == 'GROUP':
                             if nd.node_tree and nd.node_tree.nodes:
                                 for ng in nd.node_tree.nodes:
                                     if ng.type == 'IMAGE':
@@ -713,22 +711,20 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
 
                         for no in nodes:
                             if no.image and no.image.name == x:
-                                if no.image.name not in self.__class__.users['VIEW3D']:
 
-                                    links = False
+                                links = False
 
-                                    for o in no.outputs:
-                                        if o.links:
-                                            links = True
+                                for o in no.outputs:
+                                    if o.links:
+                                        links = True
 
-                                    name = '{0} "{1}" in Compositor (Scene "{2}"){3}'.format(
-                                            ('Inside group "{0}", Node'.format(nd.name)) if nd.type == 'GROUP' else 'Node',
-                                            no.name,
-                                            sce.name,
-                                            '' if links else ' (unconnected)')
+                                name = 'Node {0} in Compositor (Scene "{1}"){2}'.format(
+                                        no.name,
+                                        sce.name,
+                                        '' if links else ' (unconnected)')
 
-                                    if name not in self.__class__.users['NODETREE']:
-                                        self.__class__.users['NODETREE'].append(name)
+                                if name not in self.__class__.users['NODETREE']:
+                                    self.__class__.users['NODETREE'].append(name)
 
         # MATERIAL TYPE
         if dtype == 'MATERIAL':
