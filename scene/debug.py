@@ -66,8 +66,8 @@ def init():
 
     amth_datablock_types = (
         ("IMAGE_DATA", "Image", "Image Datablocks", 0),
-        ("GROUP_VCOL", "Vertex Colors", "Vertex Color Layers", 1),
-        #("MATERIAL", "Material", "", 1),
+        ("MATERIAL", "Material", "Material Datablocks", 1),
+        ("GROUP_VCOL", "Vertex Colors", "Vertex Color Layers", 2),
     )
     scene.amth_datablock_types = bpy.props.EnumProperty(
         items=amth_datablock_types,
@@ -514,6 +514,8 @@ class AMTH_SCENE_OT_list_users_for_x_type(bpy.types.Operator):
 
         if datablock_type == 'IMAGE_DATA':
             where = bpy.data.images
+        elif datablock_type == 'MATERIAL':
+            where = bpy.data.materials
         elif datablock_type == 'GROUP_VCOL':
             where = []
             for ob in bpy.data.objects:
@@ -538,6 +540,8 @@ class AMTH_SCENE_OT_list_users_for_x_type(bpy.types.Operator):
 
         if datablock_type == 'IMAGE_DATA':
             where = bpy.data.images
+        elif datablock_type == 'MATERIAL':
+            where = bpy.data.materials
         elif datablock_type == 'GROUP_VCOL':
             where = []
             for ob in bpy.data.objects:
@@ -573,6 +577,7 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
         dtype = context.scene.amth_datablock_types
 
         self.__class__.users = {
+            'OBJECT_DATA' : [],
             'MATERIAL' : [],
             'LAMP' : [],
             'WORLD' : [],
@@ -584,7 +589,6 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
 
         # IMAGE TYPE
         if dtype == 'IMAGE_DATA':
-
             # Check Materials
             for ma in d.materials:
                 # Cycles
@@ -663,6 +667,15 @@ class AMTH_SCENE_OT_list_users_for_x(bpy.types.Operator):
                                         .format(scr.name)
                                 if name not in self.__class__.users['VIEW3D']:
                                     self.__class__.users['VIEW3D'].append(name)
+
+        # MATERIAL TYPE
+        if dtype == 'MATERIAL':
+            # Check Materials
+            for ob in d.objects:
+                for ma in ob.material_slots:
+                    if ma.name == x:
+                        if ma.name not in self.__class__.users['OBJECT_DATA']:
+                            self.__class__.users['OBJECT_DATA'].append(ob.name)
 
         # VERTEX COLOR TYPE
         elif dtype == 'GROUP_VCOL':
