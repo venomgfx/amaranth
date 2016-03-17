@@ -850,7 +850,7 @@ class AMTH_SCENE_OT_blender_instance_open(bpy.types.Operator):
 
 class AMTH_SCENE_OT_string_to_clipboard(bpy.types.Operator):
 
-    """Copy a string to the clipboard"""
+    """Copy a string to clipboard"""
     bl_idname = "scene.string_to_clipboard"
     bl_label = "Copy string to clipboard"
     string_copy = bpy.props.StringProperty()
@@ -858,6 +858,7 @@ class AMTH_SCENE_OT_string_to_clipboard(bpy.types.Operator):
     def execute(self, context):
         if self.string_copy:
             context.window_manager.clipboard = self.string_copy
+            self.report({'INFO'}, "Copied to clipboard")
 
         return {"FINISHED"}
 
