@@ -848,20 +848,6 @@ class AMTH_SCENE_OT_blender_instance_open(bpy.types.Operator):
 
         return {"FINISHED"}
 
-class AMTH_SCENE_OT_string_to_clipboard(bpy.types.Operator):
-
-    """Copy a string to clipboard"""
-    bl_idname = "scene.string_to_clipboard"
-    bl_label = "Copy string to clipboard"
-    string_copy = bpy.props.StringProperty()
-
-    def execute(self, context):
-        if self.string_copy:
-            context.window_manager.clipboard = self.string_copy
-            self.report({'INFO'}, "Copied to clipboard")
-
-        return {"FINISHED"}
-
 
 class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
 
@@ -942,12 +928,7 @@ class AMTH_SCENE_PT_scene_debug(bpy.types.Panel):
                         #     emboss=False).name = mis[0][:-4]
 
                         row = col.row(align=True)
-                        row.alignment = "LEFT"
-                        row.operator(
-                            AMTH_SCENE_OT_string_to_clipboard.bl_idname,
-                            text=mis[1],
-                            icon="LIBRARY_DATA_DIRECT",
-                            emboss=False).string_copy = mis[1]
+                        row.label(text=mis[1], icon="LIBRARY_DATA_DIRECT")
                         if mis[2]:
                             row = col.row(align=True)
                             row.alignment = "LEFT"
@@ -1377,7 +1358,6 @@ class AMTH_LightersCorner(bpy.types.Panel):
 
 classes = {
     AMTH_SCENE_PT_scene_debug,
-    AMTH_SCENE_OT_string_to_clipboard,
     AMTH_SCENE_OT_blender_instance_open,
     AMTH_SCENE_OT_amaranth_object_select,
     AMTH_SCENE_OT_list_missing_node_links,
