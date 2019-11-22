@@ -49,12 +49,12 @@ class AMNodeEditorMaterialSelect(bpy.types.Operator):
     def avail_materials(self,context):
         items = [(str(i),x.name,x.name, "MATERIAL", i) for i,x in enumerate(bpy.context.active_object.material_slots)]
         return items
-    material_select = bpy.props.EnumProperty(items = avail_materials, name = "Available Materials")
+    material_select: bpy.props.EnumProperty(items = avail_materials, name = "Available Materials")
 
     @classmethod
     def poll(cls, context):
         return context.active_object
-    
+
     def execute(self,context):
         bpy.context.active_object.active_material_index = int(self.material_select)
         return {'FINISHED'}

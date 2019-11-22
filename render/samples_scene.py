@@ -28,6 +28,10 @@ Developed during Caminandes Open Movie Project
 
 import bpy
 from amaranth import utils
+from bpy.props import (
+        BoolProperty,
+        IntProperty,
+        )
 
 
 class AMTH_RENDER_OT_cycles_samples_percentage_set(bpy.types.Operator):
@@ -60,10 +64,11 @@ class AMTH_RENDER_OT_cycles_samples_percentage(bpy.types.Operator):
     bl_idname = "scene.amaranth_cycles_samples_percentage"
     bl_label = "Set Render Samples Percentage"
 
-    percent = bpy.props.IntProperty(
-        name="Percentage",
-        description="Percentage to divide render samples by",
-        subtype="PERCENTAGE", default=0)
+    percent: IntProperty(
+            name="Percentage",
+            description="Percentage to divide render samples by",
+            subtype="PERCENTAGE", default=0
+            )
 
     def execute(self, context):
         percent = self.percent
@@ -129,7 +134,8 @@ def render_cycles_scene_samples(self, context):
             text="25%").percent = 25
 
     # List Samples
-    if (len(scene.render.layers) > 1) or (len(bpy.data.scenes) > 1):
+    #if (len(scene.render.layers) > 1) or (len(bpy.data.scenes) > 1):
+    if (len(scene.render.views) > 1) or (len(bpy.data.scenes) > 1):
 
         box = layout.box()
         row = box.row(align=True)
@@ -142,15 +148,18 @@ def render_cycles_scene_samples(self, context):
                  emboss=False)
 
     if list_sampling:
-        if len(scene.render.layers) == 1 and render.layers[0].samples == 0:
+        #if len(scene.render.layers) == 1 and render.layers[0].samples == 0:
+        if len(scene.render.views) == 1 and render.view_layers[0].samples == 0:		
             pass
         else:
             col.separator()
-            col.label(text="RenderLayers:", icon="RENDERLAYERS")
+            #col.label(text="RenderLayers:", icon="RENDERLAYERS")
+            col.label(text="View Layers:", icon="RENDERLAYERS")			
 
-            for rl in scene.render.layers:
+            #for rl in scene.render.layers:
+            for rl in scene.view_layers:			
                 row = col.row(align=True)
-                row.label(rl.name, icon="BLANK1")
+                row.label(text=rl.name, icon="BLANK1")
                 row.prop(
                     rl, "samples", text="%s" %
                     "Samples" if rl.samples > 0 else "Automatic (%s)" %
@@ -168,7 +177,8 @@ def render_cycles_scene_samples(self, context):
                         if s.render.engine == "CYCLES":
                             cscene = s.cycles
 
-                            row.label(s.name)
+                            #row.label(s.name)
+                            row.label(text=s.name)							
                             row.prop(cscene, "samples", icon="BLANK1")
                         else:
                             row.label(
@@ -181,7 +191,7 @@ def render_cycles_scene_samples(self, context):
                         if s.render.engine == "CYCLES":
                             cscene = s.cycles
 
-                            row.label(s.name, icon="BLANK1")
+                            row.label(text=s.name, icon="BLANK1")
                             row.prop(cscene, "aa_samples",
                                      text="AA Samples")
                         else:
@@ -196,11 +206,21 @@ def init():
         scene.amaranth_cycles_list_sampling = bpy.props.BoolProperty(
             default=False,
             name="Samples Per:")
+        # Note: add versioning code to adress changes introduced in 2.79.1
+        if bpy.app.version >= (2, 79, 1):
+            from cycles import properties as _cycles_props
+            _cycles_props.CyclesRenderSettings.use_samples_final = BoolProperty(
+                    name="Use Final Render Samples",
+                    description="Use current shader samples as final render samples",
+                    default=False
+                    )
+        else:
+            bpy.types.CyclesRenderSettings.use_samples_final = BoolProperty(
+                    name="Use Final Render Samples",
+                    description="Use current shader samples as final render samples",
+                    default=False
+                    )
 
-        bpy.types.CyclesRenderSettings.use_samples_final = bpy.props.BoolProperty(
-            name="Use Final Render Samples",
-            description="Use current shader samples as final render samples",
-            default=False)
 
 
 def clear():
@@ -215,12 +235,20 @@ def register():
     bpy.utils.register_class(AMTH_RENDER_OT_cycles_samples_percentage)
     bpy.utils.register_class(AMTH_RENDER_OT_cycles_samples_percentage_set)
     if utils.cycles_exists():
-        bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
+        if bpy.app.version >= (2, 79, 1):
+            bpy.types.CYCLES_RENDER_PT_sampling.append(render_cycles_scene_samples)
+        else:
+            bpy.types.CyclesRender_PT_sampling.append(render_cycles_scene_samples)
 
 
 def unregister():
     bpy.utils.unregister_class(AMTH_RENDER_OT_cycles_samples_percentage)
     bpy.utils.unregister_class(AMTH_RENDER_OT_cycles_samples_percentage_set)
     if utils.cycles_exists():
-        bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
+        if bpy.app.version >= (2, 79, 1):
+            bpy.types.CYCLES_RENDER_PT_sampling.remove(render_cycles_scene_samples)
+        else:
+            bpy.types.CyclesRender_PT_sampling.remove(render_cycles_scene_samples)
+
+
     clear()

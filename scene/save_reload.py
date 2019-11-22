@@ -27,7 +27,6 @@ KEYMAPS = list()
 
 
 class AMTH_WM_OT_save_reload(bpy.types.Operator):
-
     """Save and Reload the current blend file"""
     bl_idname = "wm.save_reload"
     bl_label = "Save & Reload"
@@ -43,13 +42,16 @@ class AMTH_WM_OT_save_reload(bpy.types.Operator):
     def execute(self, context):
         path = bpy.data.filepath
         self.save_reload(context, path)
+
         return {"FINISHED"}
 
 
 def button_save_reload(self, context):
-    preferences = context.user_preferences.addons["amaranth"].preferences
+    get_addon = "amaranth" in context.preferences.addons.keys()
+    if not get_addon:
+        return
 
-    if preferences.use_file_save_reload:
+    if context.preferences.addons["amaranth"].preferences.use_file_save_reload:
         self.layout.separator()
         self.layout.operator(
             AMTH_WM_OT_save_reload.bl_idname,
@@ -59,7 +61,7 @@ def button_save_reload(self, context):
 
 def register():
     bpy.utils.register_class(AMTH_WM_OT_save_reload)
-    bpy.types.INFO_MT_file.append(button_save_reload)
+    bpy.types.TOPBAR_MT_file.append(button_save_reload)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     km = kc.keymaps.new(name="Window")
@@ -70,7 +72,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(AMTH_WM_OT_save_reload)
-    bpy.types.INFO_MT_file.remove(button_save_reload)
+    bpy.types.TOPBAR_MT_file.remove(button_save_reload)
     for km, kmi in KEYMAPS:
         km.keymap_items.remove(kmi)
     KEYMAPS.clear()

@@ -24,10 +24,11 @@ from amaranth import utils
 
 
 def stats_scene(self, context):
+    get_addon = "amaranth" in context.preferences.addons.keys()
+    if not get_addon:
+        return
 
-    preferences = context.user_preferences.addons["amaranth"].preferences
-
-    if preferences.use_scene_stats:
+    if context.preferences.addons["amaranth"].preferences.use_scene_stats:
         scenes_count = str(len(bpy.data.scenes))
         cameras_count = str(len(bpy.data.cameras))
         cameras_selected = 0
@@ -54,8 +55,8 @@ def stats_scene(self, context):
 
 
 def register():
-    bpy.types.INFO_HT_header.append(stats_scene)
+    bpy.types.STATUSBAR_HT_header.append(stats_scene)
 
 
 def unregister():
-    bpy.types.INFO_HT_header.remove(stats_scene)
+    bpy.types.STATUSBAR_HT_header.remove(stats_scene)
