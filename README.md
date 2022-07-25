@@ -1,16 +1,6 @@
-Amaranth Toolset
-========
+Amaranth is now part of Blender's built-in add-ons (yay!)
+=
 
-Yet another add-on for Blender 2.8+, basically a bunch of tools that I believe improve usability in production environments.
+This repository will no longer be updated, since Blender ships with Amaranth as part of the official list of community add-ons.
 
-
-## How to Install
-* Download [the latest .zip](https://github.com/venomgfx/amaranth/archive/master.zip)
-* In Blender, go to the Preferences under Edit menu > Preferences
-* Switch to the add-ons tab. Click "Install...", look for the .zip file.
-* Installed! You should see it on the list, simply enable it.
-* Optional: Most Amaranth options will be enabled by default, but you can disable some in the add-on settings.
-
-### More info at:
-[Amaranth's website](https://pablovazquez.art/amaranth)
-
+If you still want to download it or browse the code, find the latest version at: https://developer.blender.org/diffusion/BA/browse/master/amaranth/
